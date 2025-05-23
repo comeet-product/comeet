@@ -5,6 +5,10 @@ import Day from "@/components/TimetableResult/Day";
 
 export default function Home() {
   return (
+    <div>
+      <Title>Comeet 회의</Title>
+    </div>
+    
     <div className="p-4 md:p-6">
       <Title>Timetable Components Test</Title>
       <br />
@@ -35,6 +39,5 @@ export default function Home() {
           <Day halfCount={5} />
         </div>
       </div>
-    </div>
   );
 }
