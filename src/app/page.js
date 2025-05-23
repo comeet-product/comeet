@@ -2,6 +2,7 @@ import Title from "@/components/Title";
 import Half from "@/components/TimetableResult/Half";
 import Hour from "@/components/TimetableResult/Hour";
 import Day from "@/components/TimetableResult/Day";
+import TimetableResult from "@/components/TimetableResult/TimetableResult";
 
 export default function Home() {
   return (
@@ -9,7 +10,17 @@ export default function Home() {
       <Title>Comeet 회의</Title>
       <br />
       
-      <Title>Timetable Components Test</Title>
+      <div className="mb-8">
+        <h3 className="text-lg text-gray-500 font-semibold mb-4">Full Timetable (7 Days)</h3>
+        <TimetableResult dayCount={7} halfCount={4} />
+      </div>
+      
+      <div className="mb-8">
+        <h3 className="text-lg text-gray-500 font-semibold mb-4">Small Timetable (3 Days)</h3>
+        <TimetableResult dayCount={3} halfCount={3} />
+      </div>
+      
+      <Title>Individual Components Test</Title>
       <br />
       
       <div className="space-y-6">
