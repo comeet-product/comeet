@@ -2,8 +2,8 @@ import Title from "@/components/Title";
 
 export default function Home() {
   return (
-    <div className="">
-      <Title>안녕하세요! 메인 제목입니다</Title>
+    <div>
+      <Title>Comeet 회의</Title>
     </div>
   );
 }
