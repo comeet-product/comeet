@@ -1,6 +1,7 @@
 import Day from "./Day";
 
-export default function TimetableResult({ dayCount = 7, halfCount = 3 }) {
+// dayCount랑 halfCount라는 Props를 받아서 구현
+export default function DateSelector({ dayCount, halfCount, hasDateHeaderAbove = false }) {
     return (
         <div className="flex w-full">
             {Array.from({ length: dayCount }, (_, index) => (
@@ -8,6 +9,7 @@ export default function TimetableResult({ dayCount = 7, halfCount = 3 }) {
                     <Day 
                         halfCount={halfCount} 
                         isFirstDay={index === 0}
+                        hasDateHeaderAbove={hasDateHeaderAbove}
                     />
                 </div>
             ))}

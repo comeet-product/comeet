@@ -1,7 +1,7 @@
 import Hour from "./Hour";
 import Half from "./Half";
 
-export default function Day({ halfCount, isFirstDay = true }) {
+export default function Day({ halfCount, isFirstDay = true, hasDateHeaderAbove = false }) {
   const hourCount = Math.floor(halfCount / 2);
   const hasExtraHalf = halfCount % 2 === 1;
 
@@ -13,6 +13,7 @@ export default function Day({ halfCount, isFirstDay = true }) {
           key={`hour-${index}`}
           isFirst={index === 0}
           isFirstDay={isFirstDay}
+          hasDateHeaderAbove={hasDateHeaderAbove && index === 0}
         />
       ))}
       
@@ -21,6 +22,7 @@ export default function Day({ halfCount, isFirstDay = true }) {
         <Half 
           hasHourAbove={hourCount > 0} 
           isFirstDay={isFirstDay}
+          hasDateHeaderAbove={hasDateHeaderAbove && hourCount === 0}
         />
       )}
     </div>
