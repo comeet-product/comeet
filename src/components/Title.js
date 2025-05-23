@@ -5,4 +5,4 @@ export default function Title({ children }) {
       <img src="/link-icon.svg" alt="link-icon" className="ml-2 flex-shrink-0" />
     </div>
   );
-}g
+}
