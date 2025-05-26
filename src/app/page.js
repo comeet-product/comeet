@@ -2,7 +2,8 @@ import Title from "@/components/Title";
 import Half from "@/components/TimetableResult/Half";
 import Hour from "@/components/TimetableResult/Hour";
 import Day from "@/components/TimetableResult/Day";
-import Button from "@/components/Button";
+import Time from "@/components/SelectableTime/Time";
+import SelectableTime from "@/components/SelectableTime/SelectableTime";
 
 export default function Home() {
     return (
@@ -46,15 +47,10 @@ export default function Home() {
                     </h3>
                     <Day halfCount={5} />
                 </div>
-
-                <Title>Button Components Test</Title>
-                <div className="space-y-4 mb-8">
-                    <div className="mx-auto">
-                        <Button size="large" text="미팅 생성" />
-                    </div>
-                    <div className="mx-auto">
-                        <Button size="small" text="미팅 생성" />
-                    </div>
+                <Title>SelectableTime Components Test</Title>
+                <div className="mx-auto">
+                    <Time text="10:00 AM" />
+                    <SelectableTime />
                 </div>
             </div>
         </div>
