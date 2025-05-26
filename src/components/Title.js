@@ -1,8 +1,57 @@
+'use client';
+import { useState, useEffect } from 'react';
+
 export default function Title({ children }) {
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setToastMessage('링크가 복사되었습니다.');
+      setShowToast(true);
+      setIsVisible(true);
+    } catch (err) {
+      // 복사 실패 시 아무것도 표시하지 않음
+    }
+  };
+
+  useEffect(() => {
+    if (showToast) {
+      const hideTimer = setTimeout(() => {
+        setIsVisible(false);
+      }, 1250);
+      
+      const removeTimer = setTimeout(() => {
+        setShowToast(false);
+      }, 1500);
+      
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [showToast]);
+
   return (
-    <div className="flex justify-center items-center">
+    <div className="relative flex justify-center items-center">
       <h1 className="text-2xl font-bold text-black">{children}</h1>
-      <img src="/link-icon.svg" alt="link-icon" className="ml-2 flex-shrink-0" />
+      <div className="relative ml-2">
+        <img 
+          src="/link-icon.svg" 
+          alt="link-icon" 
+          className="flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity" 
+          onClick={handleCopyUrl}
+        />
+        
+        {/* Toast */}
+        {showToast && (
+          <div className={`absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+            {toastMessage}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
