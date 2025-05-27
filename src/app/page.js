@@ -2,6 +2,11 @@ import Title from "@/components/Title";
 import Half from "@/components/TimetableResult/Half";
 import Hour from "@/components/TimetableResult/Hour";
 import Day from "@/components/TimetableResult/Day";
+import Date from "@/components/TimetableResult/Date";
+import Timetable from "@/components/TimetableResult/Timetable";
+import TimeHeader from "@/components/TimetableResult/TimeHeader";
+import Time from "@/components/TimetableResult/Time";
+import TimetableResult from "@/components/TimetableResult/TimetableResult";
 
 export default function Home() {
   return (
@@ -9,33 +14,94 @@ export default function Home() {
       <Title>Comeet 회의</Title>
       <br />
       
-      <Title>Timetable Components Test</Title>
+      <div className="mb-8">
+        <h3 className="text-lg text-gray-500 font-semibold mb-4">Complete TimetableResult</h3>
+        
+        <div className="mb-6">
+          <h4 className="text-sm text-gray-400 mb-2">Full Week Timetable (like image: 7 days, 8 halves, 10 AM start)</h4>
+          <TimetableResult 
+            dayCount={7} 
+            halfCount={8} 
+            startDate="05/19" 
+            startTime={10} 
+            dateHeaderHeight={23}
+          />
+        </div>
+        
+        <div className="mb-6">
+          <h4 className="text-sm text-gray-400 mb-2">Work Week Timetable (5 days, 6 halves, 9 AM start)</h4>
+          <TimetableResult 
+            dayCount={5} 
+            halfCount={9} 
+            startDate="11/18" 
+            startTime={9}
+            dateHeaderHeight={23}
+          />
+        </div>
+        
+        <div className="mb-6">
+          <h4 className="text-sm text-gray-400 mb-2">Short Timetable (3 days, 4 halves, 2 PM start)</h4>
+          <TimetableResult 
+            dayCount={3} 
+            halfCount={4} 
+            startDate="12/01" 
+            startTime={14}
+            dateHeaderHeight={23}
+          />
+        </div>
+      </div>
+      
+      <div className="mb-8">
+        <h3 className="text-lg text-gray-500 font-semibold mb-4">Individual Time Components</h3>
+        
+        <div className="flex gap-4">
+          <Time time="10 AM" />
+          <Time time="11 AM" />
+          <Time time="12 PM" />
+          <Time time="1 PM" />
+          <Time time="2 PM" />
+        </div>
+      </div>
+      
+      <Title>Individual Components Test</Title>
       <br />
       
       <div className="space-y-6">
         <div>
+          <h3 className="text-sm text-gray-500 mb-2">Single Date</h3>
+          <Date 
+            date="11/15" 
+            isFirstDay={true}
+          />
+        </div>
+        
+        <div>
           <h3 className="text-sm text-gray-500 mb-2">Single Half</h3>
-          <Half />
+          <Half 
+            isTop={true}
+            isFirstHour={true}
+            isFirstDay={true}
+            hasHourAbove={true}
+            hasDateHeaderAbove={false}
+          />
         </div>
         
         <div>
           <h3 className="text-sm text-gray-500 mb-2">Hour (2 Halves)</h3>
-          <Hour />
+          <Hour 
+            isFirst={true}
+            isFirstDay={true}
+            hasDateHeaderAbove={false}
+          />
         </div>
         
         <div>
           <h3 className="text-sm text-gray-500 mb-2">Day with 3 Halves (1 Hour + 1 Half)</h3>
-          <Day halfCount={3} />
-        </div>
-        
-        <div>
-          <h3 className="text-sm text-gray-500 mb-2">Day with 4 Halves (2 Hours)</h3>
-          <Day halfCount={4} />
-        </div>
-        
-        <div>
-          <h3 className="text-sm text-gray-500 mb-2">Day with 5 Halves (2 Hours + 1 Half)</h3>
-          <Day halfCount={5} />
+          <Day 
+            halfCount={3}
+            isFirstDay={true}
+            hasDateHeaderAbove={false}
+          />
         </div>
       </div>
     </div>
