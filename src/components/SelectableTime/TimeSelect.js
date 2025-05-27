@@ -1,4 +1,4 @@
-export default function Time({
+export default function TimeSelect({
     text,
     onClick,
     disabled = false,
