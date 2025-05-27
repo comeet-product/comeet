@@ -1,9 +1,9 @@
 import DateHeader from "./DateHeader";
 import DateSelector from "./DateSelector";
 
-export default function Timetable({ dayCount = 7, halfCount = 3, startDate = "12/01" }) {
+export default function Timetable({ dayCount , halfCount, startDate }) {
   return (
-    <div className="w-full">
+    <div className="flex flex-col">
       <DateHeader 
         dayCount={dayCount} 
         startDate={startDate}

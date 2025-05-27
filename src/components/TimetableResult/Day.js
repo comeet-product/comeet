@@ -1,7 +1,7 @@
 import Hour from "./Hour";
 import Half from "./Half";
 
-export default function Day({ halfCount, isFirstDay = true, hasDateHeaderAbove = false }) {
+export default function Day({ halfCount, isFirstDay, hasDateHeaderAbove }) {
   const hourCount = Math.floor(halfCount / 2);
   const hasExtraHalf = halfCount % 2 === 1;
 

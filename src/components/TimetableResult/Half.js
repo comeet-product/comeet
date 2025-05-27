@@ -1,4 +1,4 @@
-export default function Half({ isTop, isFirstHour = true, hasHourAbove = false, isFirstDay = true, hasDateHeaderAbove = false }) {
+export default function Half({ isTop, isFirstHour, hasHourAbove, isFirstDay, hasDateHeaderAbove }) {
   return (
     <div className={`w-full h-[17px] border-main ${
       isTop === undefined

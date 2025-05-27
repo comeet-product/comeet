@@ -1,6 +1,6 @@
 import Half from "./Half";
 
-export default function Hour({ isFirst = true, isFirstDay = true, hasDateHeaderAbove = false }) {
+export default function Hour({ isFirst, isFirstDay, hasDateHeaderAbove }) {
   return (
     <div className="flex flex-col">
         <Half 

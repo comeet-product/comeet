@@ -1,9 +1,9 @@
 import Day from "./Day";
 
 // dayCount랑 halfCount라는 Props를 받아서 구현
-export default function DateSelector({ dayCount, halfCount, hasDateHeaderAbove = false }) {
+export default function DateSelector({ dayCount, halfCount, hasDateHeaderAbove }) {
     return (
-        <div className="flex w-full">
+        <div className="flex">
             {Array.from({ length: dayCount }, (_, index) => (
                 <div key={`day-${index}`} className="flex-1">
                     <Day 
