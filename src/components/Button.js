@@ -13,8 +13,8 @@ export default function Button({
 
     const colorStyle =
         color === "primary"
-            ? "bg-[#3674B5] hover:bg-blue-600"
-            : "bg-gray-500 hover:bg-gray-600";
+            ? "bg-[#3674B5]"
+            : "bg-gray-500";
 
     return (
         <button
@@ -25,10 +25,11 @@ export default function Button({
         ${colorStyle}
         text-white
         font-medium
-        transition-colors
+        transition-opacity
         flex
         items-center
         justify-center
+        hover:opacity-70
         ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         ${className}
     `}
