@@ -10,11 +10,18 @@ import TimeHeader from "@/components/TimetableResult/TimeHeader";
 import Time from "@/components/TimetableResult/Time";
 import TimetableResult from "@/components/TimetableResult/TimetableResult";
 import Button from "@/components/Button";
+import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
+import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
+import AvailableDates from "@/components/AvailableDatesGroup/AvailableDates";
+import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
+import Calendar from "@/components/Calendar";
 
 export default function Playground() {
     return (
         <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-8 text-center">컴포넌트 플레이그라운드</h1>
+            <h1 className="text-2xl font-bold mb-8 text-center">
+                컴포넌트 플레이그라운드
+            </h1>
 
             <div className="mb-8">
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
@@ -116,7 +123,9 @@ export default function Playground() {
                 </div>
 
                 <div>
-                    <h3 className="text-lg text-gray-500 font-semibold mb-4">Button Components</h3>
+                    <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                        Button Components
+                    </h3>
                     <div className="space-y-4 mb-8">
                         <div className="mx-auto">
                             <Button size="large" text="미팅 생성" />
@@ -128,13 +137,75 @@ export default function Playground() {
                 </div>
 
                 <div>
-                    <h3 className="text-lg text-gray-500 font-semibold mb-4">SelectableTime Components</h3>
+                    <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                        SelectableTime Components
+                    </h3>
                     <div className="mx-auto">
                         <TimeSelect text="10:00 AM" />
                         <SelectableTime />
                     </div>
                 </div>
+                <div>
+                    <Title>AvailableDatesGroup Component Test</Title>
+                    <br />
+
+                    <h3 className="text-sm text-gray-500 mb-2">Time</h3>
+                    <div className="flex flex-col space-y-1">
+                        <Time
+                            text="30분"
+                            backgroundColor="rgba(54, 116, 181, 0.60)"
+                        />
+                        <Time
+                            text="1시간"
+                            backgroundColor="rgba(54, 116, 181, 0.70)"
+                        />
+                        <Time
+                            text="2시간"
+                            backgroundColor="rgba(54, 116, 181, 0.80)"
+                        />
+                        <Time
+                            text="3시간"
+                            backgroundColor="rgba(54, 116, 181, 0.90)"
+                        />
+                        <Time
+                            text="4시간+"
+                            backgroundColor="rgba(54, 116, 181, 1)"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-sm text-gray-500 mb-2">
+                        AvailableDate
+                    </h3>
+                    <div className="space-y-2">
+                        <AvailableDate
+                            date="5월 19일"
+                            timeText="30분"
+                            backgroundColor="rgba(54, 116, 181, 0.60)"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-sm text-gray-500 mb-2">
+                        AvailableDates
+                    </h3>
+                    <AvailableDates />
+                </div>
+
+                <div>
+                    <h3 className="text-sm text-gray-500 mb-2">
+                        AvailableDatesGroup
+                    </h3>
+                    <AvailableDatesGroup />
+                </div>
+            </div>
+            <div>
+                <Title>Calendar Component Test</Title>
+                <br />
+                <Calendar />
             </div>
         </div>
     );
-} 
+}
