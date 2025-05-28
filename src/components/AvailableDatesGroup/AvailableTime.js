@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Time({
+export default function AvailableTime({
     text = "30분",
     onClick,
     disabled = false,

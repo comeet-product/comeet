@@ -1,5 +1,5 @@
 import React from "react";
-import Time from "./Time";
+import Time from "./AvailableTime";
 
 export default function AvailableDate({
     date = "5월 19일", // 기본값 설정
