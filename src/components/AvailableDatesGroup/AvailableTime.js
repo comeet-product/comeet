@@ -2,15 +2,11 @@ import React from "react";
 
 export default function AvailableTime({
     text = "30분",
-    onClick,
-    disabled = false,
     className = "",
     backgroundColor,
 }) {
     return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
+        <div
             style={{ backgroundColor }}
             className={`
                 w-[40px] h-[18px]
@@ -23,11 +19,10 @@ export default function AvailableTime({
                 flex
                 items-center
                 justify-center
-                ${disabled ? "opacity-50 cursor-not-allowed" : ""}
                 ${className}
             `}
         >
             {text}
-        </button>
+        </div>
     );
 }

@@ -148,25 +148,28 @@ export default function Playground() {
                     <Title>AvailableDatesGroup Component Test</Title>
                     <br />
 
-                    <h3 className="text-sm text-gray-500 mb-2">Time</h3>
+                    <h3 className="text-sm text-gray-500 mb-2">
+                        AvailableTime
+                    </h3>
+
                     <div className="flex flex-col space-y-1">
-                        <Time
+                        <AvailableTime
                             text="30분"
                             backgroundColor="rgba(54, 116, 181, 0.60)"
                         />
-                        <Time
+                        <AvailableTime
                             text="1시간"
                             backgroundColor="rgba(54, 116, 181, 0.70)"
                         />
-                        <Time
+                        <AvailableTime
                             text="2시간"
                             backgroundColor="rgba(54, 116, 181, 0.80)"
                         />
-                        <Time
+                        <AvailableTime
                             text="3시간"
                             backgroundColor="rgba(54, 116, 181, 0.90)"
                         />
-                        <Time
+                        <AvailableTime
                             text="4시간+"
                             backgroundColor="rgba(54, 116, 181, 1)"
                         />
