@@ -2,7 +2,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 /**
  * Create a new meeting in Firestore
- * @param {string} meetingId - Document ID (e.g. "meeting_001")
+ * @param {string} meetingId - Document ID (ex. "meeting_001")
  * @param {{
  *   title: string,
  *   dates: string[], // ex: ["2025-07-05", "2025-07-06"]
@@ -23,7 +23,7 @@ export async function createMeeting(
             startTime: 900, 
             endTime: 1800, 
         },
-        recommendations: {}, // 빈 추천 데이터 캐시 초기화
+        recommendations: {}, 
     };
 
     await setDoc(meetingRef, data);

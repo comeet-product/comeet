@@ -18,7 +18,7 @@ export const dummyMeetingData = {
                         { user: "기훈" },
                     ],
                 },
-                // 추가 시간 블록...
+                
             ],
         },
         "2025-07-06": {
@@ -29,7 +29,7 @@ export const dummyMeetingData = {
                     count: 2,
                     availableUsers: [{ user: "예진" }, { user: "재완" }],
                 },
-                // 추가 시간 블록...
+
             ],
         },
     },
