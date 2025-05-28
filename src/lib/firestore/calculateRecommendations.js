@@ -28,7 +28,7 @@ export async function calculateRecommendations(meetingId) {
         }
     }
 
-    // 2. 연속 시간 블록 계산 
+    // 2. 연속 시간 블록 계산
     const recommendations = {};
     for (const date in timeMap) {
         const slots = Object.keys(timeMap[date])
@@ -45,7 +45,7 @@ export async function calculateRecommendations(meetingId) {
 
             while (
                 i + length < slots.length &&
-                slots[i + length] === slots[i] + length * 30 &&
+                slots[i + length] - slots[i + length - 1] === 30 &&
                 arrayEqual(timeMap[date][slots[i + length]], currentUsers)
             ) {
                 length++;
