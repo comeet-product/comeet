@@ -1,10 +1,16 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function Title({ children }) {
+export default function Title({ children, onTitleChange }) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(children || '새로운 회의');
+
+  useEffect(() => {
+    setTitle(children);
+  }, [children]);
 
   const handleCopyUrl = async () => {
     try {
@@ -14,6 +20,31 @@ export default function Title({ children }) {
       setIsVisible(true);
     } catch (err) {
       // 복사 실패 시 아무것도 표시하지 않음
+    }
+  };
+
+  const handleTitleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleTitleChange = (e) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+  };
+
+  const handleTitleBlur = () => {
+    setIsEditing(false);
+    if (onTitleChange) {
+      onTitleChange(title);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      setIsEditing(false);
+      if (onTitleChange) {
+        onTitleChange(title);
+      }
     }
   };
 
@@ -36,7 +67,24 @@ export default function Title({ children }) {
 
   return (
     <div className="relative flex justify-center items-center">
-      <h1 className="text-2xl font-bold text-black">{children}</h1>
+      {isEditing ? (
+        <input
+          type="text"
+          value={title}
+          onChange={handleTitleChange}
+          onBlur={handleTitleBlur}
+          onKeyDown={handleKeyDown}
+          className="text-2xl font-bold text-black bg-transparent border-b-2 border-main outline-none px-2"
+          autoFocus
+        />
+      ) : (
+        <h1 
+          className="text-2xl font-bold text-black cursor-pointer hover:opacity-80"
+          onClick={handleTitleClick}
+        >
+          {title}
+        </h1>
+      )}
       <div className="relative ml-2">
         <img 
           src="/link-icon.svg" 
