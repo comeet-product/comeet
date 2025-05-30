@@ -4,7 +4,7 @@ import { submitAvailability } from "../firestore/submitAvailability";
 import { calculateRecommendations } from "../firestore/calculateRecommendations";
 
 export async function runTestFlow() {
-    const meetingId = "meeting_test_001";
+    const meetingId = "meeting_test_001"; //랜덤으로 생성되도록 합시다, 사용자 아이디도 랜덤으로. 이름 중복 방지 구현
 
     // Step 1: 미팅 생성
     await createMeeting(meetingId, {

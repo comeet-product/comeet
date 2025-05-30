@@ -6,10 +6,11 @@ import { db } from "../firebase";
  * @param {{
  *   title: string,
  *   dates: string[], // ex: ["2025-07-05", "2025-07-06"]
- *   startTime: string, // ex: "0900"
- *   endTime: string // ex: "1800"
+ *   startTime: number, // ex: "0900"
+ *   endTime: number // ex: "1800"
  * }} params
  */
+
 export async function createMeeting(
     meetingId,
     { title, dates, startTime, endTime }
