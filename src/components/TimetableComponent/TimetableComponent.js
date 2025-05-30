@@ -4,10 +4,10 @@ import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 import { animated } from '@react-spring/web';
 
-export default function TimetableComponent({ dayCount, halfCount, startDate, startTime, dateHeaderHeight, gestureBind, animatedVisualScale, gestureArgs }) {
+export default function TimetableComponent({ dayCount, halfCount, startDate, startTime, dateHeaderHeight, gestureBinder, animatedVisualScale }) {
   return (
     <div className="flex w-full">
-      {/* TimeHeader - 내용에 맞는 최소 너비, 줄어들지 않음 */}
+      {/* TimeHeader - Fixed on the left */}
       <div className="flex-shrink-0 min-w-max">
         <TimeHeader 
           halfCount={halfCount} 
@@ -15,22 +15,31 @@ export default function TimetableComponent({ dayCount, halfCount, startDate, sta
           dateHeaderHeight={dateHeaderHeight}
         />
       </div>
-      {/* Timetable - 남은 공간 모두 차지 */}
-      <animated.div
-        {...(gestureBind ? gestureBind(...gestureArgs) : {})}
-        style={{
+      {/* Gesture and animated container for Timetable (DateSelector area) - Takes remaining space */}
+      <div 
+        {...(gestureBinder ? gestureBinder() : {})}
+        style={{ 
           touchAction: 'none',
-          scale: animatedVisualScale,
-          transformOrigin: 'left center',
+          overflow: 'hidden',
         }}
-        className="flex-1 min-w-0 overflow-x-auto"
+        className="flex-1 min-w-0"
       >
-        <Timetable 
-          dayCount={dayCount} 
-          halfCount={halfCount} 
-          startDate={startDate}
-        />
-      </animated.div>
+        <animated.div
+          style={{
+            scale: animatedVisualScale,
+            transformOrigin: 'left center',
+            height: '100%',
+            width: '100%',
+          }}
+          className="overflow-x-auto h-full"
+        >
+          <Timetable 
+            dayCount={dayCount} 
+            halfCount={halfCount} 
+            startDate={startDate}
+          />
+        </animated.div>
+      </div>
     </div>
   );
 } 
