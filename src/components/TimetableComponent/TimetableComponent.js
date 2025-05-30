@@ -2,8 +2,9 @@
 
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
+import { animated } from '@react-spring/web';
 
-export default function TimetableComponent({ dayCount, halfCount, startDate, startTime, dateHeaderHeight }) {
+export default function TimetableComponent({ dayCount, halfCount, startDate, startTime, dateHeaderHeight, gestureBind, animatedVisualScale, gestureArgs }) {
   return (
     <div className="flex w-full">
       {/* TimeHeader - 내용에 맞는 최소 너비, 줄어들지 않음 */}
@@ -15,13 +16,21 @@ export default function TimetableComponent({ dayCount, halfCount, startDate, sta
         />
       </div>
       {/* Timetable - 남은 공간 모두 차지 */}
-      <div className="flex-1 min-w-0 overflow-x-auto">
+      <animated.div
+        {...(gestureBind ? gestureBind(...gestureArgs) : {})}
+        style={{
+          touchAction: 'none',
+          scale: animatedVisualScale,
+          transformOrigin: 'left center',
+        }}
+        className="flex-1 min-w-0 overflow-x-auto"
+      >
         <Timetable 
           dayCount={dayCount} 
           halfCount={halfCount} 
           startDate={startDate}
         />
-      </div>
+      </animated.div>
     </div>
   );
 } 
