@@ -16,6 +16,7 @@ import AvailableDates from "@/components/AvailableDatesGroup/AvailableDates";
 import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
 import Calendar from "@/components/Calendar";
 import UserBar from "@/components/UserBar";
+import Input from "@/components/Input";
 
 export const generateMetadata = () => {
     return {
@@ -241,6 +242,16 @@ export default function Playground() {
                 <br />
                 <div className="relative">
                     <UserBar />
+                </div>
+            </div>
+
+            <div>
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    Input Component
+                </h3>
+                <br />
+                <div>
+                    <Input />
                 </div>
             </div>
         </div>
