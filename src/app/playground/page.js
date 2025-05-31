@@ -15,13 +15,35 @@ import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
 import AvailableDates from "@/components/AvailableDatesGroup/AvailableDates";
 import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
 import Calendar from "@/components/Calendar";
+import UserBar from "@/components/UserBar";
+
+export const generateMetadata = () => {
+    return {
+        title: "[COMEET]",
+        description: "프로덕트데이 커밋 줌 회의",
+        openGraph: {
+            images: ["/comeet_logo.png"],
+        },
+    };
+};
 
 export default function Playground() {
     return (
         <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-8 text-center">
-                컴포넌트 플레이그라운드
-            </h1>
+            <Title>
+                <h1 className="text-2xl font-bold text-center">
+                    컴포넌트 플레이그라운드
+                </h1>
+            </Title>
+
+            <Title
+                dynamicTitle="프로덕트데이 줌 회의"
+                dynamicLink="https://comeet.team/5kxZ27p8"
+            >
+                <h2 className="text-2xl font-bold text-center">
+                    Dynamic Title Test
+                </h2>
+            </Title>
 
             <div className="mb-8">
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
@@ -124,7 +146,7 @@ export default function Playground() {
 
                 <div>
                     <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                        Button Components
+                        Button Component
                     </h3>
                     <div className="space-y-4 mb-8">
                         <div className="mx-auto">
@@ -138,7 +160,7 @@ export default function Playground() {
 
                 <div>
                     <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                        SelectableTime Components
+                        SelectableTime Component
                     </h3>
                     <div className="mx-auto">
                         <TimeSelect text="10:00 AM" />
@@ -146,7 +168,9 @@ export default function Playground() {
                     </div>
                 </div>
                 <div>
-                    <Title>AvailableDatesGroup Component Test</Title>
+                    <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                        AvailableDatesGroup Component
+                    </h3>
                     <br />
 
                     <h3 className="text-sm text-gray-500 mb-2">
@@ -204,10 +228,20 @@ export default function Playground() {
                     <AvailableDatesGroup />
                 </div>
             </div>
+
             <div>
-                <Title>Calendar Component Test</Title>
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    Calendar Component
+                </h3>
                 <br />
                 <Calendar />
+            </div>
+
+            <div>
+                <br />
+                <div className="relative">
+                    <UserBar />
+                </div>
             </div>
         </div>
     );
