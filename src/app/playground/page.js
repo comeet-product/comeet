@@ -1,14 +1,14 @@
 import Title from "@/components/Title";
-import Half from "@/components/TimetableResult/Half";
-import Hour from "@/components/TimetableResult/Hour";
-import Day from "@/components/TimetableResult/Day";
+import Half from "@/components/TimetableComponent/Half";
+import Hour from "@/components/TimetableComponent/Hour";
+import Day from "@/components/TimetableComponent/Day";
 import TimeSelect from "@/components/SelectableTime/TimeSelect";
 import SelectableTime from "@/components/SelectableTime/SelectableTime";
-import Date from "@/components/TimetableResult/Date";
-import Timetable from "@/components/TimetableResult/Timetable";
-import TimeHeader from "@/components/TimetableResult/TimeHeader";
-import Time from "@/components/TimetableResult/Time";
-import TimetableResult from "@/components/TimetableResult/TimetableResult";
+import Date from "@/components/TimetableComponent/Date";
+import Timetable from "@/components/TimetableComponent/Timetable";
+import TimeHeader from "@/components/TimetableComponent/TimeHeader";
+import Time from "@/components/TimetableComponent/Time";
+import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
 import Button from "@/components/Button";
 import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
 import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
@@ -55,7 +55,7 @@ export default function Playground() {
                         Full Week Timetable (like image: 7 days, 8 halves, 10 AM
                         start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={7}
                         halfCount={8}
                         startDate="05/19"
@@ -68,7 +68,7 @@ export default function Playground() {
                     <h4 className="text-sm text-gray-400 mb-2">
                         Work Week Timetable (5 days, 6 halves, 9 AM start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={5}
                         halfCount={9}
                         startDate="11/18"
@@ -81,7 +81,7 @@ export default function Playground() {
                     <h4 className="text-sm text-gray-400 mb-2">
                         Short Timetable (3 days, 4 halves, 2 PM start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={3}
                         halfCount={4}
                         startDate="12/01"
