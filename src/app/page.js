@@ -16,7 +16,6 @@ import TimetableComponent from "@/components/TimetableComponent/TimetableCompone
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import { createMeeting } from "@/lib/firestore/createMeeting";
-import SelectableTime from '@/components/SelectableTime/SelectableTime';
 
 export default function Home() {
     const router = useRouter();
@@ -25,33 +24,14 @@ export default function Home() {
     const [startTime, setStartTime] = useState(900); // 9:00 AM
     const [endTime, setEndTime] = useState(1800); // 6:00 PM
 
-    const handleTitleChange = (newTitle) => {
-        setMeetingTitle(newTitle);
-    };
-
-    const handleCreateMeeting = async () => {
-        try {
-            const meetingId = await createMeeting({
-                title: meetingTitle,
-                dates: selectedDates,
-                startTime,
-                endTime
-            });
-            router.push(`/result/${meetingId}`);
-        } catch (error) {
-            console.error('미팅 생성 중 오류 발생:', error);
-        }
-    };
-
     return (
-        <div className="flex flex-col justify-between items-center h-full p-10">
-            <Title onTitleChange={handleTitleChange}>{meetingTitle}</Title>
+        <div>
+            <Title>{meetingTitle}</Title>
             <Calendar />
             <SelectableTime />
             <Button 
                 size="large" 
                 text="미팅 생성" 
-                onClick={handleCreateMeeting}
             />
         </div>
     );
