@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
-    if (!isOpen) return null;
-
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const minutes = [0, 30];
     
@@ -15,6 +13,13 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
     const overlayRef = useRef(null);
 
     useEffect(() => {
+        setSelectedHour(Math.floor(initialValue / 100));
+        setSelectedMinute((initialValue % 100) === 30 ? 30 : 0);
+    }, [initialValue]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        
         const handleClickOutside = (event) => {
             if (overlayRef.current && !overlayRef.current.contains(event.target)) {
                 onClose();
@@ -23,7 +28,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [onClose]);
+    }, [isOpen, onClose]);
 
     const handleSelect = () => {
         const timeValue = selectedHour * 100 + selectedMinute;
@@ -31,16 +36,18 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
         onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div ref={overlayRef} className="bg-white rounded-lg p-4 w-[300px] max-h-[90%] overflow-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div ref={overlayRef} className="bg-white rounded-lg p-4 w-[300px]">
                 <div className="flex justify-between mb-4">
                     <div className="w-1/2 pr-2">
-                        <div className="h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             {hours.map((hour) => (
                                 <div
                                     key={hour}
-                                    className={`py-2 text-center cursor-pointer ${
+                                    className={`py-4 text-center cursor-pointer text-lg ${
                                         selectedHour === hour ? 'bg-blue-100' : ''
                                     } hover:bg-gray-100`}
                                     onClick={() => setSelectedHour(hour)}
@@ -51,11 +58,11 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                         </div>
                     </div>
                     <div className="w-1/2 pl-2">
-                        <div className="h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             {minutes.map((minute) => (
                                 <div
                                     key={minute}
-                                    className={`py-2 text-center cursor-pointer ${
+                                    className={`py-4 text-center cursor-pointer text-lg ${
                                         selectedMinute === minute ? 'bg-blue-100' : ''
                                     } hover:bg-gray-100`}
                                     onClick={() => setSelectedMinute(minute)}
