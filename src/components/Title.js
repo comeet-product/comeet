@@ -1,61 +1,30 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useToast, Toast } from "./Toast";
 
-export default function Title({ children, dynamicTitle, dynamicLink }) {
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-    const [isVisible, setIsVisible] = useState(false);
+export default function Title({ children }) {
+    const { isVisible, message, showToast } = useToast();
 
     const handleCopyUrl = async () => {
         try {
-            const textToCopy = `[COMEET]\n${dynamicTitle}\n${dynamicLink}`;
+            const textToCopy = `[COMEET]\n${children}\n${window.location.href}`;
             await navigator.clipboard.writeText(textToCopy);
-            setToastMessage("링크가 복사되었습니다.");
-            setShowToast(true);
-            setIsVisible(true);
+            showToast("링크가 복사되었습니다.");
         } catch (err) {
-            // 복사 실패 시 아무것도 표시하지 않음
+            showToast("링크 복사에 실패했습니다.");
         }
     };
 
-    useEffect(() => {
-        if (showToast) {
-            const hideTimer = setTimeout(() => {
-                setIsVisible(false);
-            }, 1250);
-
-            const removeTimer = setTimeout(() => {
-                setShowToast(false);
-            }, 1500);
-
-            return () => {
-                clearTimeout(hideTimer);
-                clearTimeout(removeTimer);
-            };
-        }
-    }, [showToast]);
-
     return (
         <div className="relative flex justify-center items-center">
-            {children}
+            <h1 className="text-2xl font-bold text-black">{children}</h1>
             <div className="relative ml-2">
                 <img
                     src="/link-icon.svg"
-                    alt="link-icon"
+                    alt="링크 복사"
                     className="flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
                     onClick={handleCopyUrl}
                 />
-
-                {/* Toast */}
-                {showToast && (
-                    <div
-                        className={`fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500 ${
-                            isVisible ? "opacity-100" : "opacity-0"
-                        }`}
-                    >
-                        {toastMessage}
-                    </div>
-                )}
+                <Toast isVisible={isVisible} message={message} />
             </div>
         </div>
     );

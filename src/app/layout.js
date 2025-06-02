@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 export const metadata = {
     title: "Comeet",
     description: "모임 관리 앱",
+    metadataBase: new URL('https://comeet.team'),
     openGraph: {
         images: ["/comeet_logo.png"],
     },
