@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className="antialiased bg-white">
         <div className="min-h-screen flex justify-center">
-          <div className="w-full mx-5 lg:max-w-sm lg:mx-auto my-5 bg-white lg:border lg:border-gray-300 lg:rounded-lg p-5">
+          <div className="w-full mx-5 lg:max-w-sm lg:mx-auto my-5 bg-white lg:border lg:border-gray-300 lg:rounded-lg p-5 flex flex-col justify-center items-center">
             {children}
           </div>
         </div>
