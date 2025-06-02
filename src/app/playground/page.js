@@ -1,27 +1,50 @@
 import Title from "@/components/Title";
-import Half from "@/components/TimetableResult/Half";
-import Hour from "@/components/TimetableResult/Hour";
-import Day from "@/components/TimetableResult/Day";
+import Half from "@/components/TimetableComponent/Half";
+import Hour from "@/components/TimetableComponent/Hour";
+import Day from "@/components/TimetableComponent/Day";
 import TimeSelect from "@/components/SelectableTime/TimeSelect";
 import SelectableTime from "@/components/SelectableTime/SelectableTime";
-import Date from "@/components/TimetableResult/Date";
-import Timetable from "@/components/TimetableResult/Timetable";
-import TimeHeader from "@/components/TimetableResult/TimeHeader";
-import Time from "@/components/TimetableResult/Time";
-import TimetableResult from "@/components/TimetableResult/TimetableResult";
+import Date from "@/components/TimetableComponent/Date";
+import Timetable from "@/components/TimetableComponent/Timetable";
+import TimeHeader from "@/components/TimetableComponent/TimeHeader";
+import Time from "@/components/TimetableComponent/Time";
+import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
 import Button from "@/components/Button";
 import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
 import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
 import AvailableDates from "@/components/AvailableDatesGroup/AvailableDates";
 import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
 import Calendar from "@/components/Calendar";
+import UserBar from "@/components/UserBar";
+import Input from "@/components/Input";
+
+export const generateMetadata = () => {
+    return {
+        title: "[COMEET]",
+        description: "프로덕트데이 커밋 줌 회의",
+        openGraph: {
+            images: ["/comeet_logo.png"],
+        },
+    };
+};
 
 export default function Playground() {
     return (
         <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-8 text-center">
-                컴포넌트 플레이그라운드
-            </h1>
+            <Title>
+                <h1 className="text-2xl font-bold text-center">
+                    컴포넌트 플레이그라운드
+                </h1>
+            </Title>
+
+            <Title
+                dynamicTitle="프로덕트데이 줌 회의"
+                dynamicLink="https://comeet.team/5kxZ27p8"
+            >
+                <h2 className="text-2xl font-bold text-center">
+                    Dynamic Title Test
+                </h2>
+            </Title>
 
             <div className="mb-8">
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
@@ -33,7 +56,7 @@ export default function Playground() {
                         Full Week Timetable (like image: 7 days, 8 halves, 10 AM
                         start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={7}
                         halfCount={8}
                         startDate="05/19"
@@ -46,7 +69,7 @@ export default function Playground() {
                     <h4 className="text-sm text-gray-400 mb-2">
                         Work Week Timetable (5 days, 6 halves, 9 AM start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={5}
                         halfCount={9}
                         startDate="11/18"
@@ -59,7 +82,7 @@ export default function Playground() {
                     <h4 className="text-sm text-gray-400 mb-2">
                         Short Timetable (3 days, 4 halves, 2 PM start)
                     </h4>
-                    <TimetableResult
+                    <TimetableComponent
                         dayCount={3}
                         halfCount={4}
                         startDate="12/01"
@@ -124,7 +147,7 @@ export default function Playground() {
 
                 <div>
                     <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                        Button Components
+                        Button Component
                     </h3>
                     <div className="space-y-4 mb-8">
                         <div className="mx-auto">
@@ -138,7 +161,7 @@ export default function Playground() {
 
                 <div>
                     <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                        SelectableTime Components
+                        SelectableTime Component
                     </h3>
                     <div className="mx-auto">
                         <TimeSelect text="10:00 AM" />
@@ -146,7 +169,9 @@ export default function Playground() {
                     </div>
                 </div>
                 <div>
-                    <Title>AvailableDatesGroup Component Test</Title>
+                    <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                        AvailableDatesGroup Component
+                    </h3>
                     <br />
 
                     <h3 className="text-sm text-gray-500 mb-2">
@@ -204,10 +229,30 @@ export default function Playground() {
                     <AvailableDatesGroup />
                 </div>
             </div>
+
             <div>
-                <Title>Calendar Component Test</Title>
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    Calendar Component
+                </h3>
                 <br />
                 <Calendar />
+            </div>
+
+            <div>
+                <br />
+                <div className="relative">
+                    <UserBar />
+                </div>
+            </div>
+
+            <div>
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    Input Component
+                </h3>
+                <br />
+                <div>
+                    <Input />
+                </div>
             </div>
         </div>
     );
