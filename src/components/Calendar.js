@@ -152,7 +152,7 @@ export default function Calendar({ onChange, selectedDates }) {
     };
 
     return (
-        <div className="flex flex-col w-[360px] h-[380px] items-start p-5 bg-white shadow">
+        <div className="flex flex-col w-full items-start p-5 bg-white shadow">
             {/* Header */}
             <div className="flex justify-between items-center mb-6 w-full">
                 {/* 년월 표시 */}
@@ -236,7 +236,7 @@ export default function Calendar({ onChange, selectedDates }) {
 
                 {/* Days Grid */}
                 <div 
-                    className="grid grid-cols-7 gap-1 w-full"
+                    className="grid grid-cols-7 gap-2 w-full"
                     onMouseLeave={handleDragEnd}
                     onMouseUp={handleDragEnd}
                 >
@@ -248,7 +248,7 @@ export default function Calendar({ onChange, selectedDates }) {
                                 onMouseDown={(e) => handleDragStart(day, e)}
                                 onMouseEnter={() => handleDragEnter(day)}
                                 className={`
-                                    w-11 h-11 flex items-center justify-center select-none
+                                    w-full aspect-square flex items-center justify-center select-none text-sm
                                     ${day === null ? "invisible" : "cursor-pointer"}
                                     ${
                                         day !== null &&

@@ -14,12 +14,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body className="antialiased bg-white">
-        <div className="min-h-screen flex justify-center">
+        <div className="min-h-screen flex justify-center lg:py-4">
           <div className="w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg">
             <div className="top-0">
               <Header />
             </div>
-            <div className="flex flex-col justify-between items-center m-5">
+            <div className="flex flex-col justify-between items-center m-5 overflow-y-auto">
               {children}
             </div>
           </div>
