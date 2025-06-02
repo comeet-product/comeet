@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-export default function Title({ children }) {
+export default function Title({ children, link = true, onChange = () => {} }) {
+    const [isEditing, setIsEditing] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [currentUrl, setCurrentUrl] = useState("");
@@ -10,6 +11,27 @@ export default function Title({ children }) {
     useEffect(() => {
         setCurrentUrl(window.location.href);
     }, []);
+    
+    const handleClick = () => {
+        setIsEditing(true);
+    };
+
+    const handleSave = (value) => {
+        setIsEditing(false);
+        const trimmedValue = value.trim();
+        const finalValue = trimmedValue || '제목을 입력하세요';
+        onChange?.(finalValue);
+    };
+
+    const handleChange = (e) => {
+        if (e.key === 'Enter') {
+            handleSave(e.target.value);
+        }
+    };
+
+    const handleBlur = (e) => {
+        handleSave(e.target.value);
+    };
 
     const handleCopyUrl = async () => {
         try {
