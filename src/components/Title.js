@@ -1,16 +1,32 @@
 "use client";
-import { useToast, Toast } from "./Toast";
+import { useState, useEffect } from "react";
 
 export default function Title({ children }) {
-    const { isVisible, message, showToast } = useToast();
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [currentUrl, setCurrentUrl] = useState("");
+
+    useEffect(() => {
+        setCurrentUrl(window.location.href);
+    }, []);
 
     const handleCopyUrl = async () => {
         try {
-            const textToCopy = `[COMEET]\n${children}\n${window.location.href}`;
+            const textToCopy = `[COMEET]\n${children}\n${currentUrl}`;
             await navigator.clipboard.writeText(textToCopy);
-            showToast("링크가 복사되었습니다.");
+            setToastMessage("링크가 복사되었습니다.");
+            setShowToast(true);
+            
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
         } catch (err) {
-            showToast("링크 복사에 실패했습니다.");
+            setToastMessage("링크 복사에 실패했습니다.");
+            setShowToast(true);
+            
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
         }
     };
 
@@ -24,7 +40,11 @@ export default function Title({ children }) {
                     className="flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
                     onClick={handleCopyUrl}
                 />
-                <Toast isVisible={isVisible} message={message} />
+                {showToast && (
+                    <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
+                        {toastMessage}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -3,19 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Title from "@/components/Title";
-import Half from "@/components/TimetableComponent/Half";
-import Hour from "@/components/TimetableComponent/Hour";
-import Day from "@/components/TimetableComponent/Day";
-import TimeSelect from "@/components/SelectableTime/TimeSelect";
-import SelectableTime from "@/components/SelectableTime/SelectableTime";
-import Date from "@/components/TimetableComponent/Date";
-import Timetable from "@/components/TimetableComponent/Timetable";
-import TimeHeader from "@/components/TimetableComponent/TimeHeader";
-import Time from "@/components/TimetableComponent/Time";
-import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
 import Button from "@/components/Button";
-import Calendar from "@/components/Calendar";
-import { createMeeting } from "@/lib/firestore/createMeeting";
 
 export default function Home() {
     const router = useRouter();
@@ -26,13 +14,8 @@ export default function Home() {
 
     return (
         <div>
-            <Title>{meetingTitle}</Title>
-            <Calendar />
-            <SelectableTime />
-            <Button 
-                size="large" 
-                text="미팅 생성" 
-            />
+            <Title>Comeet 회의</Title>
+            <Button>미팅 생성</Button>
         </div>
     );
 }
