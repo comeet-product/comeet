@@ -17,9 +17,13 @@ export default function Home() {
     return (
         <div className="flex flex-col justify-between items-center h-full gap-4">
             <Title onChange={setTitle} link={false}>{title}</Title>
-            <Calendar />
+            <Calendar 
+                selectedDates={selectedDates}
+                onChange={setSelectedDates}
+            />
             <SelectableTime />
             <Button>미팅 생성</Button>
+            {selectedDates.map(date => <div key={date}>{date}</div>)}
         </div>
     );
 }
