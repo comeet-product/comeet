@@ -15,7 +15,7 @@ export default function Home() {
     const [endTime, setEndTime] = useState(1800); // 6:00 PM
 
     return (
-        <div className="flex flex-col justify-between items-center h-full gap-4">
+        <div className="flex flex-col justify-between items-center h-full w-full gap-4">
             <Title onChange={setTitle} link={false}>{title}</Title>
             <Calendar 
                 selectedDates={selectedDates}
