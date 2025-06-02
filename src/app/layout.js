@@ -1,4 +1,5 @@
 import "./globals.css";
+import Header from "@/components/Header";
 
 export const metadata = {
     title: "Comeet",
@@ -14,8 +15,13 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className="antialiased bg-white">
         <div className="min-h-screen flex justify-center">
-          <div className="w-full mx-5 lg:max-w-sm lg:mx-auto my-5 bg-white lg:border lg:border-gray-300 lg:rounded-lg p-5">
-            {children}
+          <div className="w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg">
+            <div className="top-0">
+              <Header />
+            </div>
+            <div className="m-5">
+              {children}
+            </div>
           </div>
         </div>
       </body>
