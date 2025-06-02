@@ -13,7 +13,7 @@ import { supabase } from "../supabase.js";
  */
 export async function createMeeting(meetingData) {
     try {
-        const meetingId = `meeting_${Math.random().toString(36).substr(2, 9)}`;
+        const meetingId = Math.random().toString(36).substr(2, 9);
         const now = new Date();
         const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000); // UTC+9
 

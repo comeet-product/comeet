@@ -5,6 +5,11 @@ export const metadata = {
     title: "Comeet",
     description: "모임 관리 앱",
     metadataBase: new URL('https://comeet.team'),
+    icons: {
+        icon: '/logo.png',
+        shortcut: '/logo.png',
+        apple: '/logo.png',
+    },
     openGraph: {
         images: ["/comeet_logo.png"],
     },
@@ -19,7 +24,7 @@ export default function RootLayout({ children }) {
             <div className="top-0">
               <Header />
             </div>
-            <div className="flex flex-col justify-between items-center m-5 overflow-y-auto">
+            <div className="flex flex-col justify-between items-center m-5 h-[calc(100vh-160px)] overflow-y-auto">
               {children}
             </div>
           </div>
