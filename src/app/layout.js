@@ -1,8 +1,12 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Comeet",
-  description: "모임 관리 앱",
+    title: "Comeet",
+    description: "모임 관리 앱",
+    metadataBase: new URL('https://comeet.team'),
+    openGraph: {
+        images: ["/comeet_logo.png"],
+    },
 };
 
 export default function RootLayout({ children }) {
