@@ -151,10 +151,10 @@ export default function Playground() {
                     </h3>
                     <div className="space-y-4 mb-8">
                         <div className="mx-auto">
-                            <Button size="large" text="미팅 생성" />
+                            <Button size="large">버튼 테스트</Button>
                         </div>
                         <div className="mx-auto">
-                            <Button size="small" text="미팅 생성" />
+                            <Button size="small">버튼 테스트</Button>
                         </div>
                     </div>
                 </div>
