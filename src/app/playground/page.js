@@ -1,8 +1,9 @@
+'use client';
+
 import Title from "@/components/Title";
 import Half from "@/components/TimetableComponent/Half";
 import Hour from "@/components/TimetableComponent/Hour";
 import Day from "@/components/TimetableComponent/Day";
-import TimeSelect from "@/components/SelectableTime/TimeSelect";
 import SelectableTime from "@/components/SelectableTime/SelectableTime";
 import Date from "@/components/TimetableComponent/Date";
 import Timetable from "@/components/TimetableComponent/Timetable";
@@ -164,7 +165,6 @@ export default function Playground() {
                         SelectableTime Component
                     </h3>
                     <div className="mx-auto">
-                        <TimeSelect text="10:00 AM" />
                         <SelectableTime />
                     </div>
                 </div>
