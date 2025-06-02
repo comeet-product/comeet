@@ -1,7 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+<<<<<<< Updated upstream
 export default function Title({ children, link = true, onChange = () => {} }) {
+=======
+export default function Title({ children, link = true, onChange }) {
+>>>>>>> Stashed changes
     const [isEditing, setIsEditing] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -20,7 +24,11 @@ export default function Title({ children, link = true, onChange = () => {} }) {
         setIsEditing(false);
         const trimmedValue = value.trim();
         const finalValue = trimmedValue || '제목을 입력하세요';
+<<<<<<< Updated upstream
         onChange?.(finalValue);
+=======
+        onChange(finalValue);
+>>>>>>> Stashed changes
     };
 
     const handleChange = (e) => {

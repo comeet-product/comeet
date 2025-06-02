@@ -4,17 +4,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Title from "@/components/Title";
 import Button from "@/components/Button";
+import Calendar from "@/components/Calendar";
+import SelectableTime from "@/components/SelectableTime/SelectableTime";
 
 export default function Home() {
     const router = useRouter();
-    const [meetingTitle, setMeetingTitle] = useState('새로운 회의');
+    const [title, setTitle] = useState('새로운 회의');
     const [selectedDates, setSelectedDates] = useState([]);
     const [startTime, setStartTime] = useState(900); // 9:00 AM
     const [endTime, setEndTime] = useState(1800); // 6:00 PM
 
     return (
-        <div>
-            <Title onChange={setMeetingTitle} link={false}>{meetingTitle}</Title>
+        <div className="flex flex-col justify-between items-center h-full gap-4">
+            <Title onChange={setTitle} link={false}>{title}</Title>
+            <Calendar />
+            <SelectableTime />
             <Button>미팅 생성</Button>
         </div>
     );
