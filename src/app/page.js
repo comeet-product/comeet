@@ -16,7 +16,7 @@ export default function Home() {
 
     return (
         <div className="flex flex-col justify-between items-center h-full gap-4">
-            <Title onChange={setTitle}>{title}</Title>
+            <Title onChange={setTitle} link={false}>{title}</Title>
             <Calendar />
             <SelectableTime />
             <Button>미팅 생성</Button>
