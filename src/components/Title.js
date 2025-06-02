@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-export default function Title({ children, link = true, onChange }) {
+export default function Title({ children, link = true, onChange = () => {} }) {
     const [isEditing, setIsEditing] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -20,7 +20,7 @@ export default function Title({ children, link = true, onChange }) {
         setIsEditing(false);
         const trimmedValue = value.trim();
         const finalValue = trimmedValue || '제목을 입력하세요';
-        onChange(finalValue);
+        onChange?.(finalValue);
     };
 
     const handleChange = (e) => {
@@ -35,11 +35,21 @@ export default function Title({ children, link = true, onChange }) {
 
     const handleCopyUrl = async () => {
         try {
-            const textToCopy = `[COMEET]\n${children}\n${window.location.href}`;
+            const textToCopy = `[COMEET]\n${children}\n${currentUrl}`;
             await navigator.clipboard.writeText(textToCopy);
-            showToast("링크가 복사되었습니다.");
+            setToastMessage("링크가 복사되었습니다.");
+            setShowToast(true);
+            
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
         } catch (err) {
-            showToast("링크 복사에 실패했습니다.");
+            setToastMessage("링크 복사에 실패했습니다.");
+            setShowToast(true);
+            
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
         }
     };
 
