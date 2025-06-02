@@ -1,3 +1,5 @@
+'use client';
+
 import { supabase } from "../supabase.js";
 
 export async function getMeeting(meetingId) {
