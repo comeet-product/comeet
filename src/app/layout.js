@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
             <div className="top-0">
               <Header />
             </div>
-            <div className="m-5">
+            <div className="flex flex-col justify-between items-center m-5">
               {children}
             </div>
           </div>
