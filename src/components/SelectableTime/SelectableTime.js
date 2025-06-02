@@ -1,9 +1,17 @@
 import React, { useState } from "react";
 import TimePicker from "./TimePicker";
 
-export default function SelectableTime({ startTime, endTime, onTimeChange }) {
+export default function SelectableTime({ startTime = 900, endTime = 1800, onTimeChange = () => {} }) {
     const [isStartPickerOpen, setIsStartPickerOpen] = useState(false);
     const [isEndPickerOpen, setIsEndPickerOpen] = useState(false);
+    const [localStartTime, setLocalStartTime] = useState(startTime);
+    const [localEndTime, setLocalEndTime] = useState(endTime);
+
+    // startTime이나 endTime props가 변경되면 local state도 업데이트
+    React.useEffect(() => {
+        setLocalStartTime(startTime);
+        setLocalEndTime(endTime);
+    }, [startTime, endTime]);
 
     const formatTime = (timeValue) => {
         const hours = Math.floor(timeValue / 100);
@@ -11,52 +19,54 @@ export default function SelectableTime({ startTime, endTime, onTimeChange }) {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     };
 
+    const handleStartTimeChange = (time) => {
+        setLocalStartTime(time);
+        onTimeChange(time, localEndTime);
+    };
+
+    const handleEndTimeChange = (time) => {
+        setLocalEndTime(time);
+        onTimeChange(localStartTime, time);
+    };
+
     return (
-        <div className="flex items-center bg-white w-[315px] px-[14.13px] relative">
+        <div className="flex items-center bg-white w-full px-4 py-2 relative">
             <span className="text-black whitespace-nowrap">선택 가능 시간</span>
-            <div className="flex items-center gap-x-[5px] ml-auto">
+            <div className="flex items-center gap-x-2 ml-auto">
                 <button
-                    className="w-[77px] h-[30px] rounded-[5px] bg-gray-200 text-black text-[15.009px]"
+                    className="min-w-[77px] h-[30px] rounded-[5px] bg-gray-200 text-black text-[15px] px-2"
                     onClick={() => setIsStartPickerOpen(true)}
                 >
-                    {formatTime(startTime)}
+                    {formatTime(localStartTime)}
                 </button>
                 <span className="text-black whitespace-nowrap">~</span>
                 <button
-                    className="w-[77px] h-[30px] rounded-[5px] bg-gray-200 text-black text-[15.009px]"
+                    className="min-w-[77px] h-[30px] rounded-[5px] bg-gray-200 text-black text-[15px] px-2"
                     onClick={() => setIsEndPickerOpen(true)}
                 >
-                    {formatTime(endTime)}
+                    {formatTime(localEndTime)}
                 </button>
             </div>
 
-            {isStartPickerOpen && (
-                <div className="absolute top-full left-0 w-full mt-2">
-                    <TimePicker
-                        isOpen={isStartPickerOpen}
-                        onClose={() => setIsStartPickerOpen(false)}
-                        onSelect={(time) => {
-                            onTimeChange(time, endTime);
-                            setIsStartPickerOpen(false);
-                        }}
-                        initialValue={startTime}
-                    />
-                </div>
-            )}
+            <TimePicker
+                isOpen={isStartPickerOpen}
+                onClose={() => setIsStartPickerOpen(false)}
+                onSelect={(time) => {
+                    handleStartTimeChange(time);
+                    setIsStartPickerOpen(false);
+                }}
+                initialValue={localStartTime}
+            />
 
-            {isEndPickerOpen && (
-                <div className="absolute top-full left-0 w-full mt-2">
-                    <TimePicker
-                        isOpen={isEndPickerOpen}
-                        onClose={() => setIsEndPickerOpen(false)}
-                        onSelect={(time) => {
-                            onTimeChange(startTime, time);
-                            setIsEndPickerOpen(false);
-                        }}
-                        initialValue={endTime}
-                    />
-                </div>
-            )}
+            <TimePicker
+                isOpen={isEndPickerOpen}
+                onClose={() => setIsEndPickerOpen(false)}
+                onSelect={(time) => {
+                    handleEndTimeChange(time);
+                    setIsEndPickerOpen(false);
+                }}
+                initialValue={localEndTime}
+            />
         </div>
     );
 }

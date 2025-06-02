@@ -21,8 +21,17 @@ export default function Home() {
                 selectedDates={selectedDates}
                 onChange={setSelectedDates}
             />
-            <SelectableTime />
+            <SelectableTime 
+                startTime={startTime}
+                endTime={endTime}
+                onTimeChange={(newStartTime, newEndTime) => {
+                    setStartTime(newStartTime);
+                    setEndTime(newEndTime);
+                }}
+            />
             <Button>미팅 생성</Button>
+            {startTime}
+            {endTime}
             {selectedDates.map(date => <div key={date}>{date}</div>)}
         </div>
     );
