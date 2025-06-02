@@ -1,16 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-export default function Title({ children, link = true, onChange = () => {} }) {
-=======
-export default function Title({ children, link = true, onChange }) {
->>>>>>> Stashed changes
-=======
-export default function Title({ children, link = true, onChange }) {
->>>>>>> Stashed changes
-    const [isEditing, setIsEditing] = useState(false);
+export default function Title({ children }) {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [currentUrl, setCurrentUrl] = useState("");
@@ -19,35 +10,6 @@ export default function Title({ children, link = true, onChange }) {
     useEffect(() => {
         setCurrentUrl(window.location.href);
     }, []);
-    
-    const handleClick = () => {
-        setIsEditing(true);
-    };
-
-    const handleSave = (value) => {
-        setIsEditing(false);
-        const trimmedValue = value.trim();
-        const finalValue = trimmedValue || '제목을 입력하세요';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        onChange?.(finalValue);
-=======
-        onChange(finalValue);
->>>>>>> Stashed changes
-=======
-        onChange(finalValue);
->>>>>>> Stashed changes
-    };
-
-    const handleChange = (e) => {
-        if (e.key === 'Enter') {
-            handleSave(e.target.value);
-        }
-    };
-
-    const handleBlur = (e) => {
-        handleSave(e.target.value);
-    };
 
     const handleCopyUrl = async () => {
         try {
