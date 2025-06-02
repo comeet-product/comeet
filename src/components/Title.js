@@ -2,7 +2,11 @@
 import { useState, useEffect, useRef } from "react";
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 export default function Title({ children, link = true, onChange = () => {} }) {
+=======
+export default function Title({ children, link = true, onChange }) {
+>>>>>>> Stashed changes
 =======
 export default function Title({ children, link = true, onChange }) {
 >>>>>>> Stashed changes
@@ -25,7 +29,11 @@ export default function Title({ children, link = true, onChange }) {
         const trimmedValue = value.trim();
         const finalValue = trimmedValue || '제목을 입력하세요';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         onChange?.(finalValue);
+=======
+        onChange(finalValue);
+>>>>>>> Stashed changes
 =======
         onChange(finalValue);
 >>>>>>> Stashed changes
