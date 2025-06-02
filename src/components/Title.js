@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Title({ children }) {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [currentUrl, setCurrentUrl] = useState("");
+    const inputRef = useRef(null);
 
     useEffect(() => {
         setCurrentUrl(window.location.href);
@@ -30,22 +31,50 @@ export default function Title({ children }) {
         }
     };
 
+    const handleInput = (e) => {
+        // 입력된 텍스트 길이에 따라 size 속성 조절 (최소 1 유지)
+        e.target.setAttribute('size', Math.max(e.target.value.length, 1));
+    };
+
+    const titleStyle = "text-2xl font-bold text-black text-center w-fit";
+
     return (
-        <div className="relative flex justify-center items-center">
-            <h1 className="text-2xl font-bold text-black">{children}</h1>
-            <div className="relative ml-2">
-                <img
-                    src="/link-icon.svg"
-                    alt="링크 복사"
-                    className="flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
-                    onClick={handleCopyUrl}
+        <div className="relative flex justify-center items-center gap-2">
+            {isEditing ? (
+                <input
+                    ref={inputRef}
+                    type="text"
+                    defaultValue={children}
+                    onKeyDown={handleChange}
+                    onBlur={handleBlur}
+                    onInput={handleInput}
+                    autoFocus
+                    size={Math.max(children?.length || 0, 1)}
+                    className={`${titleStyle} bg-transparent outline-none`}
                 />
-                {showToast && (
-                    <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
-                        {toastMessage}
-                    </div>
-                )}
-            </div>
+            ) : (
+                <h1 
+                    className={`${titleStyle} cursor-text`}
+                    onClick={handleClick}
+                >
+                    {children || "제목을 입력하세요"}
+                </h1>
+            )}
+            {link && !isEditing && (
+                <div className="relative flex items-center justify-center">
+                    <img
+                        src="/link-icon.svg"
+                        alt="링크 복사"
+                        className="w-8 flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
+                        onClick={handleCopyUrl}
+                    />
+                    {showToast && (
+                        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
+                            {toastMessage}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
