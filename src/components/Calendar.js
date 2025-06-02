@@ -181,8 +181,8 @@ export default function Calendar({ onChange, selectedDates }) {
                                     <div
                                         key={y}
                                         onClick={() => handleYearSelect(y)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-gray-100
-                                            ${y === year ? 'bg-blue-50 text-blue-600' : ''}
+                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                            ${y === year ? 'bg-[#3674B5]/20 text-[#3674B5]' : ''}
                                         `}
                                     >
                                         {y}
@@ -195,8 +195,8 @@ export default function Calendar({ onChange, selectedDates }) {
                                     <div
                                         key={m}
                                         onClick={() => handleMonthSelect(index)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-gray-100
-                                            ${index === month ? 'bg-blue-50 text-blue-600' : ''}
+                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                            ${index === month ? 'bg-[#3674B5]/20 text-[#3674B5]' : ''}
                                         `}
                                     >
                                         {m}
@@ -248,27 +248,11 @@ export default function Calendar({ onChange, selectedDates }) {
                                 onMouseDown={(e) => handleDragStart(day, e)}
                                 onMouseEnter={() => handleDragEnter(day)}
                                 className={`
-                                    w-full aspect-square flex items-center justify-center select-none text-sm
+                                    w-full aspect-square flex items-center justify-center select-none text-base
                                     ${day === null ? "invisible" : "cursor-pointer"}
-                                    ${
-                                        day !== null &&
-                                        isCurrentMonth &&
-                                        day === today
-                                            ? "text-blue-600 font-bold"
-                                            : ""
-                                    }
-                                    ${
-                                        day !== null && selectedDates.includes(dateStr)
-                                            ? "bg-blue-100 rounded-full"
-                                            : ""
-                                    }
-                                    ${
-                                        day !== null &&
-                                        !selectedDates.includes(dateStr) &&
-                                        (!isCurrentMonth || day !== today)
-                                            ? "hover:bg-gray-200 rounded-full"
-                                            : ""
-                                    }
+                                    ${day !== null && isCurrentMonth && day === today ? "text-[#3674B5] font-bold" : ""}
+                                    ${day !== null && selectedDates.includes(dateStr) ? "bg-[#3674B5]/20 rounded-full" : ""}
+                                    ${day !== null && !selectedDates.includes(dateStr) && (!isCurrentMonth || day !== today) ? "hover:bg-[#3674B5]/10 rounded-full" : ""}
                                 `}
                             >
                                 {day}
