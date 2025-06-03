@@ -9,6 +9,7 @@ import Timetable from "@/components/TimetableComponent/Timetable";
 import TimeHeader from "@/components/TimetableComponent/TimeHeader";
 import Time from "@/components/TimetableComponent/Time";
 import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
+import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
 import Button from "@/components/Button";
 import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
 import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
@@ -27,6 +28,13 @@ export default function Playground() {
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
                     Complete TimetableResult
                 </h3>
+
+                <div className="mb-6">
+                    <h4 className="text-sm text-gray-400 mb-2">
+                        Interactive Timetable (Pinch & Scroll)
+                    </h4>
+                    <TimetableSelect />
+                </div>
 
                 <div className="mb-6">
                     <h4 className="text-sm text-gray-400 mb-2">
