@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
-export default function Calendar({ onChange, selectedDates }) {
+export default function Calendar({ onChange, selectedDates = [] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
     const [dragState, setDragState] = useState({
@@ -152,7 +152,7 @@ export default function Calendar({ onChange, selectedDates }) {
     };
 
     return (
-        <div className="flex flex-col w-full items-start p-5 bg-white shadow">
+        <div className="flex flex-col w-full items-start">
             {/* Header */}
             <div className="flex justify-between items-center mb-6 w-full">
                 {/* 년월 표시 */}
@@ -258,7 +258,7 @@ export default function Calendar({ onChange, selectedDates }) {
                                             : ""
                                     }
                                     ${
-                                        day !== null && selectedDates.includes(dateStr)
+                                        day !== null && selectedDates?.includes(dateStr)
                                             ? "bg-blue-100 rounded-full"
                                             : ""
                                     }
