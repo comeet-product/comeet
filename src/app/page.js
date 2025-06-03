@@ -70,7 +70,6 @@ export default function Home() {
             >
                 {isLoading ? '생성 중...' : '미팅 생성'}
             </Button>
-            {selectedDates.map(date => <div key={date}>{date}</div>)}
         </div>
     );
 }
