@@ -6,6 +6,7 @@ import SelectableTime from "@/components/SelectableTime/SelectableTime";
 import Date from "@/components/TimetableComponent/Date";
 import Time from "@/components/TimetableComponent/Time";
 import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
+import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
 import Button from "@/components/Button";
 import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
 import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
@@ -24,12 +25,37 @@ export const generateMetadata = () => ({
 });
 
 export default function Playground() {
-  return (
-    <div className="w-full space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-center mb-4">컴포넌트 플레이그라운드</h2>
-        <Title dynamicTitle="프로덕트데이 줌 회의" dynamicLink="https://comeet.team/5kxZ27p8" />
-      </div>
+    return (
+        <div className="p-4 md:p-6">
+            <h1 className="text-2xl font-bold mb-8 text-center">
+                컴포넌트 플레이그라운드
+            </h1>
+
+            <div className="mb-8">
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    Complete TimetableResult
+                </h3>
+
+                <div className="mb-6">
+                    <h4 className="text-sm text-gray-400 mb-2">
+                        Interactive Timetable (Pinch & Scroll)
+                    </h4>
+                    <TimetableSelect />
+                </div>
+
+                <div className="mb-6">
+                    <h4 className="text-sm text-gray-400 mb-2">
+                        Full Week Timetable (like image: 7 days, 8 halves, 10 AM
+                        start)
+                    </h4>
+                    <TimetableComponent
+                        dayCount={8}
+                        halfCount={8}
+                        startDate="05/19"
+                        startTime={10}
+                        dateHeaderHeight={23}
+                    />
+                </div>
 
       <div>
         <h3 className="text-lg text-gray-500 font-semibold mb-4">타임테이블</h3>
@@ -106,6 +132,7 @@ export default function Playground() {
           <Input />
         </div>
       </div>
+    </div>
     </div>
   );
 }

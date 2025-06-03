@@ -1,15 +1,64 @@
 import Half from "./Half";
 
-export default function Hour({ isFirst, isFirstDay, hasDateHeaderAbove }) {
+export default function Hour({ 
+  dayIndex,
+  hourIndex,
+  isFirst, 
+  isFirstDay, 
+  hasDateHeaderAbove, 
+  selectedSlots, 
+  onSlotSelection, 
+  onTapSelection,
+  onDragSelectionStart,
+  onDragSelectionMove,
+  onDragSelectionEnd,
+  isSelectionEnabled,
+  isDragSelecting,
+  touchStartTime,
+  setTouchStartTime,
+  tapThreshold
+}) {
+  const topHalfIndex = hourIndex * 2;
+  const bottomHalfIndex = hourIndex * 2 + 1;
+
   return (
     <div className="flex flex-col">
         <Half 
+          dayIndex={dayIndex}
+          halfIndex={topHalfIndex}
           isTop={true} 
           isFirstHour={isFirst} 
           isFirstDay={isFirstDay} 
           hasDateHeaderAbove={hasDateHeaderAbove}
+          selectedSlots={selectedSlots}
+          onSlotSelection={onSlotSelection}
+          onTapSelection={onTapSelection}
+          onDragSelectionStart={onDragSelectionStart}
+          onDragSelectionMove={onDragSelectionMove}
+          onDragSelectionEnd={onDragSelectionEnd}
+          isSelectionEnabled={isSelectionEnabled}
+          isDragSelecting={isDragSelecting}
+          touchStartTime={touchStartTime}
+          setTouchStartTime={setTouchStartTime}
+          tapThreshold={tapThreshold}
         />
-        <Half isTop={false} isFirstDay={isFirstDay} />
+        <Half 
+          dayIndex={dayIndex}
+          halfIndex={bottomHalfIndex}
+          isTop={false} 
+          isFirstDay={isFirstDay}
+          selectedSlots={selectedSlots}
+          onSlotSelection={onSlotSelection}
+          onTapSelection={onTapSelection}
+          onDragSelectionStart={onDragSelectionStart}
+          onDragSelectionMove={onDragSelectionMove}
+          onDragSelectionEnd={onDragSelectionEnd}
+          isSelectionEnabled={isSelectionEnabled}
+          isDragSelecting={isDragSelecting}
+          touchStartTime={touchStartTime}
+          setTouchStartTime={setTouchStartTime}
+          tapThreshold={tapThreshold}
+        />
     </div>
   );
 }
