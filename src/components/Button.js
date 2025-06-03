@@ -1,6 +1,6 @@
 export default function Button({
     size = "large",
-    text,
+    children,
     onClick,
     disabled = false,
     className = "",
@@ -34,7 +34,7 @@ export default function Button({
         ${className}
     `}
         >
-            {text}
+            {children}
         </button>
     );
 }

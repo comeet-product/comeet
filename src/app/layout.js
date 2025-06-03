@@ -1,17 +1,32 @@
 import "./globals.css";
+import Header from "@/components/Header";
 
 export const metadata = {
-  title: "Comeet",
-  description: "모임 관리 앱",
+    title: "Comeet",
+    description: "모임 관리 앱",
+    metadataBase: new URL('https://comeet.team'),
+    icons: {
+        icon: '/logo.png',
+        shortcut: '/logo.png',
+        apple: '/logo.png',
+    },
+    openGraph: {
+        images: ["/comeet_logo.png"],
+    },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body className="antialiased bg-white">
-        <div className="min-h-screen flex justify-center">
-          <div className="w-full mx-5 lg:max-w-sm lg:mx-auto my-5 bg-white lg:border lg:border-gray-300 lg:rounded-lg p-5">
-            {children}
+        <div className="min-h-screen flex justify-center lg:py-4">
+          <div className="w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg overflow-y-auto">
+            <div className="top-0">
+              <Header />
+            </div>
+            <div className="flex flex-col justify-between items-center mx-10 my-5 h-[calc(100vh-160px)]">
+              {children}
+            </div>
           </div>
         </div>
       </body>
