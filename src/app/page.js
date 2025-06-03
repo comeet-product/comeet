@@ -68,7 +68,7 @@ export default function Home() {
                 onClick={handleCreateMeeting}
                 disabled={isLoading}
             >
-                {isLoading ? '생성 중...' : '미팅 생성'}
+                미팅 생성
             </Button>
         </div>
     );
