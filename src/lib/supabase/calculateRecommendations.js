@@ -1,3 +1,5 @@
+'use client';
+
 import { supabase } from "../supabase.js";
 
 /**
@@ -18,7 +20,7 @@ function calculateContinuousBlocks(timeMap) {
         // 연속된 시간 블록 찾기
         for (let i = 0; i < times.length; i++) {
             const time = times[i];
-            const users = slots[time];
+            const users = slots[time] || [];  // undefined일 경우 빈 배열로 초기화
 
             if (!currentBlock) {
                 currentBlock = {
@@ -88,17 +90,17 @@ export async function calculateRecommendations(meetingId) {
         // 2. 시간별 가용 사용자 맵 생성
         const timeMap = {};
         availabilityData.participants.forEach((participant) => {
-            if (!participant.available_slots) return;
+            if (!participant || !participant.available_slots || !participant.name) return;
 
             Object.entries(participant.available_slots).forEach(
                 ([date, slots]) => {
-                    if (!Array.isArray(slots)) return;
+                    if (!Array.isArray(slots) || !slots.length) return;
 
                     if (!timeMap[date]) {
                         timeMap[date] = {};
                     }
                     slots.forEach((time) => {
-                        if (typeof time !== "number") return;
+                        if (typeof time !== "number" || isNaN(time)) return;
 
                         if (!timeMap[date][time]) {
                             timeMap[date][time] = [];
