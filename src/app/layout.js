@@ -20,11 +20,11 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className="antialiased bg-white">
         <div className="min-h-screen flex justify-center lg:py-4">
-          <div className="w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg">
+          <div className="w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg overflow-y-auto">
             <div className="top-0">
               <Header />
             </div>
-            <div className="flex flex-col justify-between items-center m-5 h-[calc(100vh-160px)] overflow-y-auto">
+            <div className="flex flex-col justify-between items-center mx-10 my-5 h-[calc(100vh-160px)]">
               {children}
             </div>
           </div>

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import TimePicker from "./TimePicker";
@@ -32,7 +32,7 @@ export default function SelectableTime({ startTime = 900, endTime = 1800, onTime
     };
 
     return (
-        <div className="flex items-center bg-white w-full px-4 py-2 relative">
+        <div className="flex items-center bg-white w-full relative">
             <span className="text-black whitespace-nowrap">선택 가능 시간</span>
             <div className="flex items-center gap-x-2 ml-auto">
                 <button
