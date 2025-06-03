@@ -42,7 +42,7 @@ export default function Playground() {
                         start)
                     </h4>
                     <TimetableComponent
-                        dayCount={7}
+                        dayCount={8}
                         halfCount={8}
                         startDate="05/19"
                         startTime={10}
