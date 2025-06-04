@@ -7,7 +7,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     const [dragState, setDragState] = useState({
         isDragging: false,
         startDay: null,
-        isAddMode: true
+        isAddMode: true,
     });
     const dateSelectorRef = useRef(null);
 
@@ -32,14 +32,18 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     };
 
     const formatDate = (year, month, day) => {
-        const monthStr = String(month + 1).padStart(2, '0');
-        const dayStr = String(day).padStart(2, '0');
+        const monthStr = String(month + 1).padStart(2, "0");
+        const dayStr = String(day).padStart(2, "0");
         return `${year}-${monthStr}-${dayStr}`;
     };
 
     // 이벤트 핸들러
     const handleDateClick = (day) => {
         if (day === null) return;
+        if (day > 31) {
+            alert("날짜 선택은 최대 31일까지 가능합니다");
+            return;
+        }
         const dateStr = formatDate(year, month, day);
         onChange(toggleDate(dateStr, selectedDates));
     };
@@ -59,7 +63,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
         setDragState({
             isDragging: true,
             startDay: day,
-            isAddMode
+            isAddMode,
         });
 
         // 드래그 시작 날짜 선택 상태 변경
@@ -67,13 +71,24 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     };
 
     const handleDragEnter = (day) => {
-        if (!dragState.isDragging || day === null || dragState.startDay === null) return;
+        if (
+            !dragState.isDragging ||
+            day === null ||
+            dragState.startDay === null
+        )
+            return;
 
         const start = Math.min(dragState.startDay, day);
         const end = Math.max(dragState.startDay, day);
-        
+
+        if (end > 31) {
+            alert("날짜 선택은 최대 31일까지 가능합니다");
+            handleDragEnd();
+            return;
+        }
+
         let newDates = new Set(selectedDates);
-        
+
         // 드래그 범위의 모든 날짜에 대해 동일한 동작(추가 또는 제거) 수행
         for (let i = 1; i <= 31; i++) {
             const dateStr = formatDate(year, month, i);
@@ -85,7 +100,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                 }
             }
         }
-        
+
         onChange([...newDates]);
     };
 
@@ -93,21 +108,24 @@ export default function Calendar({ onChange, selectedDates = [] }) {
         setDragState({
             isDragging: false,
             startDay: null,
-            isAddMode: true
+            isAddMode: true,
         });
     };
 
     // 드롭다운 외부 클릭 감지
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dateSelectorRef.current && !dateSelectorRef.current.contains(event.target)) {
+            if (
+                dateSelectorRef.current &&
+                !dateSelectorRef.current.contains(event.target)
+            ) {
                 setIsDateSelectorOpen(false);
             }
         };
 
-        document.addEventListener('mouseup', handleClickOutside);
+        document.addEventListener("mouseup", handleClickOutside);
         return () => {
-            document.removeEventListener('mouseup', handleClickOutside);
+            document.removeEventListener("mouseup", handleClickOutside);
         };
     }, []);
 
@@ -115,7 +133,20 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-    const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+    const monthNames = [
+        "1월",
+        "2월",
+        "3월",
+        "4월",
+        "5월",
+        "6월",
+        "7월",
+        "8월",
+        "9월",
+        "10월",
+        "11월",
+        "12월",
+    ];
     const yearOptions = Array.from({ length: 21 }, (_, i) => year - 10 + i);
 
     const firstDayOfMonth = new Date(year, month, 1);
@@ -130,7 +161,8 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     while (days.length % 7 !== 0) days.push(null);
 
     const today = new Date().getDate();
-    const isCurrentMonth = new Date().getFullYear() === year && new Date().getMonth() === month;
+    const isCurrentMonth =
+        new Date().getFullYear() === year && new Date().getMonth() === month;
 
     // 네비게이션 핸들러
     const handlePrevMonth = () => {
@@ -156,10 +188,15 @@ export default function Calendar({ onChange, selectedDates = [] }) {
             {/* Header */}
             <div className="flex justify-between items-center mb-6 w-full">
                 {/* 년월 표시 */}
-                <div className="flex items-center relative" ref={dateSelectorRef}>
-                    <div 
+                <div
+                    className="flex items-center relative"
+                    ref={dateSelectorRef}
+                >
+                    <div
                         className="flex items-center cursor-pointer"
-                        onClick={() => setIsDateSelectorOpen(!isDateSelectorOpen)}
+                        onClick={() =>
+                            setIsDateSelectorOpen(!isDateSelectorOpen)
+                        }
                     >
                         <span className="text-[16px] text-black font-semibold tracking-[-0.38px] whitespace-nowrap">
                             {year}
@@ -228,20 +265,25 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                 {/* Weekdays */}
                 <div className="grid grid-cols-7 text-center mb-2 w-full">
                     {weekdays.map((day) => (
-                        <div key={day} className="flex items-center justify-center h-10 text-sm text-gray-500">
+                        <div
+                            key={day}
+                            className="flex items-center justify-center h-10 text-sm text-gray-500"
+                        >
                             {day}
                         </div>
                     ))}
                 </div>
 
                 {/* Days Grid */}
-                <div 
+                <div
                     className="grid grid-cols-7 gap-2 w-full"
                     onMouseLeave={handleDragEnd}
                     onMouseUp={handleDragEnd}
                 >
                     {days.map((day, index) => {
-                        const dateStr = day ? formatDate(year, month, day) : null;
+                        const dateStr = day
+                            ? formatDate(year, month, day)
+                            : null;
                         return (
                             <div
                                 key={index}
@@ -249,7 +291,11 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                 onMouseEnter={() => handleDragEnter(day)}
                                 className={`
                                     w-full aspect-square flex items-center justify-center select-none text-base
-                                    ${day === null ? "invisible" : "cursor-pointer"}
+                                    ${
+                                        day === null
+                                            ? "invisible"
+                                            : "cursor-pointer"
+                                    }
                                     ${
                                         day !== null &&
                                         isCurrentMonth &&
@@ -258,7 +304,8 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                             : "text-black"
                                     }
                                     ${
-                                        day !== null && selectedDates?.includes(dateStr)
+                                        day !== null &&
+                                        selectedDates?.includes(dateStr)
                                             ? "bg-blue-100 rounded-full"
                                             : ""
                                     }
