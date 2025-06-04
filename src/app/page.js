@@ -22,13 +22,7 @@ export default function Home() {
             return;
         }
 
-        // 31일 초과 날짜 체크
-        const hasInvalidDate = selectedDates.some((date) => {
-            const day = parseInt(date.split("-")[2]);
-            return day > 31;
-        });
-
-        if (hasInvalidDate) {
+        if (selectedDates.length > 31) {
             alert("날짜 선택은 최대 31일까지 가능합니다");
             return;
         }

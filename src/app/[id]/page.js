@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState, use } from 'react';
-import { getMeeting } from '@/lib/supabase/getMeeting';
+import { useEffect, useState, use } from "react";
+import { getMeeting } from "@/lib/supabase/getMeeting";
 import Title from "@/components/Title";
 
 export default function MeetingPage({ params }) {
