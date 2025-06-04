@@ -2,7 +2,7 @@ import React from "react";
 
 const UserBar = () => {
     return (
-        <div className="fixed bottom-0 left-0 right-0 w-full h-[71px] py-[10px] flex justify-center items-center gap-x-[18.5px] bg-gray-200">
+        <div className="absolute bottom-0 left-0 right-0 w-full h-[71px] py-[10px] flex justify-center items-center gap-x-[18.5px] bg-gray-200">
             <div className="flex flex-col items-center pl-[28px]">
                 <img
                     src="/profile.png"
