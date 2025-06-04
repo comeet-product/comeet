@@ -29,7 +29,7 @@ const Input = ({ meetingId, onCheckDuplicate }) => {
             <input
                 type="text"
                 placeholder="이름을 입력해주세요"
-                className="w-[170px] h-[44px] px-2 py-3.5 bg-gray rounded-[5px] inline-flex justify-center items-center gap-2.5 text-[15px]"
+                className="w-[170px] h-[44px] px-2 py-3.5 bg-gray rounded-[5px] inline-flex justify-center items-center gap-2.5 text-[15px] text-black"
                 value={name}
                 onChange={handleInputChange}
                 onBlur={handleBlur}

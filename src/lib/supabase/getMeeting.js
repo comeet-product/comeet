@@ -6,7 +6,7 @@ export async function getMeeting(meetingId) {
     const { data } = await supabase
         .from('meetings')
         .select('*')
-        .eq('id', meetingId)
+        .eq('meeting_id', meetingId)
         .single();
     
     return data;

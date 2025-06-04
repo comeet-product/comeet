@@ -161,10 +161,10 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                         className="flex items-center cursor-pointer"
                         onClick={() => setIsDateSelectorOpen(!isDateSelectorOpen)}
                     >
-                        <span className="text-[16px] font-semibold tracking-[-0.38px] whitespace-nowrap">
+                        <span className="text-[16px] text-black font-semibold tracking-[-0.38px] whitespace-nowrap">
                             {year}
                         </span>
-                        <span className="ml-1 text-[16px] font-semibold tracking-[-0.38px] min-w-[25px] whitespace-nowrap">
+                        <span className="ml-1 text-[16px] text-black font-semibold tracking-[-0.38px] min-w-[25px] whitespace-nowrap">
                             {monthNames[month]}
                         </span>
                         <span className="ml-1 text-[#3674B5] text-[16px] flex items-center">
@@ -182,7 +182,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                         key={y}
                                         onClick={() => handleYearSelect(y)}
                                         className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
-                                            ${y === year ? 'bg-[#3674B5]/20 text-[#3674B5]' : ''}
+                                            ${y === year ? 'bg-[#3674B5]/20 text-[#3674B5]' : 'text-black'}
                                         `}
                                     >
                                         {y}
@@ -196,7 +196,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                         key={m}
                                         onClick={() => handleMonthSelect(index)}
                                         className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
-                                            ${index === month ? 'bg-[#3674B5]/20 text-[#3674B5]' : ''}
+                                            ${index === month ? 'bg-[#3674B5]/20 text-[#3674B5]' : 'text-black'}
                                         `}
                                     >
                                         {m}
@@ -255,7 +255,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                         isCurrentMonth &&
                                         day === today
                                             ? "text-blue-600 font-bold"
-                                            : ""
+                                            : "text-black"
                                     }
                                     ${
                                         day !== null && selectedDates?.includes(dateStr)
