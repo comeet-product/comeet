@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Title from "@/components/Title";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
@@ -10,7 +10,7 @@ import { createMeeting } from "@/lib/supabase/createMeeting";
 
 export default function Home() {
     const router = useRouter();
-    const [title, setTitle] = useState('새로운 회의');
+    const [title, setTitle] = useState("새로운 회의");
     const [selectedDates, setSelectedDates] = useState([]);
     const [startTime, setStartTime] = useState(900); // 9:00 AM
     const [endTime, setEndTime] = useState(1800); // 6:00 PM
@@ -18,7 +18,18 @@ export default function Home() {
 
     const handleCreateMeeting = async () => {
         if (selectedDates.length === 0) {
-            alert('날짜를 선택해주세요.');
+            alert("날짜를 선택해주세요.");
+            return;
+        }
+
+        // 31일 초과 날짜 체크
+        const hasInvalidDate = selectedDates.some((date) => {
+            const day = parseInt(date.split("-")[2]);
+            return day > 31;
+        });
+
+        if (hasInvalidDate) {
+            alert("날짜 선택은 최대 31일까지 가능합니다");
             return;
         }
 
@@ -30,20 +41,20 @@ export default function Home() {
                 selectableTime: {
                     start: startTime,
                     end: endTime,
-                    interval: 30
-                }
+                    interval: 30,
+                },
             };
 
             const result = await createMeeting(meetingData);
-            
+
             if (result.success) {
                 router.push(`/${result.data.meeting_id}`);
             } else {
                 alert(result.message);
             }
         } catch (error) {
-            console.error('Error creating meeting:', error);
-            alert('미팅 생성 중 오류가 발생했습니다.');
+            console.error("Error creating meeting:", error);
+            alert("미팅 생성 중 오류가 발생했습니다.");
         } finally {
             setIsLoading(false);
         }
@@ -51,12 +62,14 @@ export default function Home() {
 
     return (
         <div className="flex flex-col justify-between items-center h-full w-full gap-4">
-            <Title onChange={setTitle} link={false}>{title}</Title>
-            <Calendar 
+            <Title onChange={setTitle} link={false}>
+                {title}
+            </Title>
+            <Calendar
                 selectedDates={selectedDates}
                 onChange={setSelectedDates}
             />
-            <SelectableTime 
+            <SelectableTime
                 startTime={startTime}
                 endTime={endTime}
                 onTimeChange={(newStartTime, newEndTime) => {
@@ -64,10 +77,7 @@ export default function Home() {
                     setEndTime(newEndTime);
                 }}
             />
-            <Button 
-                onClick={handleCreateMeeting}
-                disabled={isLoading}
-            >
+            <Button onClick={handleCreateMeeting} disabled={isLoading}>
                 미팅 생성
             </Button>
         </div>
