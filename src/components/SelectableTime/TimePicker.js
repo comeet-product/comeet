@@ -51,10 +51,57 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
     const [selectedMinute, setSelectedMinute] = useState(initialTime.minute);
     const [selectedPeriod, setSelectedPeriod] = useState(initialTime.period);
 
+    // 터치 상태 관리
+    const [touchState, setTouchState] = useState({
+        startY: null,
+        startTime: null,
+        moved: false,
+    });
+
     const overlayRef = useRef(null);
     const hourScrollRef = useRef(null);
     const minuteScrollRef = useRef(null);
     const periodScrollRef = useRef(null);
+
+    // 터치 시작 핸들러
+    const handleTouchStart = (event) => {
+        const touch = event.touches[0];
+        setTouchState({
+            startY: touch.clientY,
+            startTime: Date.now(),
+            moved: false,
+        });
+    };
+
+    // 터치 무브 핸들러
+    const handleTouchMove = (event) => {
+        if (!touchState.startY) return;
+
+        const touch = event.touches[0];
+        const moveDistance = Math.abs(touch.clientY - touchState.startY);
+
+        // 10px 이상 움직이면 스크롤로 간주
+        if (moveDistance > 10) {
+            setTouchState((prev) => ({ ...prev, moved: true }));
+        }
+    };
+
+    // 터치 종료 핸들러 - 스크롤하지 않고 빠르게 터치한 경우에만 선택
+    const handleTouchEnd = (value, setter, event) => {
+        const touchDuration = Date.now() - (touchState.startTime || 0);
+
+        // 스크롤하지 않고(moved: false) 빠른 터치(300ms 미만)인 경우에만 선택
+        if (!touchState.moved && touchDuration < 300) {
+            event.preventDefault();
+            setter(value);
+        }
+
+        setTouchState({
+            startY: null,
+            startTime: null,
+            moved: false,
+        });
+    };
 
     // 스크롤을 초기값 위치로 이동시키는 함수
     const scrollToInitialValues = () => {
@@ -149,6 +196,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                         <div
                             ref={hourScrollRef}
                             className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                            onTouchMove={handleTouchMove}
                         >
                             {hours.map((hour) => (
                                 <div
@@ -160,6 +208,10 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                                             : ""
                                     } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedHour(hour)}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchEnd={(e) =>
+                                        handleTouchEnd(hour, setSelectedHour, e)
+                                    }
                                 >
                                     {hour.toString().padStart(2, "0")}
                                 </div>
@@ -171,6 +223,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                         <div
                             ref={minuteScrollRef}
                             className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                            onTouchMove={handleTouchMove}
                         >
                             {minutes.map((minute) => (
                                 <div
@@ -182,6 +235,14 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                                             : ""
                                     } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedMinute(minute)}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchEnd={(e) =>
+                                        handleTouchEnd(
+                                            minute,
+                                            setSelectedMinute,
+                                            e
+                                        )
+                                    }
                                 >
                                     {minute.toString().padStart(2, "0")}
                                 </div>
@@ -193,6 +254,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                         <div
                             ref={periodScrollRef}
                             className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                            onTouchMove={handleTouchMove}
                         >
                             {periods.map((period) => (
                                 <div
@@ -204,6 +266,14 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                                             : ""
                                     } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedPeriod(period)}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchEnd={(e) =>
+                                        handleTouchEnd(
+                                            period,
+                                            setSelectedPeriod,
+                                            e
+                                        )
+                                    }
                                 >
                                     {period}
                                 </div>
