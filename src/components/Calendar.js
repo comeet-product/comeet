@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
-export default function Calendar({ onChange, selectedDates = [] }) {
+export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
     const [dragState, setDragState] = useState({
