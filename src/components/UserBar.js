@@ -53,29 +53,27 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                     backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.2)' : 'transparent'
                 }}
                 onMouseEnter={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && e.currentTarget) {
                         e.currentTarget.style.backgroundColor = 'rgba(25, 118, 210, 0.1)';
                     }
                 }}
                 onMouseLeave={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && e.currentTarget) {
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }
                 }}
                 onTouchStart={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && e.currentTarget) {
                         e.currentTarget.style.backgroundColor = 'rgba(25, 118, 210, 0.1)';
                     }
                 }}
                 onTouchEnd={(e) => {
-                    if (!isSelected) {
-                        setTimeout(() => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        }, 150);
+                    if (!isSelected && e.currentTarget) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
                     }
                 }}
                 onTouchCancel={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && e.currentTarget) {
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }
                 }}
@@ -83,12 +81,6 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                     e.preventDefault();
                     e.stopPropagation();
                     onClick();
-                    // 클릭 후 즉시 배경색 정리
-                    setTimeout(() => {
-                        if (!isSelected) {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                    }, 50);
                 }}
             >
                 <img
