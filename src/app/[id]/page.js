@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { getMeeting } from "@/lib/supabase/getMeeting";
+import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import Title from "@/components/Title";
 
 export default function MeetingPage({ params }) {
@@ -12,11 +13,20 @@ export default function MeetingPage({ params }) {
         getMeeting(unwrappedParams.id).then(setMeeting);
     }, [unwrappedParams.id]);
 
+    const handleTitleChange = async (newTitle) => {
+        const result = await updateMeetingTitle(unwrappedParams.id, newTitle);
+        if (result.success) {
+            setMeeting(prev => ({ ...prev, title: newTitle }));
+        } else {
+            alert(result.message);
+        }
+    };
+
     if (!meeting) return null;
 
     return (
         <div>
-            <Title>{meeting.title}</Title>
+            <Title onChange={handleTitleChange}>{meeting.title}</Title>
         </div>
     );
 }
