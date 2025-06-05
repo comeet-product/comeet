@@ -269,7 +269,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
             {/* Toast Message */}
             {showToast && (
                 <div className="fixed bottom-[65px] left-1/2 transform -translate-x-1/2 z-50">
-                    <div className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+                    <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
                         {toastMessage}
                     </div>
                 </div>
