@@ -28,6 +28,14 @@ export default function Half({
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
   const isSelected = selectedSlots?.has(slotId) || false;
+  const isPending = pendingTouchSlot && 
+    pendingTouchSlot.dayIndex === dayIndex && 
+    pendingTouchSlot.halfIndex === halfIndex;
+
+  // 터치 관련 로컬 상태 추가
+  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+  const [localTouchMoved, setLocalTouchMoved] = useState(false);
+  const [touchStartTimestamp, setTouchStartTimestamp] = useState(0);
 
   // 마우스 이벤트 추적용 로컬 상태
   const [mouseStartTime, setMouseStartTime] = useState(0);
@@ -37,6 +45,7 @@ export default function Half({
 
   const CLICK_THRESHOLD = 200; // 200ms 이하만 빠른 클릭으로 간주
   const DRAG_TIME_THRESHOLD = 200; // 200ms 이상 누르면 드래그 모드로 전환
+  const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -117,12 +126,19 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    // 터치 시작 시간 기록
+    const touch = e.touches[0];
+    
+    // 터치 시작 위치와 시간 기록
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setTouchStartTimestamp(Date.now());
+    setLocalTouchMoved(false);
+    
+    // 상위 컴포넌트 터치 시간 기록
     if (setTouchStartTime) {
       setTouchStartTime(Date.now());
     }
     
-    // 즉시 터치 처리
+    // 즉시 선택하지 않고 대기 (드래그 가능성을 위해)
     if (onTouchPending) {
       onTouchPending(dayIndex, halfIndex);
     }
@@ -130,26 +146,36 @@ export default function Half({
 
   const handleTouchMove = (e) => {
     // 터치가 하나일 때만 처리
-    if (e.touches.length === 1) {
-      // 움직임이 감지되면 드래그 선택 시작
-      if (onDragSelectionStart) {
+    if (e.touches.length !== 1) {
+      return;
+    }
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    
+    // 움직임이 충분히 감지되면 localTouchMoved 설정
+    if ((deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) && !localTouchMoved) {
+      setLocalTouchMoved(true);
+      
+      // 세로 움직임이 가로 움직임보다 크면 드래그 선택 시작
+      if (deltaY >= deltaX && onDragSelectionStart && !isDragSelecting) {
         onDragSelectionStart(dayIndex, halfIndex);
         return;
       }
+    }
+    
+    // 이미 드래그 선택 중이면 드래그 이동 처리
+    if (isDragSelecting && onDragSelectionMove) {
+      // 터치 포인트 아래의 엘리먼트 찾기
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
       
-      // 이미 드래그 선택 중이면 드래그 이동 처리
-      if (isDragSelecting && onDragSelectionMove) {
-        // 터치 포인트 아래의 엘리먼트 찾기
-        const touch = e.touches[0];
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
+        const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
+        const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
         
-        if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
-          const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
-          const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
-          
-          // 드래그 이동 처리
-          onDragSelectionMove(newDayIndex, newHalfIndex);
-        }
+        // 드래그 이동 처리
+        onDragSelectionMove(newDayIndex, newHalfIndex);
       }
     }
   };
@@ -157,6 +183,18 @@ export default function Half({
   const handleTouchEnd = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // 드래그 선택이 진행 중이었다면 종료
+    if (isDragSelecting && onDragSelectionEnd) {
+      onDragSelectionEnd();
+    }
+    
+    // 상태 초기화
+    setTimeout(() => {
+      setTouchStartPos({ x: 0, y: 0 });
+      setLocalTouchMoved(false);
+      setTouchStartTimestamp(0);
+    }, 50);
   };
 
   return (
@@ -168,7 +206,8 @@ export default function Half({
             ? `border-[1.3px] border-b-[1px] border-b-main/50 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
             : `border-[1.3px] border-t-0 ${!isFirstDay ? 'border-l-0' : ''}`
       } ${
-        isSelected ? 'bg-main/30' : ''
+        isSelected ? 'bg-main/30' : 
+        isPending ? 'bg-main/10' : ''
       }`}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
