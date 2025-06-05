@@ -27,6 +27,7 @@ export default function Playground() {
         <div className="p-4 md:p-6">
             <h1 className="text-2xl text-black font-bold mb-8 text-center">
                 컴포넌트 플레이그라운드
+                <Title></Title>
             </h1>
 
             <div className="mb-8">

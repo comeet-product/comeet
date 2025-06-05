@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 
 const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const minutes = [0, 30];
-    
+
     const initialHour = Math.floor(initialValue / 100);
-    const initialMinute = (initialValue % 100) === 30 ? 30 : 0;
+    const initialMinute = initialValue % 100 === 30 ? 30 : 0;
 
     const [selectedHour, setSelectedHour] = useState(initialHour);
     const [selectedMinute, setSelectedMinute] = useState(initialMinute);
@@ -16,20 +16,24 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
 
     useEffect(() => {
         setSelectedHour(Math.floor(initialValue / 100));
-        setSelectedMinute((initialValue % 100) === 30 ? 30 : 0);
+        setSelectedMinute(initialValue % 100 === 30 ? 30 : 0);
     }, [initialValue]);
 
     useEffect(() => {
         if (!isOpen) return;
-        
+
         const handleClickOutside = (event) => {
-            if (overlayRef.current && !overlayRef.current.contains(event.target)) {
+            if (
+                overlayRef.current &&
+                !overlayRef.current.contains(event.target)
+            ) {
                 onClose();
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen, onClose]);
 
     const handleSelect = () => {
@@ -49,12 +53,14 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                             {hours.map((hour) => (
                                 <div
                                     key={hour}
-                                    className={`py-4 text-center cursor-pointer text-lg ${
-                                        selectedHour === hour ? 'bg-blue-100' : ''
+                                    className={`py-4 text-center cursor-pointer text-lg text-black ${
+                                        selectedHour === hour
+                                            ? "bg-blue-100"
+                                            : ""
                                     } hover:bg-gray-100`}
                                     onClick={() => setSelectedHour(hour)}
                                 >
-                                    {hour.toString().padStart(2, '0')}
+                                    {hour.toString().padStart(2, "0")}
                                 </div>
                             ))}
                         </div>
@@ -64,12 +70,14 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                             {minutes.map((minute) => (
                                 <div
                                     key={minute}
-                                    className={`py-4 text-center cursor-pointer text-lg ${
-                                        selectedMinute === minute ? 'bg-blue-100' : ''
+                                    className={`py-4 text-center cursor-pointer text-lg text-black${
+                                        selectedMinute === minute
+                                            ? "bg-blue-100"
+                                            : ""
                                     } hover:bg-gray-100`}
                                     onClick={() => setSelectedMinute(minute)}
                                 >
-                                    {minute.toString().padStart(2, '0')}
+                                    {minute.toString().padStart(2, "0")}
                                 </div>
                             ))}
                         </div>
@@ -94,4 +102,4 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
     );
 };
 
-export default TimePicker; 
+export default TimePicker;
