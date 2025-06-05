@@ -9,11 +9,22 @@ export default function Calendar({ onChange, selectedDates = [] }) {
         startDay: null,
         isAddMode: true,
     });
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
     const dateSelectorRef = useRef(null);
 
     // 날짜 선택 관련 유틸리티 함수
     const toggleDate = (dateStr, dates, isAdd = null) => {
         const newDates = new Set(dates);
+
+        // 추가하려는 경우 미리 31일 초과 체크
+        const shouldAdd = isAdd === null ? !newDates.has(dateStr) : isAdd;
+        if (shouldAdd && newDates.size >= 31) {
+            // 31일 초과 시 변경 없이 기존 날짜 배열 반환
+            return [...dates];
+        }
+
+        // 실제 날짜 추가 또는 제거
         if (isAdd === null) {
             // 토글 모드
             if (newDates.has(dateStr)) {
@@ -40,12 +51,33 @@ export default function Calendar({ onChange, selectedDates = [] }) {
     // 이벤트 핸들러
     const handleDateClick = (day) => {
         if (day === null) return;
-        if (day > 31) {
-            alert("날짜 선택은 최대 31일까지 가능합니다");
-            return;
-        }
+
         const dateStr = formatDate(year, month, day);
-        onChange(toggleDate(dateStr, selectedDates));
+
+        // 클릭 시도 전에 31일 초과 여부 먼저 체크
+        const willAdd = !selectedDates.includes(dateStr);
+        if (willAdd && selectedDates.length >= 31) {
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
+            return; // 31일 초과 시 선택 방지
+        }
+
+        // 31개 미만일 경우에만 toggleDate 호출 및 onChange 실행
+        const newDates = toggleDate(dateStr, selectedDates);
+        // toggleDate가 31일 초과로 인해 기존 배열을 반환한 경우 (이 로직은 위에서 막지만 안전망 차원)
+        if (newDates.length === selectedDates.length && willAdd) {
+            // 이미 위에서 return 되므로 이 블록은 실행되지 않아야 하지만, 로직 변경 시 안전망
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
+        } else {
+            onChange(newDates);
+        }
     };
 
     const handleDragStart = (day, event) => {
@@ -57,17 +89,36 @@ export default function Calendar({ onChange, selectedDates = [] }) {
             return;
         }
 
-        // 드래그 시작
         const dateStr = formatDate(year, month, day);
         const isAddMode = !selectedDates.includes(dateStr);
+
+        // 드래그 시작 시점에도 31일 이상 선택되어 있다면 드래그 시작 방지 및 토스트 표시 (추가 모드일 때만)
+        if (isAddMode && selectedDates.length >= 31) {
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
+            setDragState({
+                isDragging: false,
+                startDay: null,
+                isAddMode: true,
+            }); // 드래그 상태 초기화
+            return;
+        }
+
+        // 드래그 시작
         setDragState({
             isDragging: true,
             startDay: day,
             isAddMode,
         });
 
-        // 드래그 시작 날짜 선택 상태 변경
-        onChange(toggleDate(dateStr, selectedDates, isAddMode));
+        // 드래그 시작 날짜 선택 상태 변경 (31일 제한은 이미 위에서 체크됨)
+        // 드래그 시작 날짜가 이미 31개 포함 상태에서 제거 모드일때는 토글 호출, 추가 모드일때는 이미 위에서 걸러짐
+        if (!isAddMode || selectedDates.length < 31) {
+            onChange(toggleDate(dateStr, selectedDates, isAddMode));
+        }
     };
 
     const handleDragEnter = (day) => {
@@ -81,27 +132,54 @@ export default function Calendar({ onChange, selectedDates = [] }) {
         const start = Math.min(dragState.startDay, day);
         const end = Math.max(dragState.startDay, day);
 
-        if (end > 31) {
-            alert("날짜 선택은 최대 31일까지 가능합니다");
-            handleDragEnd();
-            return;
+        let potentialNewDates = new Set(selectedDates);
+
+        // 드래그 범위의 모든 날짜를 잠재적 새 날짜에 추가/제거
+        for (let i = start; i <= end; i++) {
+            const dateStr = formatDate(year, month, i);
+            if (dragState.isAddMode) {
+                potentialNewDates.add(dateStr);
+            } else {
+                potentialNewDates.delete(dateStr);
+            }
         }
 
-        let newDates = new Set(selectedDates);
+        // 31일 초과 체크
+        if (potentialNewDates.size > 31) {
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 1500);
+            handleDragEnd(); // 드래그 종료
+            return; // 변경 적용 안 함
+        }
 
-        // 드래그 범위의 모든 날짜에 대해 동일한 동작(추가 또는 제거) 수행
-        for (let i = 1; i <= 31; i++) {
+        // 31일 초과하지 않으면 변경 사항 반영
+        // 드래그 중 실시간 선택 상태 변경
+        let currentDragDates = new Set(selectedDates);
+        for (let i = 1; i <= daysInMonth; i++) {
+            // 현재 달의 모든 날짜를 순회
             const dateStr = formatDate(year, month, i);
-            if (i >= start && i <= end) {
-                if (dragState.isAddMode) {
-                    newDates.add(dateStr);
-                } else {
-                    newDates.delete(dateStr);
+            const isWithinDragRange = i >= start && i <= end;
+
+            if (dragState.isAddMode) {
+                // 드래그 범위 내 날짜는 추가
+                if (isWithinDragRange) {
+                    currentDragDates.add(dateStr);
+                }
+            } else {
+                // 드래그 범위 내 날짜는 제거
+                if (isWithinDragRange) {
+                    currentDragDates.delete(dateStr);
                 }
             }
         }
 
-        onChange([...newDates]);
+        // 31일 제한을 통과한 경우에만 onChange 호출
+        if (currentDragDates.size <= 31) {
+            onChange([...currentDragDates]);
+        }
     };
 
     const handleDragEnd = () => {
@@ -110,6 +188,9 @@ export default function Calendar({ onChange, selectedDates = [] }) {
             startDay: null,
             isAddMode: true,
         });
+        // 드래그 종료 시 마지막 상태로 onChange 호출 (handleDragEnter에서 이미 호출될 수 있음)
+        // 필요에 따라 여기에 마지막 selectedDates 상태를 onChange로 전달
+        // onChange([...selectedDates]); // 현재 selectedDates 상태로 업데이트
     };
 
     // 드롭다운 외부 클릭 감지
@@ -147,7 +228,10 @@ export default function Calendar({ onChange, selectedDates = [] }) {
         "11월",
         "12월",
     ];
-    const yearOptions = Array.from({ length: 21 }, (_, i) => year - 10 + i);
+
+    // 현재 년도부터 +10년까지만 표시 (이전 년도 제거)
+    const currentYear = new Date().getFullYear();
+    const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear + i);
 
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
@@ -185,6 +269,15 @@ export default function Calendar({ onChange, selectedDates = [] }) {
 
     return (
         <div className="flex flex-col w-full items-start">
+            {/* Toast Message */}
+            {showToast && (
+                <div className="fixed bottom-[65px] left-1/2 transform -translate-x-1/2 z-50">
+                    <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
+                        {toastMessage}
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex justify-between items-center mb-6 w-full">
                 {/* 년월 표시 */}
@@ -198,10 +291,10 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                             setIsDateSelectorOpen(!isDateSelectorOpen)
                         }
                     >
-                        <span className="text-[16px] font-semibold tracking-[-0.38px] whitespace-nowrap">
+                        <span className="text-[16px] text-black font-semibold tracking-[-0.38px] whitespace-nowrap">
                             {year}
                         </span>
-                        <span className="ml-1 text-[16px] font-semibold tracking-[-0.38px] min-w-[25px] whitespace-nowrap">
+                        <span className="ml-1 text-[16px] text-black font-semibold tracking-[-0.38px] min-w-[25px] whitespace-nowrap">
                             {monthNames[month]}
                         </span>
                         <span className="ml-1 text-[#3674B5] text-[16px] flex items-center">
@@ -211,36 +304,42 @@ export default function Calendar({ onChange, selectedDates = [] }) {
 
                     {/* 년월 선택 드롭다운 */}
                     {isDateSelectorOpen && (
-                        <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg z-10 flex">
+                        <div className="absolute top-full left-0 mt-2 bg-white shadow-2xl rounded-2xl z-10 flex border border-gray-100 overflow-hidden">
                             {/* 년도 선택 */}
-                            <div className="w-24 max-h-60 overflow-y-auto border-r">
+                            <div className="w-28 max-h-72 overflow-y-auto border-r border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+                                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold text-center py-3 shadow-sm">
+                                    년도
+                                </div>
                                 {yearOptions.map((y) => (
                                     <div
                                         key={y}
                                         onClick={() => handleYearSelect(y)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                        className={`px-4 py-3 cursor-pointer text-sm font-medium transition-all duration-200 hover:shadow-sm
                                             ${
                                                 y === year
-                                                    ? "bg-[#3674B5]/20 text-[#3674B5]"
-                                                    : ""
+                                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                                                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                                             }
                                         `}
                                     >
-                                        {y}
+                                        {y}년
                                     </div>
                                 ))}
                             </div>
                             {/* 월 선택 */}
-                            <div className="w-20 max-h-60 overflow-y-auto">
+                            <div className="w-24 max-h-72 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+                                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold text-center py-3 shadow-sm">
+                                    월
+                                </div>
                                 {monthNames.map((m, index) => (
                                     <div
                                         key={m}
                                         onClick={() => handleMonthSelect(index)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                        className={`px-4 py-3 cursor-pointer text-sm font-medium transition-all duration-200 hover:shadow-sm
                                             ${
                                                 index === month
-                                                    ? "bg-[#3674B5]/20 text-[#3674B5]"
-                                                    : ""
+                                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                                                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                                             }
                                         `}
                                     >
@@ -309,7 +408,7 @@ export default function Calendar({ onChange, selectedDates = [] }) {
                                         isCurrentMonth &&
                                         day === today
                                             ? "text-blue-600 font-bold"
-                                            : ""
+                                            : "text-black"
                                     }
                                     ${
                                         day !== null &&
