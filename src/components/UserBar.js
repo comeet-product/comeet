@@ -44,27 +44,51 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                 className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors border touch-none select-none ${
                     isSelected 
                         ? 'bg-main/20 border-main' 
-                        : 'border-transparent bg-transparent hover:bg-main/10'
+                        : 'border-transparent'
                 }`}
                 style={{
                     WebkitTapHighlightColor: 'transparent',
                     WebkitUserSelect: 'none',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.2)' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'rgba(25, 118, 210, 0.1)';
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                }}
+                onTouchStart={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'rgba(25, 118, 210, 0.1)';
+                    }
+                }}
+                onTouchEnd={(e) => {
+                    if (!isSelected) {
+                        setTimeout(() => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }, 150);
+                    }
+                }}
+                onTouchCancel={(e) => {
+                    if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
                 }}
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     onClick();
-                }}
-                onTouchStart={(e) => {
-                    // 터치 시작 시 hover 상태 제거
-                    e.currentTarget.blur();
-                }}
-                onTouchEnd={(e) => {
-                    // 터치 종료 후 강제로 hover 상태 제거
+                    // 클릭 후 즉시 배경색 정리
                     setTimeout(() => {
-                        e.currentTarget.blur();
-                    }, 100);
+                        if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                    }, 50);
                 }}
             >
                 <img
