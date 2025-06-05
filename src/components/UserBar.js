@@ -76,11 +76,7 @@ const UserBar = () => {
     const containerRef = React.useRef(null);
 
     const handleUserClick = (name) => {
-        if (selectedUser === name) {
-            setSelectedUser(null);
-        } else {
-            setSelectedUser(name);
-        }
+        setSelectedUser(prev => prev === name ? null : name);
     };
 
     const handleAddClick = () => {
