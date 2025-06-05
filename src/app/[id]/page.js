@@ -32,12 +32,12 @@ export default function MeetingPage({ params }) {
             <div className="flex-1 px-10 py-8 flex flex-col gap-4">
                 <Title onChange={handleTitleChange}>{meeting.title}</Title>
                 <div className="mb-10">
-                <AvailableDatesGroup />
+                    <AvailableDatesGroup />
                 </div>
-                    <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
-                        Schedule Overview
-                    </h5>
-                <TimetableResult
+                <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
+                    Schedule Overview
+                </h5>
+                <TimetableComponent
                     dayCount={7}
                     halfCount={8}
                     startDate="05/19"
