@@ -32,8 +32,10 @@ export default function TimetableSelect() {
     const [touchStartTime, setTouchStartTime] = useState(0);
     const [touchMoved, setTouchMoved] = useState(false);
     const [touchStartPosition, setTouchStartPosition] = useState({ x: 0, y: 0 });
-    const TAP_THRESHOLD = 500; // 500ms 이하는 탭으로 간주
-    const MOVE_THRESHOLD = 10; // 10px 이상 움직이면 드래그로 간주
+    const [pendingTouchSlot, setPendingTouchSlot] = useState(null); // 대기 중인 터치 슬롯
+    const [touchTimeout, setTouchTimeout] = useState(null); // 터치 타이머
+    const TAP_THRESHOLD = 150; // 150ms 후 탭으로 확정
+    const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
     
     // Refs for DOM elements
     const containerRef = useRef(null);
@@ -204,11 +206,43 @@ export default function TimetableSelect() {
         });
     };
 
-    // 드래그 선택 시작
+    // 터치 대기 시작 (즉시 선택하지 않고 잠시 대기)
+    const handleTouchPending = (dayIndex, halfIndex) => {
+        if (isScrolling || !isSelectionEnabled) {
+            return;
+        }
+
+        // 기존 타이머가 있다면 클리어
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+        }
+
+        // 대기 중인 슬롯 설정
+        setPendingTouchSlot({ dayIndex, halfIndex });
+
+        // 일정 시간 후 개별 선택으로 확정
+        const timer = setTimeout(() => {
+            if (!touchMoved && !isDragSelecting) {
+                handleTapSelection(dayIndex, halfIndex);
+            }
+            setPendingTouchSlot(null);
+        }, TAP_THRESHOLD);
+
+        setTouchTimeout(timer);
+    };
+
+    // 드래그 선택 시작 (움직임이 감지되었을 때)
     const handleDragSelectionStart = (dayIndex, halfIndex) => {
         if (isScrolling || !isSelectionEnabled) {
             return;
         }
+
+        // 대기 중인 터치 취소
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            setTouchTimeout(null);
+        }
+        setPendingTouchSlot(null);
 
         const slotId = `${dayIndex}-${halfIndex}`;
         const isCurrentlySelected = selectedSlots.has(slotId);
@@ -265,6 +299,13 @@ export default function TimetableSelect() {
 
     // 드래그 선택 종료
     const handleDragSelectionEnd = () => {
+        // 대기 중인 터치 타이머도 정리
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            setTouchTimeout(null);
+        }
+        setPendingTouchSlot(null);
+        
         setIsDragSelecting(false);
         setDragStartSlot(null);
         setDragCurrentSlot(null);
@@ -566,19 +607,19 @@ export default function TimetableSelect() {
                 handleDragSelectionEnd();
             }
             
-            // 짧은 터치이고 움직임이 거의 없으면 탭으로 처리
-            const touchDuration = Date.now() - touchStartTime;
-            if (e.touches.length === 0 && !touchMoved && touchDuration < TAP_THRESHOLD && isSelectionEnabled) {
-                // 터치 이벤트를 Timetable 컴포넌트로 전달하여 슬롯 선택 처리
-                // 실제 선택은 Timetable 컴포넌트에서 처리됨
+            // 대기 중인 터치 타이머 정리
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                setTouchTimeout(null);
             }
             
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
-                // 짧은 지연 후 선택 기능 재활성화
+                // 짧은 지연 후 상태 초기화
                 setTimeout(() => {
                     setIsSelectionEnabled(true);
                     setTouchMoved(false);
+                    setPendingTouchSlot(null);
                 }, 50);
                 
                 handleScrollEnd();
@@ -629,6 +670,11 @@ export default function TimetableSelect() {
         return () => {
             if (scrollTimeoutRef.current) {
                 clearTimeout(scrollTimeoutRef.current);
+            }
+            
+            // 터치 타이머 정리
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
             }
             
             container.removeEventListener('gesturestart', handleGestureStart, true);
@@ -696,11 +742,13 @@ export default function TimetableSelect() {
                             selectedSlots={selectedSlots}
                             onSlotSelection={handleSlotSelection}
                             onTapSelection={handleTapSelection}
+                            onTouchPending={handleTouchPending}
                             onDragSelectionStart={handleDragSelectionStart}
                             onDragSelectionMove={handleDragSelectionMove}
                             onDragSelectionEnd={handleDragSelectionEnd}
                             isSelectionEnabled={isSelectionEnabled}
                             isDragSelecting={isDragSelecting}
+                            pendingTouchSlot={pendingTouchSlot}
                             touchStartTime={touchStartTime}
                             setTouchStartTime={setTouchStartTime}
                             tapThreshold={TAP_THRESHOLD}
@@ -708,30 +756,6 @@ export default function TimetableSelect() {
                             moveThreshold={MOVE_THRESHOLD}
                         />
                     </div>
-                </div>
-            </div>
-
-            {/* Zoom 상태 표시 */}
-            <div className="fixed bottom-4 right-4 bg-white/90 p-3 rounded-lg text-sm shadow-lg max-w-sm">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                    <p>표시 컬럼: {visibleDayCount}개</p>
-                    <p>중심 컬럼: {centerColumnIndex + 1}번째</p>
-                    <p>스크롤 위치: {scrollPosition.toFixed(1)}%</p>
-                    <p>스크롤 중: {isScrolling ? '예' : '아니오'}</p>
-                    <p>선택된 슬롯: {selectedSlots.size}개</p>
-                    <p>선택 가능: {isSelectionEnabled ? '예' : '아니오'}</p>
-                    <p>드래그 선택 중: {isDragSelecting ? '예' : '아니오'}</p>
-                    <p>터치 움직임: {touchMoved ? '예' : '아니오'}</p>
-                </div>
-                <div className="mt-2 pt-2 border-t border-gray-300">
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                        <strong>조작법:</strong><br />
-                        • 짧은 터치: 시간 슬롯 선택/해제<br />
-                        • 아래로 드래그: 연속 시간 선택<br />
-                        • 좌우 스와이프: 스크롤<br />
-                        • 핀치: 확대/축소 (Auto-Align)<br />
-                        • Ctrl/Cmd + 휠: 확대/축소
-                    </p>
                 </div>
             </div>
         </div>
