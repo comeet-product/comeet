@@ -41,7 +41,9 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
             </button>
 
             <div 
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border ${isSelected ? 'bg-main/20 border-main' : 'border-transparent'}`}
+                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border touch-none ${
+                    isSelected ? 'bg-main/20 border-main' : 'border-transparent'
+                }`}
                 onClick={onClick}
             >
                 <img
