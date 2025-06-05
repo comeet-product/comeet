@@ -25,7 +25,7 @@ export const generateMetadata = () => ({
 export default function Playground() {
     return (
         <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-8 text-center">
+            <h1 className="text-2xl text-black font-bold mb-8 text-center">
                 컴포넌트 플레이그라운드
             </h1>
 
