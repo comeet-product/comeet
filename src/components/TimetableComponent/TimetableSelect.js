@@ -27,7 +27,9 @@ export default function TimetableSelect() {
     // 터치 처리 상태
     const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
     const [touchTimeout, setTouchTimeout] = useState(null);
-    const TAP_THRESHOLD = 80; // 80ms 후 탭으로 확정 (150ms에서 단축)
+    const [dragTimeout, setDragTimeout] = useState(null);
+    const TAP_THRESHOLD = 50; // 50ms 후 탭으로 확정 (더 빠른 탭 인식)
+    const DRAG_THRESHOLD = 150; // 150ms 후 드래그 모드로 전환 (더 긴 터치 요구)
     const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
     
     // Refs for DOM elements
@@ -199,23 +201,36 @@ export default function TimetableSelect() {
             return;
         }
 
-        // 기존 타이머가 있다면 클리어
+        // 기존 타이머들이 있다면 클리어
         if (touchTimeout) {
             clearTimeout(touchTimeout);
+        }
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
         }
 
         // 대기 중인 슬롯 설정
         setPendingTouchSlot({ dayIndex, halfIndex });
 
-        // 일정 시간 후 개별 선택으로 확정 (드래그가 시작되지 않았을 때만)
-        const timer = setTimeout(() => {
+        // 짧은 시간 후 탭 선택으로 확정 (더 빠른 반응)
+        const tapTimer = setTimeout(() => {
             if (!isDragSelecting) {
                 handleTapSelection(dayIndex, halfIndex);
+                setPendingTouchSlot(null);
             }
-            setPendingTouchSlot(null);
         }, TAP_THRESHOLD);
 
-        setTouchTimeout(timer);
+        // 더 긴 시간 후 드래그 선택 준비 모드로 전환
+        const dragTimer = setTimeout(() => {
+            // 아직 드래그가 시작되지 않았다면 드래그 준비 상태로 설정
+            if (!isDragSelecting && pendingTouchSlot) {
+                // 이미 탭 선택이 완료되었을 수도 있으므로 추가 처리 없음
+                setPendingTouchSlot(null);
+            }
+        }, DRAG_THRESHOLD);
+
+        setTouchTimeout(tapTimer);
+        setDragTimeout(dragTimer);
     };
 
     // 드래그 선택 시작 (움직임이 감지되었을 때)
@@ -225,10 +240,14 @@ export default function TimetableSelect() {
             return;
         }
 
-        // 대기 중인 터치 취소 (즉시)
+        // 대기 중인 터치 및 드래그 타이머 취소 (즉시)
         if (touchTimeout) {
             clearTimeout(touchTimeout);
             setTouchTimeout(null);
+        }
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
+            setDragTimeout(null);
         }
         setPendingTouchSlot(null);
 
@@ -276,10 +295,14 @@ export default function TimetableSelect() {
 
     // 드래그 선택 종료
     const handleDragSelectionEnd = () => {
-        // 대기 중인 터치 타이머도 정리
+        // 대기 중인 터치 및 드래그 타이머도 정리
         if (touchTimeout) {
             clearTimeout(touchTimeout);
             setTouchTimeout(null);
+        }
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
+            setDragTimeout(null);
         }
         setPendingTouchSlot(null);
         
@@ -563,10 +586,14 @@ export default function TimetableSelect() {
                 handleDragSelectionEnd();
             }
             
-            // 대기 중인 터치 타이머 정리
+            // 대기 중인 터치 및 드래그 타이머 정리
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
                 setTouchTimeout(null);
+            }
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                setDragTimeout(null);
             }
             
             // 터치 종료 시 Auto-Align 실행
@@ -621,9 +648,12 @@ export default function TimetableSelect() {
                 clearTimeout(scrollTimeoutRef.current);
             }
             
-            // 터치 타이머 정리
+            // 터치 및 드래그 타이머 정리
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
+            }
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
             }
             
             container.removeEventListener('gesturestart', handleGestureStart, true);
@@ -644,7 +674,7 @@ export default function TimetableSelect() {
             document.removeEventListener('gesturechange', preventDefaults, true);
             document.removeEventListener('gestureend', preventDefaults, true);
         };
-    }, [visibleDayCount, isDragSelecting, touchTimeout, isSelectionEnabled]);
+    }, [visibleDayCount, isDragSelecting, touchTimeout, dragTimeout, isSelectionEnabled]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -698,6 +728,9 @@ export default function TimetableSelect() {
                             isSelectionEnabled={isSelectionEnabled}
                             isDragSelecting={isDragSelecting}
                             pendingTouchSlot={pendingTouchSlot}
+                            tapThreshold={TAP_THRESHOLD}
+                            dragThreshold={DRAG_THRESHOLD}
+                            moveThreshold={MOVE_THRESHOLD}
                         />
                     </div>
                 </div>
