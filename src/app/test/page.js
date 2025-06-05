@@ -4,6 +4,10 @@ import { useState } from "react";
 import { createMeeting } from "@/lib/supabase/createMeeting";
 import { submitAvailability } from "@/lib/supabase/submitAvailability";
 import { calculateRecommendations } from "@/lib/supabase/calculateRecommendations";
+import { getRecommendations } from "@/lib/supabase/getRecommendations";
+import { getResults } from "@/lib/supabase/getResults";
+import { getUsers } from "@/lib/supabase/getUsers";
+import { getAvailability } from "@/lib/supabase/getAvailability";
 import Button from "@/components/Button";
 
 export default function TestPage() {
@@ -11,8 +15,10 @@ export default function TestPage() {
         createMeeting: null,
         submitAvailability: null,
         calculateRecommendations: null,
-        additionalSubmit: null,
-        additionalCalculate: null,
+        getRecommendations: null,
+        getResults: null,
+        getUsers: null,
+        getAvailability: null,
     });
     const [isLoading, setIsLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState("");
@@ -42,7 +48,7 @@ export default function TestPage() {
                 throw new Error(meetingResult.message);
             }
 
-            const newMeetingId = meetingResult.data.meeting_id;
+            const newMeetingId = meetingResult.data.meetingid;
             setMeetingId(newMeetingId);
 
             // 2. 가용성 제출 테스트
@@ -62,16 +68,19 @@ export default function TestPage() {
                         "2025-07-06": [1400, 1430, 1500],
                     },
                 },
+                {
+                    name: "이영희",
+                    availableSlots: {
+                        "2025-07-05": [900, 930, 1000, 1030],
+                        "2025-07-06": [1400, 1430, 1500],
+                    },
+                },
             ];
 
             const submitResults = [];
             for (const response of testResponses) {
-                const userId = `user_${Math.random()
-                    .toString(36)
-                    .substr(2, 9)}`;
                 const result = await submitAvailability(
                     newMeetingId,
-                    userId,
                     response.name,
                     response.availableSlots
                 );
@@ -92,100 +101,103 @@ export default function TestPage() {
                 calculateRecommendations: recommendationsResult,
             }));
 
-            // 4. 추가 사용자 가용성 제출 테스트
-            setCurrentStep("추가 사용자 가용성 제출 중...");
-            const additionalUser = {
-                name: "이영희",
-                availableSlots: {
-                    "2025-07-05": [900, 930, 1000, 1030],
-                    "2025-07-06": [1400, 1430, 1500],
-                },
-            };
-
-            const additionalUserId = `user_${Math.random()
-                .toString(36)
-                .substr(2, 9)}`;
-            const additionalResult = await submitAvailability(
-                newMeetingId,
-                additionalUserId,
-                additionalUser.name,
-                additionalUser.availableSlots
+            // 4. 추천 시간 조회 테스트
+            setCurrentStep("추천 시간 조회 중...");
+            const getRecommendationsResult = await getRecommendations(
+                newMeetingId
             );
             setTestResults((prev) => ({
                 ...prev,
-                additionalSubmit: additionalResult,
+                getRecommendations: getRecommendationsResult,
             }));
 
-            // 5. 추가 사용자 포함 추천 시간 재계산
-            setCurrentStep("추가 사용자 포함 추천 시간 계산 중...");
-            const additionalRecommendationsResult =
-                await calculateRecommendations(newMeetingId);
+            // 5. 결과 조회 테스트
+            setCurrentStep("결과 조회 중...");
+            const getResultsResult = await getResults(newMeetingId);
             setTestResults((prev) => ({
                 ...prev,
-                additionalCalculate: additionalRecommendationsResult,
+                getResults: getResultsResult,
             }));
+
+            // 6. 사용자 목록 조회 테스트
+            setCurrentStep("사용자 목록 조회 중...");
+            const getUsersResult = await getUsers(newMeetingId);
+            setTestResults((prev) => ({
+                ...prev,
+                getUsers: getUsersResult,
+            }));
+
+            // 7. 가용성 데이터 조회 테스트
+            setCurrentStep("가용성 데이터 조회 중...");
+            const getAvailabilityResult = await getAvailability(newMeetingId);
+            setTestResults((prev) => ({
+                ...prev,
+                getAvailability: getAvailabilityResult,
+            }));
+
+            setCurrentStep("테스트 완료!");
         } catch (error) {
-            console.error("테스트 실패:", error);
-            setTestResults((prev) => ({
-                ...prev,
-                [currentStep]: {
-                    success: false,
-                    message: error.message,
-                },
-            }));
+            console.error("Test failed:", error);
+            setCurrentStep(`테스트 실패: ${error.message}`);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-        setCurrentStep("");
     };
 
     const renderTestResult = (result, title) => {
         if (!result) return null;
 
-        if (Array.isArray(result)) {
-            return (
-                <div className="space-y-2">
-                    <h3 className="font-semibold">{title}</h3>
-                    {result.map((r, index) => (
-                        <div
-                            key={index}
-                            className={`p-2 rounded ${
-                                r.success ? "bg-green-50" : "bg-red-50"
-                            }`}
-                        >
-                            <p className="text-sm">{r.message}</p>
-                            {r.data && (
-                                <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto">
-                                    {JSON.stringify(r.data, null, 2)}
-                                </pre>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-
         return (
-            <div
-                className={`p-4 rounded-lg ${
-                    result.success ? "bg-green-100" : "bg-red-100"
-                }`}
-            >
-                <h3 className="font-semibold mb-2">{title}</h3>
-                <p className="text-sm">{result.message}</p>
-                {result.data && (
-                    <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto">
-                        {JSON.stringify(result.data, null, 2)}
+            <div className="border rounded p-4">
+                <h3 className="font-semibold text-lg mb-2">{title}</h3>
+                <div
+                    className={`p-2 rounded text-sm ${
+                        result.success ||
+                        (Array.isArray(result) &&
+                            result.every((r) => r.success))
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                    }`}
+                >
+                    <p className="font-medium">
+                        상태:{" "}
+                        {result.success ||
+                        (Array.isArray(result) &&
+                            result.every((r) => r.success))
+                            ? "성공"
+                            : "실패"}
+                    </p>
+                    {result.message && <p>메시지: {result.message}</p>}
+                    {Array.isArray(result) && (
+                        <div className="mt-2">
+                            {result.map((r, i) => (
+                                <div key={i} className="mb-1">
+                                    <span className="font-medium">
+                                        항목 {i + 1}:
+                                    </span>{" "}
+                                    {r.success ? "성공" : "실패"} - {r.message}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <details className="mt-2">
+                    <summary className="cursor-pointer font-medium">
+                        상세 데이터 보기
+                    </summary>
+                    <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto mt-2">
+                        {JSON.stringify(result, null, 2)}
                     </pre>
-                )}
+                </details>
             </div>
         );
     };
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Supabase 연결 테스트</h1>
+            <h1 className="text-2xl font-bold">새로운 테이블 구조 테스트</h1>
             <Button
-                text={isLoading ? currentStep : "테스트 실행"}
+                text={isLoading ? currentStep : "전체 테스트 실행"}
                 onClick={handleTest}
                 disabled={isLoading}
             />
@@ -207,12 +219,14 @@ export default function TestPage() {
                     "3. 추천 시간 계산"
                 )}
                 {renderTestResult(
-                    testResults.additionalSubmit,
-                    "4. 추가 사용자 가용성 제출"
+                    testResults.getRecommendations,
+                    "4. 추천 시간 조회"
                 )}
+                {renderTestResult(testResults.getResults, "5. 결과 조회")}
+                {renderTestResult(testResults.getUsers, "6. 사용자 목록 조회")}
                 {renderTestResult(
-                    testResults.additionalCalculate,
-                    "5. 추가 사용자 포함 추천 시간 계산"
+                    testResults.getAvailability,
+                    "7. 가용성 데이터 조회"
                 )}
             </div>
         </div>

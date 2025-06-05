@@ -42,7 +42,7 @@ export default function Home() {
             const result = await createMeeting(meetingData);
 
             if (result.success) {
-                router.push(`/${result.data.meeting_id}`);
+                router.push(`/${result.data.meetingid}`);
             } else {
                 alert(result.message);
             }

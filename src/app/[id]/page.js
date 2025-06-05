@@ -13,19 +13,26 @@ export default function MeetingPage({ params }) {
     const unwrappedParams = use(params);
 
     useEffect(() => {
-        getMeeting(unwrappedParams.id).then(setMeeting);
+        getMeeting(unwrappedParams.id).then((result) => {
+            if (result.success) {
+                setMeeting(result.data);
+            } else {
+                console.error("Failed to fetch meeting:", result.message);
+                // 에러 처리 로직 추가 가능
+            }
+        });
     }, [unwrappedParams.id]);
 
     const handleTitleChange = async (newTitle) => {
         const result = await updateMeetingTitle(unwrappedParams.id, newTitle);
         if (result.success) {
-            setMeeting(prev => ({ ...prev, title: newTitle }));
+            setMeeting((prev) => ({ ...prev, title: newTitle }));
         } else {
             alert(result.message);
         }
     };
 
-    if (!meeting) return null;
+    if (!meeting) return <div>Loading...</div>;
 
     return (
         <div className="flex flex-col h-full">
