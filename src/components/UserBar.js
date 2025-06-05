@@ -41,8 +41,10 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
             </button>
 
             <button 
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border touch-none select-none ${
-                    isSelected ? 'bg-main/20 border-main' : 'border-transparent'
+                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors border touch-none select-none ${
+                    isSelected 
+                        ? 'bg-main/20 border-main' 
+                        : 'border-transparent bg-transparent hover:bg-main/10'
                 }`}
                 style={{
                     WebkitTapHighlightColor: 'transparent',
@@ -53,6 +55,16 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                     e.preventDefault();
                     e.stopPropagation();
                     onClick();
+                }}
+                onTouchStart={(e) => {
+                    // 터치 시작 시 hover 상태 제거
+                    e.currentTarget.blur();
+                }}
+                onTouchEnd={(e) => {
+                    // 터치 종료 후 강제로 hover 상태 제거
+                    setTimeout(() => {
+                        e.currentTarget.blur();
+                    }, 100);
                 }}
             >
                 <img
