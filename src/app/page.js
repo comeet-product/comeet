@@ -55,7 +55,7 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col justify-between items-center h-full w-full gap-4">
+        <div className="flex flex-col justify-between items-center h-full w-full px-10 py-8 gap-4">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
