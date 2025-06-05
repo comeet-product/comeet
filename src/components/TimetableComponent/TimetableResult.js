@@ -7,13 +7,18 @@ import Timetable from "./Timetable";
 export default function TimetableResult() {
     // States for scroll control only
     const [isScrolling, setIsScrolling] = useState(false);
-    const [startTouchX, setStartTouchX] = useState(0);
-    const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     
     // Refs for DOM elements
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
     const scrollTimeoutRef = useRef(null);
+    
+    // 터치 상태를 ref로 관리 (closure 문제 해결)
+    const touchStateRef = useRef({
+        startX: 0,
+        startY: 0,
+        isScrolling: false
+    });
 
     // Constants
     const TOTAL_DAYS = 9;
@@ -94,54 +99,74 @@ export default function TimetableResult() {
             e.preventDefault();
         };
 
-        // 모바일 스크롤을 위한 터치 이벤트 처리 (TimetableSelect와 유사하게)
+        // 모바일 스크롤을 위한 터치 이벤트 처리
         const handleTouchStart = (e) => {
-            if (e.touches.length === 1 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-                // 단일 터치 - 스크롤 준비
+            console.log('TimetableResult: Touch start', e.touches.length); // 디버깅용
+            if (e.touches.length === 1) {
                 const touch = e.touches[0];
-                setStartTouchX(touch.clientX);
-                setStartTouch1({ x: touch.clientX, y: touch.clientY });
+                touchStateRef.current = {
+                    startX: touch.clientX,
+                    startY: touch.clientY,
+                    isScrolling: false
+                };
                 setIsScrolling(false);
             }
         };
 
         const handleTouchMove = (e) => {
-            if (e.touches.length === 1 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+            if (e.touches.length === 1) {
                 const touch = e.touches[0];
+                const touchState = touchStateRef.current;
                 
                 // 움직임의 방향을 확인하여 수평 스크롤인지 판단
-                const deltaX = Math.abs(touch.clientX - startTouch1.x);
-                const deltaY = Math.abs(touch.clientY - startTouch1.y);
+                const deltaX = Math.abs(touch.clientX - touchState.startX);
+                const deltaY = Math.abs(touch.clientY - touchState.startY);
+                
+                console.log('TimetableResult: Touch move', deltaX, deltaY); // 디버깅용
                 
                 // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
-                if (deltaX > 10 && deltaX > deltaY) { // 수평 우선 움직임 감지
+                if (deltaX > 5 && deltaX > deltaY) { // 임계값을 더 낮게 설정
                     e.preventDefault();
-                    setIsScrolling(true);
+                    e.stopPropagation();
                     
-                    const currentX = touch.clientX;
-                    const scrollDeltaX = startTouchX - currentX;
+                    if (!touchState.isScrolling) {
+                        touchState.isScrolling = true;
+                        setIsScrolling(true);
+                        console.log('TimetableResult: Start scrolling'); // 디버깅용
+                    }
                     
-                    if (timetable.scrollLeft !== undefined) {
-                        timetable.scrollLeft += scrollDeltaX;
-                        setStartTouchX(currentX);
+                    const scrollDeltaX = touchState.startX - touch.clientX;
+                    
+                    if (timetable && timetable.scrollLeft !== undefined) {
+                        const newScrollLeft = Math.max(0, timetable.scrollLeft + scrollDeltaX);
+                        const maxScroll = timetable.scrollWidth - timetable.clientWidth;
+                        timetable.scrollLeft = Math.min(newScrollLeft, maxScroll);
+                        
+                        // 시작점 업데이트 (부드러운 스크롤을 위해)
+                        touchState.startX = touch.clientX;
+                        
+                        console.log('TimetableResult: Scrolling to', timetable.scrollLeft); // 디버깅용
                     }
                 }
             }
         };
 
         const handleTouchEnd = (e) => {
+            console.log('TimetableResult: Touch end'); // 디버깅용
             // 터치 종료 시 Auto-Align 실행
-            if (e.touches.length === 0 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-                handleScrollEnd();
+            if (e.touches.length === 0) {
+                const touchState = touchStateRef.current;
+                if (touchState.isScrolling) {
+                    handleScrollEnd();
+                }
+                touchState.isScrolling = false;
             }
         };
 
-        // 이벤트 리스너 등록
-        if (VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-            container.addEventListener('touchstart', handleTouchStart, { passive: false });
-            container.addEventListener('touchmove', handleTouchMove, { passive: false });
-            container.addEventListener('touchend', handleTouchEnd, { passive: true });
-        }
+        // 이벤트 리스너 등록 (timetable 요소에 직접 등록)
+        timetable.addEventListener('touchstart', handleTouchStart, { passive: false });
+        timetable.addEventListener('touchmove', handleTouchMove, { passive: false });
+        timetable.addEventListener('touchend', handleTouchEnd, { passive: true });
         timetable.addEventListener('scroll', handleTableScroll);
 
         // 모바일 스크롤을 위해 기본 제스처 차단 제거
@@ -153,16 +178,14 @@ export default function TimetableResult() {
             }
             
             // 터치 이벤트 리스너 제거
-            if (VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-                container.removeEventListener('touchstart', handleTouchStart);
-                container.removeEventListener('touchmove', handleTouchMove);
-                container.removeEventListener('touchend', handleTouchEnd);
-            }
             if (timetable) {
+                timetable.removeEventListener('touchstart', handleTouchStart);
+                timetable.removeEventListener('touchmove', handleTouchMove);
+                timetable.removeEventListener('touchend', handleTouchEnd);
                 timetable.removeEventListener('scroll', handleTableScroll);
             }
         };
-    }, [startTouchX, startTouch1]);
+    }, []); // 의존성 배열 제거하여 무한 재등록 방지
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -187,7 +210,7 @@ export default function TimetableResult() {
                 className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'manipulation'  // TimetableSelect와 동일한 설정
+                    touchAction: 'pan-y'  // 세로 스크롤만 허용, 가로는 커스텀 처리
                 }}
             >
                 <div 
@@ -196,7 +219,7 @@ export default function TimetableResult() {
                     data-scroll-container="true"
                     style={{ 
                         overflowX: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'manipulation',  // TimetableSelect와 동일한 설정
+                        touchAction: 'none',  // 모든 터치 동작을 커스텀으로 처리
                         WebkitOverflowScrolling: 'touch',  // iOS Safari에서 momentum scrolling 활성화
                         scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
                         paddingLeft: VISIBLE_DAY_COUNT < TOTAL_DAYS ? '1.3px' : '0',  // 왼쪽 border 보정
