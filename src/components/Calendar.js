@@ -304,42 +304,36 @@ export default function Calendar({ onChange, selectedDates = [] }) {
 
                     {/* 년월 선택 드롭다운 */}
                     {isDateSelectorOpen && (
-                        <div className="absolute top-full left-0 mt-2 bg-white shadow-2xl rounded-2xl z-10 flex border border-gray-100 overflow-hidden">
+                        <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg z-10 flex">
                             {/* 년도 선택 */}
-                            <div className="w-28 max-h-72 overflow-y-auto border-r border-gray-100 bg-gradient-to-b from-gray-50 to-white">
-                                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold text-center py-3 shadow-sm">
-                                    년도
-                                </div>
+                            <div className="w-24 max-h-60 overflow-y-auto border-r">
                                 {yearOptions.map((y) => (
                                     <div
                                         key={y}
                                         onClick={() => handleYearSelect(y)}
-                                        className={`px-4 py-3 cursor-pointer text-sm font-medium transition-all duration-200 hover:shadow-sm
+                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
                                             ${
                                                 y === year
-                                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
-                                                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                                    ? "bg-[#3674B5]/20 text-[#3674B5]"
+                                                    : "text-black"
                                             }
                                         `}
                                     >
-                                        {y}년
+                                        {y}
                                     </div>
                                 ))}
                             </div>
                             {/* 월 선택 */}
-                            <div className="w-24 max-h-72 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
-                                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold text-center py-3 shadow-sm">
-                                    월
-                                </div>
+                            <div className="w-20 max-h-60 overflow-y-auto">
                                 {monthNames.map((m, index) => (
                                     <div
                                         key={m}
                                         onClick={() => handleMonthSelect(index)}
-                                        className={`px-4 py-3 cursor-pointer text-sm font-medium transition-all duration-200 hover:shadow-sm
+                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
                                             ${
                                                 index === month
-                                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
-                                                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                                    ? "bg-[#3674B5]/20 text-[#3674B5]"
+                                                    : "text-black"
                                             }
                                         `}
                                     >
