@@ -35,9 +35,6 @@ export default function Playground() {
                 </h3>
 
                 <div className="mb-6">
-                    <h4 className="text-sm text-gray-400 mb-2">
-                        Interactive Timetable (Pinch & Scroll)
-                    </h4>
                     <TimetableSelect />
                 </div>
 

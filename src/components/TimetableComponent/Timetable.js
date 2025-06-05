@@ -28,6 +28,7 @@ export default function Timetable({
         dayCount={dayCount} 
         startDate={startDate}
       />
+      <div className="h-[5px]"></div>
       <DateSelector 
         dayCount={dayCount} 
         halfCount={halfCount}
