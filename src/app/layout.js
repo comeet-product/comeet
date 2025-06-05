@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className="antialiased bg-white">
         <div className="min-h-screen flex justify-center lg:py-4">
-          <div className="w-screen lg:w-full lg:max-w-sm lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col overflow-y-auto">
+          <div className="w-screen lg:w-[25%] lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col overflow-y-auto">
             <Header />
             <div className="flex-1 flex flex-col">
               {children}

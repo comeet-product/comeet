@@ -5,6 +5,7 @@ import { getMeeting } from "@/lib/supabase/getMeeting";
 import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import Title from "@/components/Title";
 import UserBar from "@/components/UserBar";
+import TimetableResult from "@/components/TimetableComponent/TimetableComponent";
 
 export default function MeetingPage({ params }) {
     const [meeting, setMeeting] = useState(null);
@@ -27,8 +28,15 @@ export default function MeetingPage({ params }) {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-1 px-6 py-6">
+            <div className="flex-1 px-10 py-8 flex flex-col gap-4">
                 <Title onChange={handleTitleChange}>{meeting.title}</Title>
+                <TimetableResult
+                    dayCount={7}
+                    halfCount={8}
+                    startDate="05/19"
+                    startTime={10}
+                    dateHeaderHeight={23}
+                />
             </div>
             <UserBar />
         </div>

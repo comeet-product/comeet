@@ -55,22 +55,24 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col justify-between items-center h-full w-full px-10 py-8 gap-4">
+        <div className="flex flex-col justify-center items-center h-full w-full px-10 py-8 gap-12">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
-            <Calendar
-                selectedDates={selectedDates}
-                onChange={setSelectedDates}
-            />
-            <SelectableTime
-                startTime={startTime}
-                endTime={endTime}
-                onTimeChange={(newStartTime, newEndTime) => {
-                    setStartTime(newStartTime);
-                    setEndTime(newEndTime);
-                }}
-            />
+            <div className="flex flex-col gap-4 w-full">
+                <Calendar
+                    selectedDates={selectedDates}
+                    onChange={setSelectedDates}
+                />
+                <SelectableTime
+                    startTime={startTime}
+                    endTime={endTime}
+                    onTimeChange={(newStartTime, newEndTime) => {
+                        setStartTime(newStartTime);
+                        setEndTime(newEndTime);
+                    }}
+                />
+            </div>
             <Button onClick={handleCreateMeeting} disabled={isLoading}>
                 미팅 생성
             </Button>
