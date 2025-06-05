@@ -9,11 +9,13 @@ export default function Day({
   selectedSlots, 
   onSlotSelection, 
   onTapSelection,
+  onTouchPending,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
+  pendingTouchSlot,
   touchStartTime,
   setTouchStartTime,
   tapThreshold,
@@ -37,11 +39,13 @@ export default function Day({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
@@ -61,11 +65,13 @@ export default function Day({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}

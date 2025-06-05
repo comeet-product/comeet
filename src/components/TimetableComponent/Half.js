@@ -11,19 +11,26 @@ export default function Half({
   isFirstDay, 
   hasDateHeaderAbove,
   selectedSlots,
+  onSlotSelection,
   onTapSelection,
+  onTouchPending,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
+  pendingTouchSlot,
   touchStartTime,
   setTouchStartTime,
   tapThreshold,
   touchMoved,
+  moveThreshold
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
   const isSelected = selectedSlots?.has(slotId) || false;
+  const isPending = pendingTouchSlot && 
+    pendingTouchSlot.dayIndex === dayIndex && 
+    pendingTouchSlot.halfIndex === halfIndex;
 
   // 마우스 이벤트 추적용 로컬 상태
   const [mouseStartTime, setMouseStartTime] = useState(0);
@@ -128,25 +135,35 @@ export default function Half({
       setTouchStartTime(Date.now());
     }
     
-    // 드래그 선택 시작 (나중에 탭인지 드래그인지 판단)
-    if (onDragSelectionStart) {
-      onDragSelectionStart(dayIndex, halfIndex);
+    // 즉시 드래그하지 않고 대기 상태로 전환 (더 자연스러운 터치 경험)
+    if (onTouchPending) {
+      onTouchPending(dayIndex, halfIndex);
     }
   };
 
   const handleTouchMove = (e) => {
-    // 터치가 하나이고 드래그 선택 중일 때만 처리
-    if (e.touches.length === 1 && isDragSelecting && onDragSelectionMove) {
-      // 터치 포인트 아래의 엘리먼트 찾기
-      const touch = e.touches[0];
-      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    // 터치가 하나일 때만 처리
+    if (e.touches.length === 1) {
+      // 대기 중인 터치가 있고 움직임이 감지되면 드래그 선택 시작
+      if (isPending && onDragSelectionStart) {
+        console.log('Touch move detected, starting drag selection:', { dayIndex, halfIndex });
+        onDragSelectionStart(dayIndex, halfIndex);
+        return;
+      }
       
-      if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
-        const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
-        const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
+      // 이미 드래그 선택 중이면 드래그 이동 처리
+      if (isDragSelecting && onDragSelectionMove) {
+        // 터치 포인트 아래의 엘리먼트 찾기
+        const touch = e.touches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
         
-        // 드래그 이동 처리 (TimetableSelect에서 같은 day와 아래 방향만 허용)
-        onDragSelectionMove(newDayIndex, newHalfIndex);
+        if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
+          const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
+          const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
+          
+          // 드래그 이동 처리 (TimetableSelect에서 같은 day와 아래 방향만 허용)
+          onDragSelectionMove(newDayIndex, newHalfIndex);
+        }
       }
     }
   };
@@ -155,47 +172,34 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    const touchDuration = Date.now() - touchStartTime;
-    const wasTap = touchDuration < tapThreshold && !touchMoved;
-    
     console.log('Half touch end:', { 
       dayIndex, 
       halfIndex, 
-      touchDuration, 
-      wasTap, 
-      isDragSelecting, 
-      touchMoved 
+      isPending,
+      isDragSelecting
     });
     
-    if (isDragSelecting) {
-      // 짧은 터치이고 움직임이 거의 없었다면 개별 선택으로 처리
-      if (wasTap && onTapSelection) {
-        // 드래그 선택 종료
-        if (onDragSelectionEnd) {
-          onDragSelectionEnd();
-        }
-        // 약간의 지연 후 개별 선택 실행 (상태 업데이트 대기)
-        setTimeout(() => {
-          onTapSelection(dayIndex, halfIndex);
-        }, 10);
-      } else {
-        // 긴 터치이거나 움직임이 있었다면 드래그 선택 종료
-        if (onDragSelectionEnd) {
-          onDragSelectionEnd();
-        }
-      }
+    // 드래그 선택이 진행 중이었다면 종료
+    if (isDragSelecting && onDragSelectionEnd) {
+      onDragSelectionEnd();
     }
+    
+    // 대기 중인 터치는 상위 컴포넌트의 타이머에서 처리됨
+    // 여기서는 특별한 처리 불필요
   };
 
   return (
     <div 
-      className={`w-full h-[17px] border-main cursor-pointer transition-colors ${
+      className={`w-full h-[17px] border-main cursor-pointer transition-colors duration-150 ${
         isTop === undefined
           ? `border-[1.3px] ${hasHourAbove ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}`
           : isTop 
             ? `border-[1.3px] border-b-[1px] border-b-main/50 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
             : `border-[1.3px] border-t-0 ${!isFirstDay ? 'border-l-0' : ''}`
-      } ${isSelected ? 'bg-main' : ''}`}
+      } ${
+        isSelected ? 'bg-main/30' : 
+        isPending ? 'bg-main/10' : ''
+      }`}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
