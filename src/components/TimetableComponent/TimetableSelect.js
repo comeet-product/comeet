@@ -447,6 +447,7 @@ export default function TimetableSelect() {
                 // 단일 터치 - 스크롤 및 선택 준비
                 const touch = e.touches[0];
                 setStartTouchX(touch.clientX);
+                setStartTouch1({ x: touch.clientX, y: touch.clientY }); // 방향 감지를 위한 시작 위치 저장
                 setIsScrolling(false);
                 // 터치 시작 시에는 선택 기능을 활성화 상태로 유지
             } else if (e.touches.length === 2) {
@@ -483,16 +484,23 @@ export default function TimetableSelect() {
                 
                 // 수평 스크롤 처리 (수직 드래그는 Half 컴포넌트에서 처리)
                 if (visibleDayCount < TOTAL_DAYS) {
-                    e.preventDefault();
-                    setIsScrolling(true);
-                    setIsSelectionEnabled(false);
+                    // 움직임의 방향을 확인하여 수평 스크롤인지 판단
+                    const deltaX = Math.abs(touch.clientX - startTouch1.x);
+                    const deltaY = Math.abs(touch.clientY - startTouch1.y);
                     
-                    const currentX = touch.clientX;
-                    const scrollDeltaX = startTouchX - currentX;
-                    
-                    if (timetable.scrollLeft !== undefined) {
-                        timetable.scrollLeft += scrollDeltaX;
-                        setStartTouchX(currentX);
+                    // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
+                    if (deltaX > 10 && deltaX > deltaY) { // 수평 우선 움직임 감지
+                        e.preventDefault();
+                        setIsScrolling(true);
+                        setIsSelectionEnabled(false);
+                        
+                        const currentX = touch.clientX;
+                        const scrollDeltaX = startTouchX - currentX;
+                        
+                        if (timetable.scrollLeft !== undefined) {
+                            timetable.scrollLeft += scrollDeltaX;
+                            setStartTouchX(currentX);
+                        }
                     }
                 }
                 // 수직 움직임은 Half 컴포넌트에서 처리
@@ -595,8 +603,8 @@ export default function TimetableSelect() {
         container.addEventListener('gesturechange', handleGestureChange, true);
         container.addEventListener('gestureend', handleGestureEnd, true);
         container.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-        container.addEventListener('touchstart', handleTouchStart, { passive: false });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false }); // 스크롤 제어를 위해 preventDefault 필요
         container.addEventListener('touchend', handleTouchEnd);
         timetable.addEventListener('scroll', handleTableScroll);
 
@@ -636,7 +644,7 @@ export default function TimetableSelect() {
             document.removeEventListener('gesturechange', preventDefaults, true);
             document.removeEventListener('gestureend', preventDefaults, true);
         };
-    }, [visibleDayCount, startTouchX, initialDistance, startTouch1, startTouch2, gestureScale, centerColumnIndex]);
+    }, [visibleDayCount, isDragSelecting, touchTimeout, isSelectionEnabled]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -661,7 +669,7 @@ export default function TimetableSelect() {
                 className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'none'  // 모든 기본 터치 동작 차단
+                    touchAction: 'manipulation'  // 더블탭 줌만 차단하고 다른 제스처는 허용
                 }}
             >
                 <div 
@@ -669,7 +677,7 @@ export default function TimetableSelect() {
                     className="overflow-x-auto overflow-y-hidden"
                     style={{ 
                         overflowX: visibleDayCount < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'pan-x',  // 수평 스크롤만 허용
+                        touchAction: 'manipulation',  // 더블탭 줌만 차단하고 다른 제스처는 허용
                         scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
                         paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
                     }}
