@@ -15,7 +15,9 @@ export default function DateSelector({
     isDragSelecting,
     touchStartTime,
     setTouchStartTime,
-    tapThreshold
+    tapThreshold,
+    touchMoved,
+    moveThreshold
 }) {
     return (
         <div className="flex">
@@ -37,6 +39,8 @@ export default function DateSelector({
                         touchStartTime={touchStartTime}
                         setTouchStartTime={setTouchStartTime}
                         tapThreshold={tapThreshold}
+                        touchMoved={touchMoved}
+                        moveThreshold={moveThreshold}
                     />
                 </div>
             ))}

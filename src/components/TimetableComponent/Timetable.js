@@ -16,7 +16,9 @@ export default function Timetable({
   isDragSelecting,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   return (
     <div className="flex flex-col">
@@ -39,6 +41,8 @@ export default function Timetable({
         touchStartTime={touchStartTime}
         setTouchStartTime={setTouchStartTime}
         tapThreshold={tapThreshold}
+        touchMoved={touchMoved}
+        moveThreshold={moveThreshold}
       />
     </div>
   );

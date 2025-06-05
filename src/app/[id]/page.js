@@ -37,7 +37,7 @@ export default function MeetingPage({ params }) {
                     <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
                         Schedule Overview
                     </h5>
-                <TimetableResult
+                <TimetableComponent
                     dayCount={7}
                     halfCount={8}
                     startDate="05/19"

@@ -16,7 +16,9 @@ export default function Hour({
   isDragSelecting,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   const topHalfIndex = hourIndex * 2;
   const bottomHalfIndex = hourIndex * 2 + 1;
@@ -41,6 +43,8 @@ export default function Hour({
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
         <Half 
           dayIndex={dayIndex}
@@ -58,6 +62,8 @@ export default function Hour({
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
     </div>
   );

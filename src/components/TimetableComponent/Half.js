@@ -11,7 +11,6 @@ export default function Half({
   isFirstDay, 
   hasDateHeaderAbove,
   selectedSlots,
-  onSlotSelection,
   onTapSelection,
   onDragSelectionStart,
   onDragSelectionMove,
@@ -20,7 +19,8 @@ export default function Half({
   isDragSelecting,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
   const isSelected = selectedSlots?.has(slotId) || false;
@@ -113,27 +113,30 @@ export default function Half({
   };
 
   const handleTouchStart = (e) => {
+    // 선택 기능이 비활성화되어 있거나 두 손가락 이상의 터치라면 무시
+    if (!isSelectionEnabled || e.touches.length > 1) {
+      return;
+    }
+    
     e.preventDefault();
     e.stopPropagation();
     
     console.log('Half touch start:', { dayIndex, halfIndex, isSelectionEnabled, touchesLength: e.touches.length });
     
-    // 터치 시작 시간 기록
+    // 터치 시작 시간 기록 (상위 컴포넌트에서 관리)
     if (setTouchStartTime) {
       setTouchStartTime(Date.now());
     }
     
-    // 단일 터치이고 선택이 활성화된 경우
-    if (isSelectionEnabled && e.touches.length === 1) {
-      // 일단 드래그 선택으로 시작 (터치 종료에서 탭인지 드래그인지 판단)
-      if (onDragSelectionStart) {
-        onDragSelectionStart(dayIndex, halfIndex);
-      }
+    // 드래그 선택 시작 (나중에 탭인지 드래그인지 판단)
+    if (onDragSelectionStart) {
+      onDragSelectionStart(dayIndex, halfIndex);
     }
   };
 
   const handleTouchMove = (e) => {
-    if (isDragSelecting && onDragSelectionMove && e.touches.length === 1) {
+    // 터치가 하나이고 드래그 선택 중일 때만 처리
+    if (e.touches.length === 1 && isDragSelecting && onDragSelectionMove) {
       // 터치 포인트 아래의 엘리먼트 찾기
       const touch = e.touches[0];
       const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -142,7 +145,7 @@ export default function Half({
         const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
         const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
         
-        // 드래그 이동 처리 (TimetableSelect에서 day와 방향 체크)
+        // 드래그 이동 처리 (TimetableSelect에서 같은 day와 아래 방향만 허용)
         onDragSelectionMove(newDayIndex, newHalfIndex);
       }
     }
@@ -153,14 +156,21 @@ export default function Half({
     e.stopPropagation();
     
     const touchDuration = Date.now() - touchStartTime;
-    const wasTap = touchDuration < tapThreshold;
+    const wasTap = touchDuration < tapThreshold && !touchMoved;
     
-    console.log('Half touch end:', { dayIndex, halfIndex, touchDuration, wasTap, isDragSelecting });
+    console.log('Half touch end:', { 
+      dayIndex, 
+      halfIndex, 
+      touchDuration, 
+      wasTap, 
+      isDragSelecting, 
+      touchMoved 
+    });
     
     if (isDragSelecting) {
-      // 짧은 터치(탭)였다면 개별 선택으로 처리
+      // 짧은 터치이고 움직임이 거의 없었다면 개별 선택으로 처리
       if (wasTap && onTapSelection) {
-        // 드래그 선택 취소하고 개별 선택으로 전환
+        // 드래그 선택 종료
         if (onDragSelectionEnd) {
           onDragSelectionEnd();
         }
@@ -169,7 +179,7 @@ export default function Half({
           onTapSelection(dayIndex, halfIndex);
         }, 10);
       } else {
-        // 긴 터치(드래그)였다면 드래그 선택 종료
+        // 긴 터치이거나 움직임이 있었다면 드래그 선택 종료
         if (onDragSelectionEnd) {
           onDragSelectionEnd();
         }
