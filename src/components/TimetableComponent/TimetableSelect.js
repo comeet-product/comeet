@@ -28,7 +28,7 @@ export default function TimetableSelect() {
     const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
     const [touchTimeout, setTouchTimeout] = useState(null);
     const [dragTimeout, setDragTimeout] = useState(null);
-    const TAP_THRESHOLD = 50; // 50ms 후 탭으로 확정 (더 빠른 탭 인식)
+    const TAP_THRESHOLD = 30; // 30ms 후 탭으로 확정 (더 빠른 탭 인식)
     const DRAG_THRESHOLD = 150; // 150ms 후 드래그 모드로 전환 (더 긴 터치 요구)
     const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
     
