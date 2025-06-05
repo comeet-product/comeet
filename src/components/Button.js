@@ -8,8 +8,8 @@ export default function Button({
 }) {
     const sizeStyle =
         size === "large"
-            ? "w-full h-[59px] rounded-[5px] text-[20px]"
-            : "w-[90px] h-[36px] rounded-[20px] text-[17px]";
+            ? "w-full py-3 rounded-md text-lg"
+            : "py-2 px-4 rounded-3xl text-base";
 
     const colorStyle =
         color === "primary"

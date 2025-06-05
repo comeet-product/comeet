@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 
 const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }) => {
