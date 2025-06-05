@@ -3,7 +3,7 @@
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableResult({ dayCount, halfCount, startDate, startTime, dateHeaderHeight }) {
+export default function TimetableComponent({ dayCount, halfCount, startDate, startTime, dateHeaderHeight, hasDateHeaderAbove }) {
   return (
     <div className="flex w-full">
       {/* TimeHeader - 내용에 맞는 최소 너비, 줄어들지 않음 */}
@@ -20,6 +20,7 @@ export default function TimetableResult({ dayCount, halfCount, startDate, startT
           dayCount={dayCount} 
           halfCount={halfCount} 
           startDate={startDate}
+          hasDateHeaderAbove={hasDateHeaderAbove}
         />
       </div>
     </div>

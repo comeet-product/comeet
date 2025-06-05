@@ -11,7 +11,7 @@ export async function runTestFlow() {
         // 1. 미팅 생성
         const meetingData = {
             title: "되면좋겟다",
-            dates: ["2025-07-05", "2025-07-06"],
+            dates: ["2025-07-05", "2025-07-06"], // 호환성을 위해 유지
             selectableTime: {
                 start: 900, // 9:00
                 end: 1800, // 18:00
@@ -24,7 +24,7 @@ export async function runTestFlow() {
             throw new Error(meetingResult.message);
         }
 
-        const meetingId = meetingResult.data.meeting_id;
+        const meetingId = meetingResult.data.meetingid;
         console.log("✅ 미팅 생성 완료:", meetingId);
 
         // 2. 테스트용 응답 데이터
@@ -54,10 +54,8 @@ export async function runTestFlow() {
 
         // 3. 각 응답 제출
         for (const response of testResponses) {
-            const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
             const result = await submitAvailability(
                 meetingId,
-                userId,
                 response.name,
                 response.availableSlots
             );

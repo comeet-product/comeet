@@ -9,14 +9,18 @@ export default function Day({
   selectedSlots, 
   onSlotSelection, 
   onTapSelection,
+  onTouchPending,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
+  pendingTouchSlot,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   const hourCount = Math.floor(halfCount / 2);
   const hasExtraHalf = halfCount % 2 === 1;
@@ -35,14 +39,18 @@ export default function Day({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
       ))}
       
@@ -57,14 +65,18 @@ export default function Day({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
       )}
     </div>

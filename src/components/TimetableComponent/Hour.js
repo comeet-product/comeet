@@ -9,14 +9,18 @@ export default function Hour({
   selectedSlots, 
   onSlotSelection, 
   onTapSelection,
+  onTouchPending,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
+  pendingTouchSlot,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   const topHalfIndex = hourIndex * 2;
   const bottomHalfIndex = hourIndex * 2 + 1;
@@ -33,14 +37,18 @@ export default function Hour({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
         <Half 
           dayIndex={dayIndex}
@@ -50,14 +58,18 @@ export default function Hour({
           selectedSlots={selectedSlots}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
+          onTouchPending={onTouchPending}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
+          pendingTouchSlot={pendingTouchSlot}
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
     </div>
   );

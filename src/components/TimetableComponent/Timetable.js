@@ -9,14 +9,18 @@ export default function Timetable({
   selectedSlots, 
   onSlotSelection, 
   onTapSelection,
+  onTouchPending,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
+  pendingTouchSlot,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   return (
     <div className="flex flex-col">
@@ -31,14 +35,18 @@ export default function Timetable({
         selectedSlots={selectedSlots}
         onSlotSelection={onSlotSelection}
         onTapSelection={onTapSelection}
+        onTouchPending={onTouchPending}
         onDragSelectionStart={onDragSelectionStart}
         onDragSelectionMove={onDragSelectionMove}
         onDragSelectionEnd={onDragSelectionEnd}
         isSelectionEnabled={isSelectionEnabled}
         isDragSelecting={isDragSelecting}
+        pendingTouchSlot={pendingTouchSlot}
         touchStartTime={touchStartTime}
         setTouchStartTime={setTouchStartTime}
         tapThreshold={tapThreshold}
+        touchMoved={touchMoved}
+        moveThreshold={moveThreshold}
       />
     </div>
   );

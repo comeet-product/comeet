@@ -11,11 +11,11 @@ export default function AvailableDates({
     ],
 }) {
     return (
-        <div className="w-[293px] h-[76px]">
-            <h2 className="text-black text-[15px] font-medium">
+        <div className="w-full">
+            <h2 className="text-base font-medium text-gray-900">
                 {memberCount}명이 모두 가능한 날짜
             </h2>
-            <div className="mt-[5px] grid grid-cols-2 gap-x-[7px] gap-y-[6.6px]">
+            <div className="mt-2 grid grid-cols-2 gap-2">
                 {availableDates.map((item, index) => (
                     <AvailableDate
                         key={index}

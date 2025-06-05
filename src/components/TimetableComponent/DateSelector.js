@@ -8,14 +8,18 @@ export default function DateSelector({
     selectedSlots, 
     onSlotSelection, 
     onTapSelection,
+    onTouchPending,
     onDragSelectionStart,
     onDragSelectionMove,
     onDragSelectionEnd,
     isSelectionEnabled,
     isDragSelecting,
+    pendingTouchSlot,
     touchStartTime,
     setTouchStartTime,
-    tapThreshold
+    tapThreshold,
+    touchMoved,
+    moveThreshold
 }) {
     return (
         <div className="flex">
@@ -29,14 +33,18 @@ export default function DateSelector({
                         selectedSlots={selectedSlots}
                         onSlotSelection={onSlotSelection}
                         onTapSelection={onTapSelection}
+                        onTouchPending={onTouchPending}
                         onDragSelectionStart={onDragSelectionStart}
                         onDragSelectionMove={onDragSelectionMove}
                         onDragSelectionEnd={onDragSelectionEnd}
                         isSelectionEnabled={isSelectionEnabled}
                         isDragSelecting={isDragSelecting}
+                        pendingTouchSlot={pendingTouchSlot}
                         touchStartTime={touchStartTime}
                         setTouchStartTime={setTouchStartTime}
                         tapThreshold={tapThreshold}
+                        touchMoved={touchMoved}
+                        moveThreshold={moveThreshold}
                     />
                 </div>
             ))}

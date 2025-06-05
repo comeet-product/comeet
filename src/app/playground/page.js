@@ -18,18 +18,16 @@ import Input from "@/components/Input";
 import Loading from "@/components/Loading";
 
 export const generateMetadata = () => ({
-    title: "[COMEET]",
-    description: "프로덕트데이 커밋 줌 회의",
-    openGraph: {
-        images: ["/comeet_logo.png"],
-    },
+    title: "놀이터",
+    description: "마음껏 테스트해보세요",
 });
 
 export default function Playground() {
     return (
         <div className="p-4 md:p-6">
-            <h1 className="text-2xl font-bold mb-8 text-center">
+            <h1 className="text-2xl text-black font-bold mb-8 text-center">
                 컴포넌트 플레이그라운드
+                <Title></Title>
             </h1>
 
             <div className="mb-8">

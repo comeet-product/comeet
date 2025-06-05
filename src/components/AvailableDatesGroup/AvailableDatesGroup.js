@@ -24,7 +24,7 @@ export default function AvailableDatesGroup() {
     ];
 
     return (
-        <div className="flex flex-col space-y-[20px]">
+        <div className="flex flex-col space-y-5">
             {groupData.map((data, index) => (
                 <AvailableDates
                     key={index}

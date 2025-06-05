@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { supabase } from "../supabase.js";
 
@@ -6,7 +6,7 @@ import { supabase } from "../supabase.js";
  * 새로운 미팅 생성
  * @param {Object} meetingData - 미팅 데이터
  * @param {string} meetingData.title - 미팅 제목
- * @param {string[]} meetingData.dates - 가능한 날짜 배열
+ * @param {string[]} meetingData.dates - 가능한 날짜 배열 (사용하지 않음, 호환성을 위해 유지)
  * @param {Object} meetingData.selectableTime - 선택 가능한 시간 설정
  * @param {number} meetingData.selectableTime.start - 시작 시간 (예: 900)
  * @param {number} meetingData.selectableTime.end - 종료 시간 (예: 1800)
@@ -15,21 +15,14 @@ import { supabase } from "../supabase.js";
  */
 export async function createMeeting(meetingData) {
     try {
-        const meetingId = Math.random().toString(36).substr(2, 9);
-        const now = new Date();
-        const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000); // UTC+9
-
-        // 1. meetings 테이블에 미팅 생성
+        // meeting 테이블에 미팅 생성 (createdAt은 DEFAULT NOW()로 자동 설정)
         const { data: meeting, error: meetingError } = await supabase
-            .from("meetings")
+            .from("meeting")
             .insert([
                 {
-                    meeting_id: meetingId,
                     title: meetingData.title,
-                    dates: meetingData.dates,
                     selectable_time: meetingData.selectableTime,
-                    recommendations: [],
-                    created_at: kstDate.toISOString(),
+                    // createdAt은 DEFAULT NOW()로 자동 설정되므로 생략
                 },
             ])
             .select();
@@ -39,30 +32,15 @@ export async function createMeeting(meetingData) {
             throw meetingError;
         }
 
-        // 2. availabilities 테이블에 빈 participants 배열로 초기화
-        const { error: availabilityError } = await supabase
-            .from("availabilities")
-            .insert([
-                {
-                    meeting_id: meetingId,
-                    participants: [],
-                    created_at: kstDate.toISOString(),
-                    updated_at: kstDate.toISOString(),
-                },
-            ]);
-
-        if (availabilityError) {
-            console.error(
-                "Error initializing availabilities:",
-                availabilityError
-            );
-            throw availabilityError;
-        }
-
         return {
             success: true,
             message: "미팅이 성공적으로 생성되었습니다.",
-            data: meeting[0],
+            data: {
+                meetingid: meeting[0].meetingid,
+                title: meeting[0].title,
+                selectable_time: meeting[0].selectable_time,
+                createdAt: meeting[0].createdat, // Supabase는 소문자로 반환
+            },
         };
     } catch (error) {
         return {
