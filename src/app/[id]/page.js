@@ -36,7 +36,7 @@ export default function MeetingPage({ params }) {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] min-h-0">
                 <div className="px-10 py-8 flex flex-col gap-4">
                     <Title onChange={handleTitleChange}>{meeting.title}</Title>
                     <div className="mb-10">
@@ -54,7 +54,9 @@ export default function MeetingPage({ params }) {
                     />
                 </div>
             </div>
-            <UserBar meetingId={unwrappedParams.id} />
+            <div className="flex-shrink-0">
+                <UserBar meetingId={unwrappedParams.id} />
+            </div>
         </div>
     );
 }
