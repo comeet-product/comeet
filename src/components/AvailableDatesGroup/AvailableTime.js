@@ -12,7 +12,7 @@ export default function AvailableTime({
                 w-[40px] h-[18px]
                 rounded-[5px]
                 text-white
-                text-[10.612px]
+                text-[9px]
                 font-normal
                 leading-[17.178px]
                 tracking-[-0.336px]

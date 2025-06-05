@@ -149,12 +149,24 @@ export default function Playground() {
                                 backgroundColor="rgba(54, 116, 181, 0.70)"
                             />
                             <AvailableTime
+                                text="1.5시간"
+                                backgroundColor="rgba(54, 116, 181, 0.75)"
+                            />
+                            <AvailableTime
                                 text="2시간"
                                 backgroundColor="rgba(54, 116, 181, 0.80)"
                             />
                             <AvailableTime
+                                text="2.5시간"
+                                backgroundColor="rgba(54, 116, 181, 0.85)"
+                            />
+                            <AvailableTime
                                 text="3시간"
                                 backgroundColor="rgba(54, 116, 181, 0.90)"
+                            />
+                            <AvailableTime
+                                text="3.5시간"
+                                backgroundColor="rgba(54, 116, 181, 0.95)"
                             />
                             <AvailableTime
                                 text="4시간+"
