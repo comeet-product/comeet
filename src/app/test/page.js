@@ -27,10 +27,10 @@ export default function TestPage() {
     const handleTest = async () => {
         setIsLoading(true);
         try {
-            // 1. 미팅 생성 테스트
+            // 1. 미팅 생성 테스트 (createdAt 포함)
             setCurrentStep("미팅 생성 중...");
             const meetingData = {
-                title: "테스트 미팅",
+                title: "테스트 미팅 with Timestamp",
                 dates: ["2025-07-05", "2025-07-06"],
                 selectableTime: {
                     start: 900,
@@ -180,6 +180,15 @@ export default function TestPage() {
                             ))}
                         </div>
                     )}
+                    {/* createdAt 필드 표시 */}
+                    {result.data?.createdAt && (
+                        <p className="mt-2 text-blue-600">
+                            생성 시간:{" "}
+                            {new Date(result.data.createdAt).toLocaleString(
+                                "ko-KR"
+                            )}
+                        </p>
+                    )}
                 </div>
                 <details className="mt-2">
                     <summary className="cursor-pointer font-medium">
@@ -195,7 +204,9 @@ export default function TestPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">새로운 테이블 구조 테스트</h1>
+            <h1 className="text-2xl font-bold">
+                새로운 테이블 구조 + Timestamp 테스트
+            </h1>
             <Button
                 text={isLoading ? currentStep : "전체 테스트 실행"}
                 onClick={handleTest}
@@ -209,7 +220,10 @@ export default function TestPage() {
             )}
 
             <div className="space-y-4">
-                {renderTestResult(testResults.createMeeting, "1. 미팅 생성")}
+                {renderTestResult(
+                    testResults.createMeeting,
+                    "1. 미팅 생성 (Timestamp 포함)"
+                )}
                 {renderTestResult(
                     testResults.submitAvailability,
                     "2. 가용성 제출"

@@ -27,6 +27,7 @@ export async function getMeeting(meetingId) {
             success: true,
             data: {
                 ...data,
+                createdAt: data.createdat, // Supabase는 소문자로 반환하므로 camelCase로 변환
                 timeHeaderData, // { startHour: 9, hourCount: 9 }
             },
         };

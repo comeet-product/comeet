@@ -15,13 +15,14 @@ import { supabase } from "../supabase.js";
  */
 export async function createMeeting(meetingData) {
     try {
-        // meeting 테이블에 미팅 생성
+        // meeting 테이블에 미팅 생성 (createdAt은 DEFAULT NOW()로 자동 설정)
         const { data: meeting, error: meetingError } = await supabase
             .from("meeting")
             .insert([
                 {
                     title: meetingData.title,
                     selectable_time: meetingData.selectableTime,
+                    // createdAt은 DEFAULT NOW()로 자동 설정되므로 생략
                 },
             ])
             .select();
@@ -38,6 +39,7 @@ export async function createMeeting(meetingData) {
                 meetingid: meeting[0].meetingid,
                 title: meeting[0].title,
                 selectable_time: meeting[0].selectable_time,
+                createdAt: meeting[0].createdat, // Supabase는 소문자로 반환
             },
         };
     } catch (error) {
