@@ -28,9 +28,6 @@ export default function Half({
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
   const isSelected = selectedSlots?.has(slotId) || false;
-  const isPending = pendingTouchSlot && 
-    pendingTouchSlot.dayIndex === dayIndex && 
-    pendingTouchSlot.halfIndex === halfIndex;
 
   // 마우스 이벤트 추적용 로컬 상태
   const [mouseStartTime, setMouseStartTime] = useState(0);
@@ -45,11 +42,8 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Half clicked:', { dayIndex, halfIndex, isSelectionEnabled, hasMouseMoved, localDragStarted });
-    
     // 단순화: 드래그가 시작되지 않았으면 개별 선택으로 처리
     if (isSelectionEnabled && onTapSelection && !localDragStarted) {
-      console.log('Executing tap selection from click');
       onTapSelection(dayIndex, halfIndex);
     }
   };
@@ -57,8 +51,6 @@ export default function Half({
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Half mouse down:', { dayIndex, halfIndex, isSelectionEnabled });
     
     // 마우스 다운 정보 기록
     setMouseStartTime(Date.now());
@@ -77,7 +69,6 @@ export default function Half({
         setLocalDragStarted(true);
         
         if (isSelectionEnabled && onDragSelectionStart) {
-          console.log('Starting drag selection:', { dayIndex, halfIndex, timeDiff });
           onDragSelectionStart(dayIndex, halfIndex);
         }
       }
@@ -103,8 +94,6 @@ export default function Half({
     const timeDiff = Date.now() - mouseStartTime;
     const wasQuickClick = timeDiff < CLICK_THRESHOLD && !hasMouseMoved;
     
-    console.log('Half mouse up:', { dayIndex, halfIndex, timeDiff, wasQuickClick, localDragStarted, isDragSelecting });
-    
     // 드래그가 진행 중이었다면 종료
     if (isDragSelecting && onDragSelectionEnd) {
       onDragSelectionEnd();
@@ -128,14 +117,12 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Half touch start:', { dayIndex, halfIndex, isSelectionEnabled, touchesLength: e.touches.length });
-    
-    // 터치 시작 시간 기록 (상위 컴포넌트에서 관리)
+    // 터치 시작 시간 기록
     if (setTouchStartTime) {
       setTouchStartTime(Date.now());
     }
     
-    // 즉시 드래그하지 않고 대기 상태로 전환 (더 자연스러운 터치 경험)
+    // 즉시 터치 처리
     if (onTouchPending) {
       onTouchPending(dayIndex, halfIndex);
     }
@@ -144,9 +131,8 @@ export default function Half({
   const handleTouchMove = (e) => {
     // 터치가 하나일 때만 처리
     if (e.touches.length === 1) {
-      // 대기 중인 터치가 있고 움직임이 감지되면 드래그 선택 시작
-      if (isPending && onDragSelectionStart) {
-        console.log('Touch move detected, starting drag selection:', { dayIndex, halfIndex });
+      // 움직임이 감지되면 드래그 선택 시작
+      if (onDragSelectionStart) {
         onDragSelectionStart(dayIndex, halfIndex);
         return;
       }
@@ -161,7 +147,7 @@ export default function Half({
           const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
           const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
           
-          // 드래그 이동 처리 (TimetableSelect에서 같은 day와 아래 방향만 허용)
+          // 드래그 이동 처리
           onDragSelectionMove(newDayIndex, newHalfIndex);
         }
       }
@@ -171,21 +157,6 @@ export default function Half({
   const handleTouchEnd = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Half touch end:', { 
-      dayIndex, 
-      halfIndex, 
-      isPending,
-      isDragSelecting
-    });
-    
-    // 드래그 선택이 진행 중이었다면 종료
-    if (isDragSelecting && onDragSelectionEnd) {
-      onDragSelectionEnd();
-    }
-    
-    // 대기 중인 터치는 상위 컴포넌트의 타이머에서 처리됨
-    // 여기서는 특별한 처리 불필요
   };
 
   return (
@@ -197,8 +168,7 @@ export default function Half({
             ? `border-[1.3px] border-b-[1px] border-b-main/50 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
             : `border-[1.3px] border-t-0 ${!isFirstDay ? 'border-l-0' : ''}`
       } ${
-        isSelected ? 'bg-main/30' : 
-        isPending ? 'bg-main/10' : ''
+        isSelected ? 'bg-main/30' : ''
       }`}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
