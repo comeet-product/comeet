@@ -10,4 +10,4 @@ export async function getMeeting(meetingId) {
         .single();
     
     return data;
-} 
+}
