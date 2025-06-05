@@ -102,9 +102,6 @@ const USERS = [
     { id: 3, name: "재완" },
     { id: 4, name: "기훈" },
     { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
 ];
 
 const UserBar = () => {
