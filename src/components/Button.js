@@ -30,7 +30,7 @@ export default function Button({
         items-center
         justify-center
         hover:opacity-70
-        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        ${disabled ? "opacity-50" : ""}
         ${className}
     `}
         >

@@ -58,24 +58,40 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
 
     // 스크롤을 초기값 위치로 이동시키는 함수
     const scrollToInitialValues = () => {
+        // DOM 요소를 직접 찾아서 즉시 스크롤
         if (hourScrollRef.current) {
-            const hourIndex = hours.indexOf(selectedHour);
-            if (hourIndex !== -1) {
-                hourScrollRef.current.scrollTop = hourIndex * 64;
+            const selectedHourElement = hourScrollRef.current.querySelector(
+                `[data-hour="${selectedHour}"]`
+            );
+            if (selectedHourElement) {
+                selectedHourElement.scrollIntoView({
+                    block: "start",
+                    behavior: "auto",
+                });
             }
         }
 
         if (minuteScrollRef.current) {
-            const minuteIndex = minutes.indexOf(selectedMinute);
-            if (minuteIndex !== -1) {
-                minuteScrollRef.current.scrollTop = minuteIndex * 64;
+            const selectedMinuteElement = minuteScrollRef.current.querySelector(
+                `[data-minute="${selectedMinute}"]`
+            );
+            if (selectedMinuteElement) {
+                selectedMinuteElement.scrollIntoView({
+                    block: "start",
+                    behavior: "auto",
+                });
             }
         }
 
         if (periodScrollRef.current) {
-            const periodIndex = periods.indexOf(selectedPeriod);
-            if (periodIndex !== -1) {
-                periodScrollRef.current.scrollTop = periodIndex * 64;
+            const selectedPeriodElement = periodScrollRef.current.querySelector(
+                `[data-period="${selectedPeriod}"]`
+            );
+            if (selectedPeriodElement) {
+                selectedPeriodElement.scrollIntoView({
+                    block: "start",
+                    behavior: "auto",
+                });
             }
         }
     };
@@ -87,13 +103,13 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
         setSelectedPeriod(time.period);
     }, [initialValue]);
 
-    // TimePicker가 열릴 때마다 초기 위치로 스크롤
+    // TimePicker가 열릴 때만 초기 위치로 스크롤
     useEffect(() => {
         if (isOpen) {
-            // 다음 렌더링 후에 스크롤 실행
-            setTimeout(scrollToInitialValues, 0);
+            // 즉시 스크롤 실행
+            scrollToInitialValues();
         }
-    }, [isOpen, selectedHour, selectedMinute, selectedPeriod]);
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) return;
