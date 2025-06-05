@@ -82,55 +82,34 @@ export default function TimetableResult() {
             e.preventDefault();
         };
 
-        // 테이블 스크롤 이벤트 핸들러
+        // 테이블 스크롤 이벤트 핸들러 (Auto-Align 포함)
         const handleTableScroll = () => {
             if (timetable && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
                 setIsScrolling(true);
                 
-                // 스크롤 종료 감지
+                // 스크롤 종료 감지 및 Auto-Align
                 handleScrollEnd();
             }
         };
 
-        // 터치 이벤트 핸들러 (스크롤만 허용)
-        const handleTouchStart = (e) => {
-            // 스크롤 영역에서의 터치만 허용
-            if (e.touches.length === 1) {
-                setIsScrolling(true);
-            }
-        };
-
-        const handleTouchEnd = (e) => {
-            // 터치 종료 시 Auto-Align 실행
-            if (e.touches.length === 0) {
-                handleScrollEnd();
-            }
-        };
-
-        // 이벤트 리스너 등록
-        container.addEventListener('touchstart', handleTouchStart, { passive: true });
-        container.addEventListener('touchend', handleTouchEnd, { passive: true });
+        // 모바일에서의 자연스러운 스크롤을 위해 터치 이벤트 처리 제거
+        // 브라우저의 네이티브 스크롤에만 의존
         timetable.addEventListener('scroll', handleTableScroll);
 
-        // 브라우저 기본 제스처 차단 (확대/축소 방지)
-        document.addEventListener('gesturestart', preventDefaults, true);
-        document.addEventListener('gesturechange', preventDefaults, true);
-        document.addEventListener('gestureend', preventDefaults, true);
+        // 모바일 스크롤을 위해 기본 제스처 차단 제거
+        // 필요한 경우에만 제한적으로 적용
 
         return () => {
             if (scrollTimeoutRef.current) {
                 clearTimeout(scrollTimeoutRef.current);
             }
             
-            container.removeEventListener('touchstart', handleTouchStart);
-            container.removeEventListener('touchend', handleTouchEnd);
+            // 터치 이벤트 리스너 제거됨 (네이티브 스크롤 사용)
             if (timetable) {
                 timetable.removeEventListener('scroll', handleTableScroll);
             }
             
-            document.removeEventListener('gesturestart', preventDefaults, true);
-            document.removeEventListener('gesturechange', preventDefaults, true);
-            document.removeEventListener('gestureend', preventDefaults, true);
+            // 기본 제스처 이벤트 리스너 제거됨
         };
     }, []);
 
@@ -157,17 +136,23 @@ export default function TimetableResult() {
                 className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'pan-x pan-y'  // 수평 및 세로 스크롤 허용, 핀치 줌만 차단
+                    touchAction: 'auto'  // 브라우저 기본 터치 동작 모두 허용 (전체 페이지 스크롤 포함)
                 }}
             >
                 <div 
                     ref={timetableRef}
                     className="overflow-x-auto overflow-y-hidden"
+                    data-scroll-container="true"
                     style={{ 
                         overflowX: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'pan-x pan-y',  // 수평 및 세로 스크롤 허용, 핀치 줌만 차단
+                        touchAction: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'pan-x pan-y pinch-zoom' : 'auto',  // 수평 스크롤, 세로 스크롤, 핀치 줌 모두 허용
+                        WebkitOverflowScrolling: 'touch',  // iOS Safari에서 momentum scrolling 활성화
                         scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
-                        paddingLeft: VISIBLE_DAY_COUNT < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
+                        paddingLeft: VISIBLE_DAY_COUNT < TOTAL_DAYS ? '1.3px' : '0',  // 왼쪽 border 보정
+                        // 모바일에서 스크롤 영역 확실히 인식하도록 최소 높이 설정
+                        minHeight: '100px',
+                        // 스크롤 가능한 영역임을 명시
+                        overscrollBehaviorX: 'contain'  // 가로 스크롤이 부모로 전파되지 않도록
                     }}
                 >
                     <div style={getTableStyle()}>
