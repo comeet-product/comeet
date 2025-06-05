@@ -16,7 +16,9 @@ export default function Day({
   isDragSelecting,
   touchStartTime,
   setTouchStartTime,
-  tapThreshold
+  tapThreshold,
+  touchMoved,
+  moveThreshold
 }) {
   const hourCount = Math.floor(halfCount / 2);
   const hasExtraHalf = halfCount % 2 === 1;
@@ -43,6 +45,8 @@ export default function Day({
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
       ))}
       
@@ -65,6 +69,8 @@ export default function Day({
           touchStartTime={touchStartTime}
           setTouchStartTime={setTouchStartTime}
           tapThreshold={tapThreshold}
+          touchMoved={touchMoved}
+          moveThreshold={moveThreshold}
         />
       )}
     </div>

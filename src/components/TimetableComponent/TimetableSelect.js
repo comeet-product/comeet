@@ -30,7 +30,10 @@ export default function TimetableSelect() {
     
     // 터치 시간 추적 (탭과 드래그 구분)
     const [touchStartTime, setTouchStartTime] = useState(0);
-    const TAP_THRESHOLD = 200; // 200ms 이하는 탭으로 간주
+    const [touchMoved, setTouchMoved] = useState(false);
+    const [touchStartPosition, setTouchStartPosition] = useState({ x: 0, y: 0 });
+    const TAP_THRESHOLD = 500; // 500ms 이하는 탭으로 간주
+    const MOVE_THRESHOLD = 10; // 10px 이상 움직이면 드래그로 간주
     
     // Refs for DOM elements
     const containerRef = useRef(null);
@@ -76,7 +79,7 @@ export default function TimetableSelect() {
         return visibleWidth / columnWidth;
     };
 
-    // Auto-Align 함수 - 더 많이 보이는 컬럼 쪽으로 snap
+    // Auto-Align 함수 - 더 명확한 스냅 동작
     const autoAlignToColumn = () => {
         const timetable = timetableRef.current;
         if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
@@ -89,41 +92,36 @@ export default function TimetableSelect() {
         const firstVisibleColumn = Math.floor(viewportStartX / columnWidth);
         const lastVisibleColumn = Math.floor((viewportEndX - 1) / columnWidth);
 
-        // 양쪽 끝 컬럼의 visibility ratio 계산
-        const firstColumnRatio = getColumnVisibilityRatio(firstVisibleColumn);
-        const lastColumnRatio = getColumnVisibilityRatio(lastVisibleColumn);
+        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 계산
+        const currentColumnFloat = viewportStartX / columnWidth;
+        const currentColumnIndex = Math.floor(currentColumnFloat);
+        const columnProgress = currentColumnFloat - currentColumnIndex;
 
         let targetColumn;
 
-        // 첫 번째 컬럼이 50% 미만으로 보이면 다음 컬럼으로 snap
-        if (firstColumnRatio < 0.5 && firstVisibleColumn < lastVisibleColumn) {
-            targetColumn = firstVisibleColumn + 1;
+        // 30% 미만이면 현재 컬럼으로, 70% 이상이면 다음 컬럼으로 snap
+        if (columnProgress < 0.3) {
+            targetColumn = currentColumnIndex;
+        } else if (columnProgress > 0.7) {
+            targetColumn = Math.min(currentColumnIndex + 1, TOTAL_DAYS - visibleDayCount);
+        } else {
+            // 30% ~ 70% 사이에서는 가장 가까운 쪽으로 snap
+            targetColumn = columnProgress < 0.5 ? currentColumnIndex : Math.min(currentColumnIndex + 1, TOTAL_DAYS - visibleDayCount);
         }
-        // 마지막 컬럼이 50% 미만으로 보이면 이전 컬럼으로 snap
-        else if (lastColumnRatio < 0.5 && lastVisibleColumn > firstVisibleColumn) {
-            targetColumn = lastVisibleColumn - 1;
-        }
-        // 둘 다 50% 이상 보이거나 하나의 컬럼만 보이는 경우
-        else {
-            // 더 많이 보이는 쪽으로 snap
-            if (firstColumnRatio < lastColumnRatio) {
-                targetColumn = lastVisibleColumn;
-            } else {
-                targetColumn = firstVisibleColumn;
-            }
-        }
+
+        // 경계값 체크
+        targetColumn = Math.max(0, Math.min(targetColumn, TOTAL_DAYS - visibleDayCount));
 
         // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
-        const targetScrollLeft = Math.max(0, Math.min(
-            targetColumn * columnWidth,
-            timetable.scrollWidth - timetable.clientWidth
-        ));
+        const targetScrollLeft = targetColumn * columnWidth;
 
-        // 부드러운 스크롤 애니메이션
-        timetable.scrollTo({
-            left: targetScrollLeft,
-            behavior: 'smooth'
-        });
+        // 현재 위치와 다를 때만 스크롤
+        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 5) {
+            timetable.scrollTo({
+                left: targetScrollLeft,
+                behavior: 'smooth'
+            });
+        }
     };
 
     // 스크롤 종료 감지 (debounce)
@@ -138,8 +136,9 @@ export default function TimetableSelect() {
             if (!isDragSelecting) {
                 setIsSelectionEnabled(true);
             }
+            // Auto-align을 더 빠르게 실행
             autoAlignToColumn();
-        }, 150); // 150ms 후 스크롤이 끝난 것으로 간주
+        }, 100); // 100ms 후 스크롤이 끝난 것으로 간주 (더 빠르게)
     };
 
     // 중심 컬럼을 기준으로 스크롤 위치 조정
@@ -424,11 +423,15 @@ export default function TimetableSelect() {
             setTouchCount(e.touches.length);
             
             if (e.touches.length === 1) {
-                // 단일 터치 - 스크롤 준비
-                setStartTouchX(e.touches[0].clientX);
+                // 단일 터치 - 스크롤 및 선택 준비
+                const touch = e.touches[0];
+                setStartTouchX(touch.clientX);
+                setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+                setTouchMoved(false);
+                setTouchStartTime(Date.now());
                 setIsDragging(false);
-                setIsScrolling(false); // 터치 시작 시점에서는 스크롤 상태가 아님
-                // setIsSelectionEnabled(false); // 터치 시작만으로는 선택 기능을 비활성화하지 않음
+                setIsScrolling(false);
+                // 터치 시작 시에는 선택 기능을 활성화 상태로 유지
             } else if (e.touches.length === 2) {
                 // 두 손가락 터치 - 핀치 줌 또는 스크롤 준비
                 const touch1 = e.touches[0];
@@ -459,25 +462,40 @@ export default function TimetableSelect() {
         };
 
         const handleTouchMove = (e) => {
-            if (e.touches.length === 1 && visibleDayCount < TOTAL_DAYS) {
-                // 단일 터치 스크롤
-                e.preventDefault();
-                setIsScrolling(true); // 실제 스크롤이 시작될 때 스크롤 상태로 변경
-                setIsSelectionEnabled(false); // 스크롤이 시작되면 선택 기능 비활성화
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartPosition.x);
+                const deltaY = Math.abs(touch.clientY - touchStartPosition.y);
                 
-                const currentX = e.touches[0].clientX;
-                const deltaX = startTouchX - currentX;
+                // 움직임이 감지되면 touchMoved 설정
+                if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+                    setTouchMoved(true);
+                }
                 
-                if (timetable.scrollLeft !== undefined) {
-                    timetable.scrollLeft += deltaX;
-                    setStartTouchX(currentX);
+                // 수평 움직임이 더 크면 스크롤로 간주
+                if (deltaX > deltaY && deltaX > MOVE_THRESHOLD && visibleDayCount < TOTAL_DAYS) {
+                    e.preventDefault();
+                    setIsScrolling(true);
+                    setIsSelectionEnabled(false);
                     
-                    // 스크롤 위치 업데이트
-                    const maxScroll = timetable.scrollWidth - timetable.clientWidth;
-                    if (maxScroll > 0) {
-                        const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
-                        setScrollPosition(scrollPercentage);
+                    const currentX = touch.clientX;
+                    const scrollDeltaX = startTouchX - currentX;
+                    
+                    if (timetable.scrollLeft !== undefined) {
+                        timetable.scrollLeft += scrollDeltaX;
+                        setStartTouchX(currentX);
+                        
+                        // 스크롤 위치 업데이트
+                        const maxScroll = timetable.scrollWidth - timetable.clientWidth;
+                        if (maxScroll > 0) {
+                            const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
+                            setScrollPosition(scrollPercentage);
+                        }
                     }
+                }
+                // 수직 움직임이 더 크거나 움직임이 작으면 드래그 선택 가능성
+                else if (deltaY >= deltaX || deltaX <= MOVE_THRESHOLD) {
+                    // 여기서는 preventDefault를 하지 않아 터치 이벤트가 Timetable 컴포넌트로 전달됨
                 }
             } else if (e.touches.length === 2) {
                 e.preventDefault();
@@ -548,8 +566,21 @@ export default function TimetableSelect() {
                 handleDragSelectionEnd();
             }
             
+            // 짧은 터치이고 움직임이 거의 없으면 탭으로 처리
+            const touchDuration = Date.now() - touchStartTime;
+            if (e.touches.length === 0 && !touchMoved && touchDuration < TAP_THRESHOLD && isSelectionEnabled) {
+                // 터치 이벤트를 Timetable 컴포넌트로 전달하여 슬롯 선택 처리
+                // 실제 선택은 Timetable 컴포넌트에서 처리됨
+            }
+            
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
+                // 짧은 지연 후 선택 기능 재활성화
+                setTimeout(() => {
+                    setIsSelectionEnabled(true);
+                    setTouchMoved(false);
+                }, 50);
+                
                 handleScrollEnd();
             }
         };
@@ -673,29 +704,35 @@ export default function TimetableSelect() {
                             touchStartTime={touchStartTime}
                             setTouchStartTime={setTouchStartTime}
                             tapThreshold={TAP_THRESHOLD}
+                            touchMoved={touchMoved}
+                            moveThreshold={MOVE_THRESHOLD}
                         />
                     </div>
                 </div>
             </div>
 
             {/* Zoom 상태 표시 */}
-            <div className="fixed bottom-4 right-4 bg-white/80 p-2 rounded-lg text-sm">
-                <p>현재 표시 중인 컬럼: {visibleDayCount}개</p>
-                <p>중심 컬럼: {centerColumnIndex + 1}번째</p>
-                <p>스크롤 위치: {scrollPosition.toFixed(1)}%</p>
-                <p>스크롤 중: {isScrolling ? '예' : '아니오'}</p>
-                <p>선택된 슬롯: {selectedSlots.size}개</p>
-                <p>선택 가능: {isSelectionEnabled ? '예' : '아니오'}</p>
-                <p>드래그 선택 중: {isDragSelecting ? '예' : '아니오'}</p>
-                <p className="text-xs text-gray-500">
-                    한 손가락: 좌우 스크롤<br />
-                    두 손가락 핀치: 확대/축소<br />
-                    트랙패드: 두 손가락 모으기/벌리기<br />
-                    Ctrl/Cmd + 휠: 확대/축소<br />
-                    Auto-Align: 스크롤 후 자동 정렬<br />
-                    터치/클릭: 시간 슬롯 선택<br />
-                    드래그: 연속 시간 슬롯 선택
-                </p>
+            <div className="fixed bottom-4 right-4 bg-white/90 p-3 rounded-lg text-sm shadow-lg max-w-sm">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <p>표시 컬럼: {visibleDayCount}개</p>
+                    <p>중심 컬럼: {centerColumnIndex + 1}번째</p>
+                    <p>스크롤 위치: {scrollPosition.toFixed(1)}%</p>
+                    <p>스크롤 중: {isScrolling ? '예' : '아니오'}</p>
+                    <p>선택된 슬롯: {selectedSlots.size}개</p>
+                    <p>선택 가능: {isSelectionEnabled ? '예' : '아니오'}</p>
+                    <p>드래그 선택 중: {isDragSelecting ? '예' : '아니오'}</p>
+                    <p>터치 움직임: {touchMoved ? '예' : '아니오'}</p>
+                </div>
+                <div className="mt-2 pt-2 border-t border-gray-300">
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                        <strong>조작법:</strong><br />
+                        • 짧은 터치: 시간 슬롯 선택/해제<br />
+                        • 아래로 드래그: 연속 시간 선택<br />
+                        • 좌우 스와이프: 스크롤<br />
+                        • 핀치: 확대/축소 (Auto-Align)<br />
+                        • Ctrl/Cmd + 휠: 확대/축소
+                    </p>
+                </div>
             </div>
         </div>
     );
