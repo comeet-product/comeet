@@ -83,8 +83,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const handleDragStart = (day, event) => {
         if (day === null) return;
 
-        // 일반 클릭
-        if (!event.buttons) {
+        // 터치 이벤트와 마우스 이벤트 모두 지원
+        const isTouch = event.type === "touchstart";
+        const isMouseDrag = event.buttons && event.type === "mousedown";
+
+        // 일반 클릭 (터치 또는 마우스 클릭)
+        if (!isMouseDrag && !isTouch) {
             handleDateClick(day);
             return;
         }
@@ -121,7 +125,24 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         }
     };
 
-    const handleDragEnter = (day) => {
+    const handleDragEnter = (day, event) => {
+        // 터치 이벤트의 경우는 드래그 엔터 대신 터치 무브에서 처리
+        if (event?.type === "touchmove") {
+            // 터치 좌표로부터 해당 날짜 찾기
+            const touch = event.touches[0];
+            const element = document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+            const dayElement = element?.closest("[data-day]");
+            if (dayElement) {
+                const touchDay = parseInt(dayElement.getAttribute("data-day"));
+                if (touchDay && touchDay !== day) {
+                    day = touchDay;
+                }
+            }
+        }
+
         if (
             !dragState.isDragging ||
             day === null ||
@@ -191,6 +212,30 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         // 드래그 종료 시 마지막 상태로 onChange 호출 (handleDragEnter에서 이미 호출될 수 있음)
         // 필요에 따라 여기에 마지막 selectedDates 상태를 onChange로 전달
         // onChange([...selectedDates]); // 현재 selectedDates 상태로 업데이트
+    };
+
+    // 터치 무브 핸들러
+    const handleTouchMove = (event) => {
+        if (!dragState.isDragging) return;
+
+        event.preventDefault(); // 스크롤 방지
+        const touch = event.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dayElement = element?.closest("[data-day]");
+
+        if (dayElement) {
+            const day = parseInt(dayElement.getAttribute("data-day"));
+            if (day) {
+                handleDragEnter(day, event);
+            }
+        }
+    };
+
+    // 터치 엔드 핸들러
+    const handleTouchEnd = () => {
+        if (dragState.isDragging) {
+            handleDragEnd();
+        }
     };
 
     // 드롭다운 외부 클릭 감지
@@ -380,6 +425,8 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                     className="grid grid-cols-7 gap-2 w-full"
                     onMouseLeave={handleDragEnd}
                     onMouseUp={handleDragEnd}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                 >
                     {days.map((day, index) => {
                         const dateStr = day
@@ -388,8 +435,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                         return (
                             <div
                                 key={index}
+                                data-day={day}
                                 onMouseDown={(e) => handleDragStart(day, e)}
                                 onMouseEnter={() => handleDragEnter(day)}
+                                onTouchStart={(e) => handleDragStart(day, e)}
                                 className={`
                                     w-full aspect-square flex items-center justify-center select-none text-base
                                     ${
