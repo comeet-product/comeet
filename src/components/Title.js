@@ -6,25 +6,31 @@ export default function Title({ children, link = true, onChange = () => {} }) {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [currentUrl, setCurrentUrl] = useState("");
+    const [inputValue, setInputValue] = useState("");
     const inputRef = useRef(null);
 
     useEffect(() => {
         setCurrentUrl(window.location.href);
     }, []);
-    
+
     const handleClick = () => {
         setIsEditing(true);
+        if (children === "새로운 회의" || children === "제목을 입력하세요") {
+            setInputValue("");
+        } else {
+            setInputValue(children);
+        }
     };
 
     const handleSave = (value) => {
         setIsEditing(false);
         const trimmedValue = value.trim();
-        const finalValue = trimmedValue || '제목을 입력하세요';
+        const finalValue = trimmedValue || "제목을 입력하세요";
         onChange?.(finalValue);
     };
 
     const handleChange = (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
             handleSave(e.target.value);
         }
     };
@@ -39,14 +45,14 @@ export default function Title({ children, link = true, onChange = () => {} }) {
             await navigator.clipboard.writeText(textToCopy);
             setToastMessage("링크가 복사되었습니다.");
             setShowToast(true);
-            
+
             setTimeout(() => {
                 setShowToast(false);
             }, 1500);
         } catch (err) {
             setToastMessage("링크 복사에 실패했습니다.");
             setShowToast(true);
-            
+
             setTimeout(() => {
                 setShowToast(false);
             }, 1500);
@@ -54,8 +60,8 @@ export default function Title({ children, link = true, onChange = () => {} }) {
     };
 
     const handleInput = (e) => {
-        // 입력된 텍스트 길이에 따라 size 속성 조절 (최소 1 유지)
-        e.target.setAttribute('size', Math.max(e.target.value.length, 1));
+        setInputValue(e.target.value);
+        e.target.setAttribute("size", Math.max(e.target.value.length, 1));
     };
 
     const titleStyle = "text-2xl font-bold text-black text-center w-fit";
@@ -66,16 +72,16 @@ export default function Title({ children, link = true, onChange = () => {} }) {
                 <input
                     ref={inputRef}
                     type="text"
-                    defaultValue={children}
+                    value={inputValue}
+                    onChange={handleInput}
                     onKeyDown={handleChange}
                     onBlur={handleBlur}
-                    onInput={handleInput}
                     autoFocus
-                    size={Math.max(children?.length || 0, 1)}
+                    size={Math.max(inputValue.length || 1, 1)}
                     className={`${titleStyle} bg-transparent outline-none`}
                 />
             ) : (
-                <h1 
+                <h1
                     className={`${titleStyle} cursor-text`}
                     onClick={handleClick}
                 >
