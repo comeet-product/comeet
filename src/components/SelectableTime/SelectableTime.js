@@ -3,7 +3,11 @@
 import React, { useState } from "react";
 import TimePicker from "./TimePicker";
 
-export default function SelectableTime({ startTime = 900, endTime = 1800, onTimeChange = () => {} }) {
+export default function SelectableTime({
+    startTime = 900,
+    endTime = 1800,
+    onTimeChange = () => {},
+}) {
     const [isStartPickerOpen, setIsStartPickerOpen] = useState(false);
     const [isEndPickerOpen, setIsEndPickerOpen] = useState(false);
     const [localStartTime, setLocalStartTime] = useState(startTime);
@@ -18,7 +22,9 @@ export default function SelectableTime({ startTime = 900, endTime = 1800, onTime
     const formatTime = (timeValue) => {
         const hours = Math.floor(timeValue / 100);
         const minutes = timeValue % 100;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        return `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`;
     };
 
     const handleStartTimeChange = (time) => {

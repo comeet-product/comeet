@@ -52,6 +52,33 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
     const [selectedPeriod, setSelectedPeriod] = useState(initialTime.period);
 
     const overlayRef = useRef(null);
+    const hourScrollRef = useRef(null);
+    const minuteScrollRef = useRef(null);
+    const periodScrollRef = useRef(null);
+
+    // 스크롤을 초기값 위치로 이동시키는 함수
+    const scrollToInitialValues = () => {
+        if (hourScrollRef.current) {
+            const hourIndex = hours.indexOf(selectedHour);
+            if (hourIndex !== -1) {
+                hourScrollRef.current.scrollTop = hourIndex * 64;
+            }
+        }
+
+        if (minuteScrollRef.current) {
+            const minuteIndex = minutes.indexOf(selectedMinute);
+            if (minuteIndex !== -1) {
+                minuteScrollRef.current.scrollTop = minuteIndex * 64;
+            }
+        }
+
+        if (periodScrollRef.current) {
+            const periodIndex = periods.indexOf(selectedPeriod);
+            if (periodIndex !== -1) {
+                periodScrollRef.current.scrollTop = periodIndex * 64;
+            }
+        }
+    };
 
     useEffect(() => {
         const time = convertTo12Hour(initialValue);
@@ -59,6 +86,14 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
         setSelectedMinute(time.minute);
         setSelectedPeriod(time.period);
     }, [initialValue]);
+
+    // TimePicker가 열릴 때마다 초기 위치로 스크롤
+    useEffect(() => {
+        if (isOpen) {
+            // 다음 렌더링 후에 스크롤 실행
+            setTimeout(scrollToInitialValues, 0);
+        }
+    }, [isOpen, selectedHour, selectedMinute, selectedPeriod]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -95,15 +130,19 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                 <div className="flex justify-between mb-4">
                     {/* Hour Selection */}
                     <div className="w-1/3 pr-2">
-                        <div className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div
+                            ref={hourScrollRef}
+                            className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                        >
                             {hours.map((hour) => (
                                 <div
                                     key={hour}
+                                    data-hour={hour}
                                     className={`py-4 text-center cursor-pointer text-lg text-black ${
                                         selectedHour === hour
-                                            ? "bg-blue-100"
+                                            ? "bg-[#3674B5]/20 text-[#3674B5]"
                                             : ""
-                                    } hover:bg-gray-100`}
+                                    } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedHour(hour)}
                                 >
                                     {hour.toString().padStart(2, "0")}
@@ -113,15 +152,19 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                     </div>
                     {/* Minute Selection */}
                     <div className="w-1/3 px-1">
-                        <div className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div
+                            ref={minuteScrollRef}
+                            className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                        >
                             {minutes.map((minute) => (
                                 <div
                                     key={minute}
+                                    data-minute={minute}
                                     className={`py-4 text-center cursor-pointer text-lg text-black ${
                                         selectedMinute === minute
-                                            ? "bg-blue-100"
+                                            ? "bg-[#3674B5]/20 text-[#3674B5]"
                                             : ""
-                                    } hover:bg-gray-100`}
+                                    } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedMinute(minute)}
                                 >
                                     {minute.toString().padStart(2, "0")}
@@ -131,15 +174,19 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                     </div>
                     {/* AM/PM Selection */}
                     <div className="w-1/3 pl-2">
-                        <div className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div
+                            ref={periodScrollRef}
+                            className="h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                        >
                             {periods.map((period) => (
                                 <div
                                     key={period}
+                                    data-period={period}
                                     className={`py-4 text-center cursor-pointer text-lg text-black ${
                                         selectedPeriod === period
-                                            ? "bg-blue-100"
+                                            ? "bg-[#3674B5]/20 text-[#3674B5]"
                                             : ""
-                                    } hover:bg-gray-100`}
+                                    } hover:bg-[#3674B5]/10`}
                                     onClick={() => setSelectedPeriod(period)}
                                 >
                                     {period}
@@ -157,7 +204,7 @@ const TimePicker = ({ isOpen, onClose, onSelect, initialValue = 900 }) => {
                     </button>
                     <button
                         onClick={handleSelect}
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-4 py-2 bg-[#3674B5] text-white rounded hover:bg-[#3674B5]/80"
                     >
                         확인
                     </button>
