@@ -45,7 +45,7 @@ export default function MeetingPage({ params }) {
                     dateHeaderHeight={23}
                 />
             </div>
-            <UserBar />
+            <UserBar meetingId={unwrappedParams.id} />
         </div>
     );
 }
