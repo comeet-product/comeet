@@ -22,13 +22,7 @@ export default function Home() {
             return;
         }
 
-        // 31일 초과 날짜 체크
-        const hasInvalidDate = selectedDates.some((date) => {
-            const day = parseInt(date.split("-")[2]);
-            return day > 31;
-        });
-
-        if (hasInvalidDate) {
+        if (selectedDates.length > 31) {
             alert("날짜 선택은 최대 31일까지 가능합니다");
             return;
         }
@@ -61,22 +55,24 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col justify-between items-center h-full w-full gap-4">
+        <div className="flex flex-col justify-center items-center h-full w-full px-10 py-8 gap-12">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
-            <Calendar
-                selectedDates={selectedDates}
-                onChange={setSelectedDates}
-            />
-            <SelectableTime
-                startTime={startTime}
-                endTime={endTime}
-                onTimeChange={(newStartTime, newEndTime) => {
-                    setStartTime(newStartTime);
-                    setEndTime(newEndTime);
-                }}
-            />
+            <div className="flex flex-col gap-4 w-full">
+                <Calendar
+                    selectedDates={selectedDates}
+                    onChange={setSelectedDates}
+                />
+                <SelectableTime
+                    startTime={startTime}
+                    endTime={endTime}
+                    onTimeChange={(newStartTime, newEndTime) => {
+                        setStartTime(newStartTime);
+                        setEndTime(newEndTime);
+                    }}
+                />
+            </div>
             <Button onClick={handleCreateMeeting} disabled={isLoading}>
                 미팅 생성
             </Button>
