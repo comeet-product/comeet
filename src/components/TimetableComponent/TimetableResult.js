@@ -5,168 +5,173 @@ import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
 export default function TimetableResult() {
-    // States for scroll control only (TimetableSelect와 동일하게)
-    const [isScrolling, setIsScrolling] = useState(false);
-    const [startTouchX, setStartTouchX] = useState(0);
-    const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
+    // 페이지네이션 상태 관리
+    const [currentPageIndex, setCurrentPageIndex] = useState(0);
+    const [isAnimating, setIsAnimating] = useState(false);
+    
+    // 스와이프 감지를 위한 터치 상태
+    const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+    const [touchEnd, setTouchEnd] = useState({ x: 0, y: 0 });
+    const [isSwiping, setIsSwiping] = useState(false);
     
     // Refs for DOM elements
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
-    const scrollTimeoutRef = useRef(null);
 
     // Constants
     const TOTAL_DAYS = 9;
     const VISIBLE_DAY_COUNT = 7; // Fixed to 7 columns
     const DATE_HEADER_HEIGHT = 28;
+    const SWIPE_THRESHOLD = 50; // 50px 이상 스와이프해야 페이지 변경
 
-    // Auto-Align 함수 - 가장 가까운 컬럼으로 스냅
-    const autoAlignToColumn = () => {
-        const timetable = timetableRef.current;
-        if (!timetable || VISIBLE_DAY_COUNT >= TOTAL_DAYS) return;
+    // 페이지 계산 로직
+    const getMaxPageIndex = () => {
+        if (TOTAL_DAYS <= VISIBLE_DAY_COUNT) return 0;
+        return Math.ceil((TOTAL_DAYS - VISIBLE_DAY_COUNT) / VISIBLE_DAY_COUNT);
+    };
 
-        const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
-        const viewportStartX = timetable.scrollLeft;
-        const viewportCenterX = viewportStartX + (timetable.clientWidth / 2);
+    const getCurrentStartDay = () => {
+        return currentPageIndex * VISIBLE_DAY_COUNT;
+    };
 
-        // 뷰포트 중심에 가장 가까운 컬럼 찾기
-        const centerColumnFloat = viewportCenterX / columnWidth;
-        const nearestColumn = Math.round(centerColumnFloat);
+    const getCurrentVisibleDays = () => {
+        const startDay = getCurrentStartDay();
+        const endDay = Math.min(startDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
+        return endDay - startDay;
+    };
 
-        // 스크롤 가능한 범위 내에서 조정
-        const maxScrollColumns = TOTAL_DAYS - VISIBLE_DAY_COUNT;
-        let targetColumn = Math.max(0, Math.min(nearestColumn, maxScrollColumns));
-
-        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
-        const currentColumnFloat = viewportStartX / columnWidth;
-        const currentColumnIndex = Math.floor(currentColumnFloat);
-        const columnProgress = currentColumnFloat - currentColumnIndex;
-
-        // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
-        if (columnProgress < 0.05 || columnProgress > 0.95) {
-            return;
-        }
-
-        // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
-        const targetScrollLeft = targetColumn * columnWidth;
-
-        // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
-        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
-            timetable.scrollTo({
-                left: targetScrollLeft,
-                behavior: 'smooth'
-            });
+    // 페이지 이동 함수
+    const goToPage = (pageIndex) => {
+        const maxPage = getMaxPageIndex();
+        const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
+        
+        if (targetPage !== currentPageIndex && !isAnimating) {
+            setIsAnimating(true);
+            setCurrentPageIndex(targetPage);
+            
+            const timetable = timetableRef.current;
+            if (timetable) {
+                const startDay = targetPage * VISIBLE_DAY_COUNT;
+                const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
+                const targetScrollLeft = startDay * columnWidth;
+                
+                timetable.scrollTo({
+                    left: targetScrollLeft,
+                    behavior: 'smooth'
+                });
+                
+                // 애니메이션 완료 후 상태 초기화
+                setTimeout(() => {
+                    setIsAnimating(false);
+                }, 300);
+            }
         }
     };
 
-    // 스크롤 종료 감지 (debounce)
-    const handleScrollEnd = () => {
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
+    // 스와이프 방향 감지 및 페이지 변경
+    const handleSwipeEnd = () => {
+        if (!isSwiping) return;
+        
+        const deltaX = touchEnd.x - touchStart.x;
+        const deltaY = Math.abs(touchEnd.y - touchStart.y);
+        
+        // 수평 스와이프가 수직 움직임보다 크고 임계값을 넘었을 때만 처리
+        if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > deltaY) {
+            if (deltaX > 0) {
+                // 오른쪽 스와이프 - 이전 페이지
+                goToPage(currentPageIndex - 1);
+            } else {
+                // 왼쪽 스와이프 - 다음 페이지  
+                goToPage(currentPageIndex + 1);
+            }
         }
-
-        scrollTimeoutRef.current = setTimeout(() => {
-            setIsScrolling(false);
-            // Auto-align 실행
-            autoAlignToColumn();
-        }, 100); // 100ms 후 스크롤이 끝난 것으로 간주
+        
+        setIsSwiping(false);
     };
 
-    // Effect for event handlers
+    // 스와이프 이벤트 처리
     useEffect(() => {
         const container = containerRef.current;
-        const timetable = timetableRef.current;
         
-        if (!container || !timetable) return;
+        if (!container) return;
 
-        // 테이블 스크롤 이벤트 핸들러 (Auto-Align 포함)
-        const handleTableScroll = () => {
-            if (timetable && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-                setIsScrolling(true);
-                
-                // 스크롤 종료 감지 및 Auto-Align
-                handleScrollEnd();
-            }
-        };
-
-        // 기본 동작 차단
-        const preventDefaults = (e) => {
-            e.preventDefault();
-        };
-
-        // TimetableSelect와 동일한 터치 이벤트 처리
+        // 스와이프 감지를 위한 터치 이벤트 핸들러
         const handleTouchStart = (e) => {
-            if (e.touches.length === 1) {
-                // 단일 터치 - 스크롤 준비
+            if (e.touches.length === 1 && !isAnimating) {
                 const touch = e.touches[0];
-                setStartTouchX(touch.clientX);
-                setStartTouch1({ x: touch.clientX, y: touch.clientY });
-                setIsScrolling(false);
+                setTouchStart({ x: touch.clientX, y: touch.clientY });
+                setTouchEnd({ x: touch.clientX, y: touch.clientY });
+                setIsSwiping(true);
             }
         };
 
         const handleTouchMove = (e) => {
-            if (e.touches.length === 1) {
+            if (e.touches.length === 1 && isSwiping && !isAnimating) {
                 const touch = e.touches[0];
+                setTouchEnd({ x: touch.clientX, y: touch.clientY });
                 
-                // 수평 스크롤 처리 (TimetableSelect와 동일한 로직)
-                if (VISIBLE_DAY_COUNT < TOTAL_DAYS) {
-                    // 움직임의 방향을 확인하여 수평 스크롤인지 판단
-                    const deltaX = Math.abs(touch.clientX - startTouch1.x);
-                    const deltaY = Math.abs(touch.clientY - startTouch1.y);
-                    
-                    // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
-                    if (deltaX > 10 && deltaX > deltaY) { // TimetableSelect와 동일한 임계값
-                        e.preventDefault();
-                        setIsScrolling(true);
-                        
-                        const currentX = touch.clientX;
-                        const scrollDeltaX = startTouchX - currentX;
-                        
-                        if (timetable.scrollLeft !== undefined) {
-                            timetable.scrollLeft += scrollDeltaX;
-                            setStartTouchX(currentX);
-                        }
-                    }
+                // 수평 스와이프 시 기본 스크롤 방지
+                const deltaX = Math.abs(touch.clientX - touchStart.x);
+                const deltaY = Math.abs(touch.clientY - touchStart.y);
+                
+                if (deltaX > deltaY && deltaX > 10) {
+                    e.preventDefault();
                 }
             }
         };
 
         const handleTouchEnd = (e) => {
-            // 터치 종료 시 Auto-Align 실행 (TimetableSelect와 동일)
-            if (e.touches.length === 0) {
-                handleScrollEnd();
+            if (e.touches.length === 0 && isSwiping && !isAnimating) {
+                handleSwipeEnd();
             }
         };
 
-        // 이벤트 리스너 등록 (TimetableSelect와 동일하게 container에 등록)
-        container.addEventListener('touchstart', handleTouchStart, { passive: true });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false }); // 스크롤 제어를 위해 preventDefault 필요
-        container.addEventListener('touchend', handleTouchEnd);
-        timetable.addEventListener('scroll', handleTableScroll);
+        // 마우스 이벤트도 지원 (데스크톱에서 테스트용)
+        const handleMouseDown = (e) => {
+            if (!isAnimating) {
+                setTouchStart({ x: e.clientX, y: e.clientY });
+                setTouchEnd({ x: e.clientX, y: e.clientY });
+                setIsSwiping(true);
+            }
+        };
 
-        // 모바일 스크롤을 위해 기본 제스처 차단 제거
-        // 필요한 경우에만 제한적으로 적용
+        const handleMouseMove = (e) => {
+            if (isSwiping && !isAnimating) {
+                setTouchEnd({ x: e.clientX, y: e.clientY });
+            }
+        };
+
+        const handleMouseUp = () => {
+            if (isSwiping && !isAnimating) {
+                handleSwipeEnd();
+            }
+        };
+
+        // 이벤트 리스너 등록
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd);
+        
+        // 마우스 이벤트 (데스크톱 지원)
+        container.addEventListener('mousedown', handleMouseDown);
+        container.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mouseup', handleMouseUp);
 
         return () => {
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-            
-            // 터치 이벤트 리스너 제거 (TimetableSelect와 동일하게)
             container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
-            if (timetable) {
-                timetable.removeEventListener('scroll', handleTableScroll);
-            }
+            container.removeEventListener('mousedown', handleMouseDown);
+            container.removeEventListener('mousemove', handleMouseMove);
+            container.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [startTouchX, startTouch1]); // TimetableSelect와 유사한 의존성
+    }, [touchStart, touchEnd, isSwiping, isAnimating, currentPageIndex]); // 필요한 의존성만 포함
 
-    // 테이블 스타일 계산
+    // 테이블 스타일 계산 - 페이지네이션 방식
     const getTableStyle = () => {
+        const currentVisibleDays = getCurrentVisibleDays();
         return {
-            width: `${100 * (TOTAL_DAYS / VISIBLE_DAY_COUNT)}%`,
+            width: `${100 * (currentVisibleDays / VISIBLE_DAY_COUNT)}%`,
             minWidth: '100%'
         };
     };
@@ -191,23 +196,18 @@ export default function TimetableResult() {
             >
                 <div 
                     ref={timetableRef}
-                    className="overflow-x-auto overflow-y-hidden"
+                    className="overflow-hidden"
                     data-scroll-container="true"
                     style={{ 
-                        overflowX: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'manipulation',  // TimetableSelect와 동일한 설정
-                        WebkitOverflowScrolling: 'touch',  // iOS Safari에서 momentum scrolling 활성화
-                        scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
-                        paddingLeft: VISIBLE_DAY_COUNT < TOTAL_DAYS ? '1.3px' : '0',  // 왼쪽 border 보정
-                        // 모바일에서 스크롤 영역 확실히 인식하도록 최소 높이 설정
-                        minHeight: '100px',
-                        // 스크롤 가능한 영역임을 명시
-                        overscrollBehaviorX: 'contain'  // 가로 스크롤이 부모로 전파되지 않도록
+                        touchAction: 'pan-y',  // 세로 스크롤만 허용, 가로는 스와이프로 처리
+                        userSelect: 'none',  // 텍스트 선택 방지
+                        WebkitUserSelect: 'none',
+                        minHeight: '100px'
                     }}
                 >
                     <div style={getTableStyle()}>
                         <Timetable 
-                            dayCount={TOTAL_DAYS}
+                            dayCount={getCurrentVisibleDays()}  // 현재 페이지의 visible days만 표시
                             halfCount={16}
                             startDate="05/19"
                             hasDateHeaderAbove={false}
@@ -221,6 +221,7 @@ export default function TimetableResult() {
                             isSelectionEnabled={false}       // 선택 기능 완전 비활성화
                             isDragSelecting={false}
                             pendingTouchSlot={null}
+                            pageStartDay={getCurrentStartDay()}  // 페이지 시작 날짜 전달 (만약 Timetable이 지원한다면)
                         />
                     </div>
                 </div>
