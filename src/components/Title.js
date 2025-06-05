@@ -97,7 +97,7 @@ export default function Title({ children, link = true, onChange = () => {} }) {
                         onClick={handleCopyUrl}
                     />
                     {showToast && (
-                        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
+                        <div className="fixed bottom-[65px] left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
                             {toastMessage}
                         </div>
                     )}
