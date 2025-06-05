@@ -17,12 +17,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ko" className="overflow-hidden">
-      <body className="antialiased bg-white overflow-hidden">
-        <div className="h-screen flex justify-center lg:py-4 overflow-hidden">
-          <div className="w-screen lg:w-[25%] lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col overflow-hidden">
+    <html lang="ko" className="h-full">
+      <body className="antialiased bg-white h-full">
+        <div className="h-full flex justify-center lg:py-4">
+          <div className="w-screen lg:w-[25%] lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col">
             <Header />
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-y-auto">
               {children}
             </div>
           </div>
