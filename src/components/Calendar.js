@@ -228,7 +228,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         "11월",
         "12월",
     ];
-    const yearOptions = Array.from({ length: 21 }, (_, i) => year - 10 + i);
+
+    // 현재 년도부터 +10년까지만 표시 (이전 년도 제거)
+    const currentYear = new Date().getFullYear();
+    const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear + i);
 
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);

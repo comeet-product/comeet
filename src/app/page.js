@@ -15,6 +15,7 @@ export default function Home() {
     const [startTime, setStartTime] = useState(900); // 9:00 AM
     const [endTime, setEndTime] = useState(1800); // 6:00 PM
     const [isLoading, setIsLoading] = useState(false);
+    const [isTimeValid, setIsTimeValid] = useState(true); // 시간 유효성 상태
 
     const handleCreateMeeting = async () => {
         if (selectedDates.length === 0) {
@@ -24,6 +25,12 @@ export default function Home() {
 
         if (selectedDates.length > 31) {
             alert("날짜 선택은 최대 31일까지 가능합니다");
+            return;
+        }
+
+        // 시간이 유효하지 않으면 미팅 생성 불가
+        if (!isTimeValid) {
+            alert("시작 시간은 종료 시간 이전으로 설정해주세요.");
             return;
         }
 
@@ -55,7 +62,7 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col justify-center items-center h-full w-full px-10 py-8 gap-12">
+        <div className="flex flex-col justify-center items-center min-h-full w-full px-10 py-4 gap-12 overflow-y-auto">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
@@ -71,9 +78,13 @@ export default function Home() {
                         setStartTime(newStartTime);
                         setEndTime(newEndTime);
                     }}
+                    onValidityChange={setIsTimeValid}
                 />
             </div>
-            <Button onClick={handleCreateMeeting} disabled={isLoading}>
+            <Button
+                onClick={handleCreateMeeting}
+                disabled={isLoading || !isTimeValid}
+            >
                 미팅 생성
             </Button>
         </div>

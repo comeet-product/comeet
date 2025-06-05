@@ -102,9 +102,6 @@ const USERS = [
     { id: 3, name: "재완" },
     { id: 4, name: "기훈" },
     { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
 ];
 
 const UserBar = () => {
@@ -127,7 +124,7 @@ const UserBar = () => {
     };
 
     return (
-        <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200">
+        <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
             <div className="relative flex items-center px-2">
                 <div className="relative flex-1 mr-16 overflow-hidden">
                     <div 
