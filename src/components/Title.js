@@ -7,18 +7,30 @@ export default function Title({ children, link = true, onChange = () => {} }) {
     const [toastMessage, setToastMessage] = useState("");
     const [currentUrl, setCurrentUrl] = useState("");
     const [inputValue, setInputValue] = useState("");
+    const [inputWidth, setInputWidth] = useState("auto");
     const inputRef = useRef(null);
+    const measureRef = useRef(null);
 
     useEffect(() => {
         setCurrentUrl(window.location.href);
     }, []);
 
+    // 텍스트 폭 측정 함수
+    const measureTextWidth = (text) => {
+        if (!measureRef.current) return "auto";
+        measureRef.current.textContent = text || "제목을 입력하세요";
+        const width = measureRef.current.offsetWidth;
+        return Math.max(width + 20, 100) + "px"; // 최소 100px, 여유 공간 20px
+    };
+
     const handleClick = () => {
         setIsEditing(true);
         if (children === "새로운 회의" || children === "제목을 입력하세요") {
             setInputValue("");
+            setInputWidth(measureTextWidth(""));
         } else {
             setInputValue(children);
+            setInputWidth(measureTextWidth(children));
         }
     };
 
@@ -61,25 +73,39 @@ export default function Title({ children, link = true, onChange = () => {} }) {
 
     const handleInput = (e) => {
         setInputValue(e.target.value);
-        e.target.setAttribute("size", Math.max(e.target.value.length, 1));
+        setInputWidth(measureTextWidth(e.target.value));
     };
 
     const titleStyle = "text-2xl font-bold text-black text-center w-fit";
 
     return (
         <div className="relative flex justify-center items-center gap-2">
+            {/* 텍스트 폭 측정을 위한 숨겨진 요소 */}
+            <span
+                ref={measureRef}
+                className={`${titleStyle} absolute invisible whitespace-nowrap`}
+                aria-hidden="true"
+            />
+
             {isEditing ? (
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputValue}
-                    onChange={handleInput}
-                    onKeyDown={handleChange}
-                    onBlur={handleBlur}
-                    autoFocus
-                    size={Math.max(inputValue.length || 1, 1)}
-                    className={`${titleStyle} bg-transparent outline-none`}
-                />
+                <div className="flex flex-col items-center">
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={inputValue}
+                        onChange={handleInput}
+                        onKeyDown={handleChange}
+                        onBlur={handleBlur}
+                        autoFocus
+                        style={{ width: inputWidth }}
+                        className={`${titleStyle} bg-transparent outline-none min-w-[100px]`}
+                    />
+                    {/* 반응형 underline */}
+                    <div
+                        style={{ width: inputWidth }}
+                        className="h-0.5 bg-gray-400 mt-1 transition-all duration-200"
+                    />
+                </div>
             ) : (
                 <h1
                     className={`${titleStyle} cursor-text`}
