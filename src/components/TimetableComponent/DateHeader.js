@@ -1,4 +1,4 @@
-import DateCell from "./Date";
+import DateCell from "./DateCell";
 
 export default function DateHeader({ dayCount, startDate }) {
   // 요일 배열 정의 (Calendar.js와 동일한 순서)
