@@ -7,6 +7,8 @@ import Timetable from "./Timetable";
 export default function TimetableResult() {
     // States for scroll control only
     const [isScrolling, setIsScrolling] = useState(false);
+    const [startTouchX, setStartTouchX] = useState(0);
+    const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     
     // Refs for DOM elements
     const containerRef = useRef(null);
@@ -77,11 +79,6 @@ export default function TimetableResult() {
         
         if (!container || !timetable) return;
 
-        // 기본 동작 차단
-        const preventDefaults = (e) => {
-            e.preventDefault();
-        };
-
         // 테이블 스크롤 이벤트 핸들러 (Auto-Align 포함)
         const handleTableScroll = () => {
             if (timetable && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
@@ -92,8 +89,59 @@ export default function TimetableResult() {
             }
         };
 
-        // 모바일에서의 자연스러운 스크롤을 위해 터치 이벤트 처리 제거
-        // 브라우저의 네이티브 스크롤에만 의존
+        // 기본 동작 차단
+        const preventDefaults = (e) => {
+            e.preventDefault();
+        };
+
+        // 모바일 스크롤을 위한 터치 이벤트 처리 (TimetableSelect와 유사하게)
+        const handleTouchStart = (e) => {
+            if (e.touches.length === 1 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+                // 단일 터치 - 스크롤 준비
+                const touch = e.touches[0];
+                setStartTouchX(touch.clientX);
+                setStartTouch1({ x: touch.clientX, y: touch.clientY });
+                setIsScrolling(false);
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (e.touches.length === 1 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+                const touch = e.touches[0];
+                
+                // 움직임의 방향을 확인하여 수평 스크롤인지 판단
+                const deltaX = Math.abs(touch.clientX - startTouch1.x);
+                const deltaY = Math.abs(touch.clientY - startTouch1.y);
+                
+                // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
+                if (deltaX > 10 && deltaX > deltaY) { // 수평 우선 움직임 감지
+                    e.preventDefault();
+                    setIsScrolling(true);
+                    
+                    const currentX = touch.clientX;
+                    const scrollDeltaX = startTouchX - currentX;
+                    
+                    if (timetable.scrollLeft !== undefined) {
+                        timetable.scrollLeft += scrollDeltaX;
+                        setStartTouchX(currentX);
+                    }
+                }
+            }
+        };
+
+        const handleTouchEnd = (e) => {
+            // 터치 종료 시 Auto-Align 실행
+            if (e.touches.length === 0 && VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+                handleScrollEnd();
+            }
+        };
+
+        // 이벤트 리스너 등록
+        if (VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+            container.addEventListener('touchstart', handleTouchStart, { passive: false });
+            container.addEventListener('touchmove', handleTouchMove, { passive: false });
+            container.addEventListener('touchend', handleTouchEnd, { passive: true });
+        }
         timetable.addEventListener('scroll', handleTableScroll);
 
         // 모바일 스크롤을 위해 기본 제스처 차단 제거
@@ -104,14 +152,17 @@ export default function TimetableResult() {
                 clearTimeout(scrollTimeoutRef.current);
             }
             
-            // 터치 이벤트 리스너 제거됨 (네이티브 스크롤 사용)
+            // 터치 이벤트 리스너 제거
+            if (VISIBLE_DAY_COUNT < TOTAL_DAYS) {
+                container.removeEventListener('touchstart', handleTouchStart);
+                container.removeEventListener('touchmove', handleTouchMove);
+                container.removeEventListener('touchend', handleTouchEnd);
+            }
             if (timetable) {
                 timetable.removeEventListener('scroll', handleTableScroll);
             }
-            
-            // 기본 제스처 이벤트 리스너 제거됨
         };
-    }, []);
+    }, [startTouchX, startTouch1]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -136,7 +187,7 @@ export default function TimetableResult() {
                 className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'auto'  // 브라우저 기본 터치 동작 모두 허용 (전체 페이지 스크롤 포함)
+                    touchAction: 'manipulation'  // TimetableSelect와 동일한 설정
                 }}
             >
                 <div 
@@ -145,7 +196,7 @@ export default function TimetableResult() {
                     data-scroll-container="true"
                     style={{ 
                         overflowX: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: VISIBLE_DAY_COUNT < TOTAL_DAYS ? 'pan-x pan-y pinch-zoom' : 'auto',  // 수평 스크롤, 세로 스크롤, 핀치 줌 모두 허용
+                        touchAction: 'manipulation',  // TimetableSelect와 동일한 설정
                         WebkitOverflowScrolling: 'touch',  // iOS Safari에서 momentum scrolling 활성화
                         scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
                         paddingLeft: VISIBLE_DAY_COUNT < TOTAL_DAYS ? '1.3px' : '0',  // 왼쪽 border 보정
