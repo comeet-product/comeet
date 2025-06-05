@@ -41,9 +41,14 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
             </button>
 
             <button 
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border touch-none ${
+                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border touch-none select-none ${
                     isSelected ? 'bg-main/20 border-main' : 'border-transparent'
                 }`}
+                style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none'
+                }}
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
