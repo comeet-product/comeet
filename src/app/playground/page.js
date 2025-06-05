@@ -3,10 +3,11 @@ import Half from "@/components/TimetableComponent/Half";
 import Hour from "@/components/TimetableComponent/Hour";
 import Day from "@/components/TimetableComponent/Day";
 import SelectableTime from "@/components/SelectableTime/SelectableTime";
-import Date from "@/components/TimetableComponent/Date";
+import Date from "@/components/TimetableComponent/DateCell";
 import Time from "@/components/TimetableComponent/Time";
 import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
 import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
+import TimetableResult from "@/components/TimetableComponent/TimetableResult";
 import Button from "@/components/Button";
 import AvailableTime from "@/components/AvailableDatesGroup/AvailableTime";
 import AvailableDate from "@/components/AvailableDatesGroup/AvailableDate";
@@ -27,18 +28,23 @@ export default function Playground() {
         <div className="p-4 md:p-6">
             <h1 className="text-2xl text-black font-bold mb-8 text-center">
                 컴포넌트 플레이그라운드
-                <Title></Title>
+                <Title />
             </h1>
-
+            
             <div className="mb-8">
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                    Complete TimetableResult
+                    TimetableResult
                 </h3>
+                <div className="mb-6">
+                    <TimetableResult />
+                </div>
 
+                <h3 className="text-lg text-gray-500 font-semibold mb-4">
+                    TimetableSelect
+                </h3>
                 <div className="mb-6">
                     <TimetableSelect />
                 </div>
-
                 <div className="mb-6">
                     <h4 className="text-sm text-gray-400 mb-2">
                         Full Week Timetable (like image: 7 days, 8 halves, 10 AM
