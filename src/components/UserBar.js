@@ -40,11 +40,15 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                 수정
             </button>
 
-            <div 
+            <button 
                 className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-colors hover:bg-main/10 border touch-none ${
                     isSelected ? 'bg-main/20 border-main' : 'border-transparent'
                 }`}
-                onClick={onClick}
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClick();
+                }}
             >
                 <img
                     src="/profile.png"
@@ -54,7 +58,7 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick, 
                 <span className="text-xs font-normal tracking-[0.06px] text-gray-800 whitespace-nowrap">
                     {name}
                 </span>
-            </div>
+            </button>
         </div>
     );
 };
