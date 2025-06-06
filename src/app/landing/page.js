@@ -1,14 +1,24 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 
-export default function ComeetMobile() {
+export default function Landing() {
+    const router = useRouter();
+
     return (
-        <div className="min-h-screen bg-white max-w-[375px] mx-auto relative">
-            {/* Header */}
+        <div className="relative min-h-screen bg-white max-w-[375px] mx-auto">
+            {/* 상단 그라데이션 배경 */}
+            <div
+                className="absolute top-0 left-0 w-full h-screen z-0"
+                style={{
+                    background:
+                        "linear-gradient(to bottom, rgba(54, 116, 181, 0.15) 0%, rgba(54, 116, 181, 0.1) 30%, rgba(54, 116, 181, 0.05) 70%, rgba(54, 116, 181, 0.02) 100%)",
+                }}
+            />
 
             {/* Hero Section */}
-            <section className="px-6 py-8 bg-gradient-to-br from-[#3674B5]/5 to-[#3674B5]/10">
+            <section className="px-6 py-8 relative z-10">
                 <div className="space-y-6">
                     <div className="text-center space-y-4">
                         <h1 className="text-3xl font-bold text-gray-900 leading-tight">
@@ -17,19 +27,22 @@ export default function ComeetMobile() {
                             한눈에
                         </h1>
                         <p className="text-gray-600 leading-relaxed text-sm">
-                            복잡한 일정 조율은 이제 그만! COMEET으로 간단하게
-                            모든 참석자가 가능한 시간을 찾아보세요. 몇 번의
-                            클릭만으로 완벽한 약속 시간을 정할 수 있습니다.
+                            번거로운 일정 조율,
+                            <br />
+                            추천 시간까지 COMEET으로 한눈에 확인 👀
                         </p>
                     </div>
 
                     {/* 결과화면 Placeholder */}
-                    <div className="bg-white rounded-xl shadow-sm border p-6">
-                        <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg">
-                            <div className="text-center space-y-2">
-                                <p className="text-sm text-gray-500">
-                                    결과화면
-                                </p>
+                    <div className="bg-white/90 rounded-xl shadow-lg border p-6 backdrop-blur-sm">
+                        <div className="relative h-56 bg-gray-50 rounded-lg overflow-hidden">
+                            <div className="absolute inset-0">
+                                <img
+                                    src="/resultpage.png"
+                                    alt="COMEET 결과화면"
+                                    className="w-full object-cover object-top"
+                                />
+                                <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-white via-white/80 to-transparent" />
                             </div>
                         </div>
                     </div>
@@ -40,19 +53,21 @@ export default function ComeetMobile() {
                             <div className="flex items-center space-x-2">
                                 <CheckCircle className="w-4 h-4 text-[#3674B5]" />
                                 <span className="text-gray-600">
-                                    회원가입 불필요
+                                    회원가입 없이
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <CheckCircle className="w-4 h-4 text-[#3674B5]" />
-                                <span className="text-gray-600">완전 무료</span>
+                                <span className="text-gray-600">
+                                    빠르게 공유해서
+                                </span>
                             </div>
                         </div>
                         <div className="flex items-center justify-center">
                             <div className="flex items-center space-x-2">
                                 <CheckCircle className="w-4 h-4 text-[#3674B5]" />
                                 <span className="text-sm text-gray-600">
-                                    즉시 사용 가능
+                                    즉시 결과 확인!
                                 </span>
                             </div>
                         </div>
@@ -61,7 +76,7 @@ export default function ComeetMobile() {
             </section>
 
             {/* 3단계 섹션 */}
-            <section className="px-6 py-8 pb-24">
+            <section className="px-6 py-8 pb-24 relative z-10">
                 <div className="space-y-8">
                     <div className="text-center space-y-2">
                         <h2 className="text-2xl font-bold text-gray-900">
@@ -69,100 +84,60 @@ export default function ComeetMobile() {
                         </h2>
                     </div>
 
-                    {/* 1단계 - 미팅 생성 */}
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                1
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                미팅 생성
-                            </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-11">
-                            미팅 제목을 입력하고 원하는 약속 날짜와 시간대를
-                            선택하여 미팅을 생성하세요.
-                        </p>
-
-                        {/* Create 화면 Placeholder */}
-                        <div className="ml-11">
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-lg">
-                                    <div className="text-center space-y-2">
-                                        <p className="text-sm text-gray-500">
-                                            Create 화면
-                                        </p>
-                                    </div>
+                    <div className="bg-white/90 rounded-xl shadow-lg p-6 backdrop-blur-sm space-y-6">
+                        {/* 1단계 */}
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    1
                                 </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    미팅 생성
+                                </h3>
                             </div>
+                            <p className="text-sm text-gray-600 ml-8">
+                                제목을 입력하고 날짜와 시간대를 선택해요
+                            </p>
                         </div>
-                    </div>
 
-                    {/* 2단계 - 시간 선택 */}
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                2
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                시간 선택
-                            </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-11">
-                            가능한 시간을 클릭하거나 드래그 하세요.
-                        </p>
-
-                        {/* SelectTime 화면 Placeholder */}
-                        <div className="ml-11">
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-lg">
-                                    <div className="text-center space-y-2">
-                                        <p className="text-sm text-gray-500">
-                                            SelectTime 화면
-                                        </p>
-                                    </div>
+                        {/* 2단계 */}
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    2
                                 </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    시간 선택
+                                </h3>
                             </div>
+                            <p className="text-sm text-gray-600 ml-8">
+                                가능한 시간을 톡 누르거나 <br />
+                                스르륵 드래그 하세요
+                            </p>
                         </div>
-                    </div>
 
-                    {/* 3단계 - 링크 공유 */}
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                3
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                링크 공유
-                            </h3>
-                        </div>
-                        <p className="text-sm text-gray-600 ml-11">
-                            링크를 참석자들에게 공유하세요.
-                        </p>
-
-                        {/* 링크 공유 화면 Placeholder */}
-                        <div className="ml-11">
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-lg">
-                                    <div className="text-center space-y-2">
-                                        <p className="text-sm text-gray-500">
-                                            링크 공유 화면
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            링크가 복사되었습니다. Toast
-                                        </p>
-                                    </div>
+                        {/* 3단계 */}
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    3
                                 </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    링크 공유
+                                </h3>
                             </div>
+                            <p className="text-sm text-gray-600 ml-8">
+                                참석자들에게 링크를 바로 공유해보세요
+                            </p>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Final CTA Section */}
-            <section className="px-6 py-8 pb-10 bg-gradient-to-br from-[#3674B5]/5 to-[#3674B5]/10">
-                <div className="text-center space-y-4">
-                    <h2 className="text-2xl font-bold text-gray-900 leading-tight">
+            <section className="px-6 py-4 relative z-10">
+                <div className="text-center">
+                    <h2 className="text-2xl font-medium text-gray-900 leading-tight">
                         지금 바로 간편하고 빠르게
                         <br />
                         약속 시간을 정해보세요!
@@ -171,12 +146,12 @@ export default function ComeetMobile() {
             </section>
 
             {/* Feedback Section */}
-            <section className="px-6 py-8 bg-gray-100 text-center">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    서비스 개선을 위한 의견을 보내주세요!
+            <section className="px-6 py-6 bg-gray-100 text-center relative z-10">
+                <h2 className="text-base font-medium text-gray-900 mb-3">
+                    서비스 개선을 위한 의견을 보내주세요
                 </h2>
                 <button
-                    className="bg-[#3674B5] hover:bg-[#3674B5]/90 text-white font-semibold rounded-lg px-6 py-3"
+                    className="bg-[#3674B5]/20 hover:bg-[#3674B5]/30 text-[#3674B5] font-medium rounded-lg px-5 py-2 text-sm transition-colors"
                     onClick={() =>
                         window.open("https://tally.so/r/mZLO9A", "_blank")
                     }
@@ -186,7 +161,7 @@ export default function ComeetMobile() {
             </section>
 
             {/* Simple Footer */}
-            <footer className="bg-gray-50 py-6 px-6 pb-32">
+            <footer className="bg-gray-50 py-6 px-6 pb-32 relative z-10">
                 <div className="text-center">
                     <div className="flex items-center justify-center space-x-2 mb-2">
                         <img
