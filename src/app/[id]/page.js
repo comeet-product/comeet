@@ -450,39 +450,43 @@ export default function MeetingPage({ params }) {
     if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
-        <div className="flex flex-col">
-            <div className="px-10 py-8 flex flex-col gap-4">
-                <Title onChange={handleTitleChange}>{meeting.title}</Title>
-                <div className="mb-10">
-                    <AvailableDatesGroup
-                        meetingId={unwrappedParams.id}
-                        refreshKey={recommendationsRefreshKey}
-                        onRecommendationClick={handleRecommendationClick}
-                    />
-                </div>
 
-                <div ref={resultTableRef}>
-                    <TimetableResult
-                        dayCount={7}
-                        halfCount={8}
-                        startDate="05/19"
-                        startTime={10}
-                        dateHeaderHeight={23}
-                        meetingId={unwrappedParams.id}
-                        meeting={meeting}
-                        results={results}
-                        users={users}
-                        selectedUser={selectedUser}
-                        selectedUserAvailability={selectedUserAvailability}
-                        selectedCell={selectedCell}
-                        selectedCells={selectedCells}
-                        onCellSelect={handleCellSelect}
-                    />
+        <div className="h-full flex flex-col">
+            <div className="flex-1">
+                <div className="px-10 py-8 pb-24 flex flex-col gap-4">
+                    <Title onChange={handleTitleChange}>{meeting.title}</Title>
+                    <div className="mb-10">
+                        <AvailableDatesGroup 
+                            meetingId={unwrappedParams.id}
+                            refreshKey={recommendationsRefreshKey}
+                            onRecommendationClick={handleRecommendationClick}
+                        />
+                    </div>
+                    
+                    <div ref={resultTableRef}>
+                        <TimetableResult 
+                            dayCount={7}
+                            halfCount={8}
+                            startDate="05/19"
+                            startTime={10}
+                            dateHeaderHeight={23}
+                            meetingId={unwrappedParams.id}
+                            meeting={meeting}
+                            results={results}
+                            users={users}
+                            selectedUser={selectedUser}
+                            selectedUserAvailability={selectedUserAvailability}
+                            selectedCell={selectedCell}
+                            selectedCells={selectedCells}
+                            onCellSelect={handleCellSelect}
+                        />
+                    </div>
                 </div>
             </div>
-            <div className="sticky bottom-0 bg-white">
-                <UserBar
-                    meetingId={unwrappedParams.id}
+            <div className="flex-shrink-0 bg-white border-t border-gray-200">
+                <UserBar 
+                    meetingId={unwrappedParams.id} 
+
                     users={users}
                     selectedUser={selectedUser}
                     selectedCell={selectedCell}

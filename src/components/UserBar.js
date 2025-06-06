@@ -412,7 +412,7 @@ const UserBar = ({
                     }
                 }
             `}</style>
-            <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
+            <div className="absolute bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
                 <div className="relative flex items-center" ref={containerRef}>
                     <div className="relative flex-1 overflow-hidden">
                         <div
