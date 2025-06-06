@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Title from "@/components/Title";
 import Half from "@/components/TimetableComponent/Half";
 import Hour from "@/components/TimetableComponent/Hour";
@@ -24,14 +27,44 @@ export const generateMetadata = () => ({
 });
 
 export default function Playground() {
+    const [selectedDates, setSelectedDates] = useState([]);
+
     return (
         <div className="p-4 md:p-6">
             <h1 className="text-2xl text-black font-bold mb-8 text-center">
                 컴포넌트 플레이그라운드
                 <Title />
             </h1>
-            
+
             <div className="mb-8">
+                <h3 className="text-lg text-red-500 font-semibold mb-4">
+                    🎯 모바일 터치 테스트용 캘린더
+                </h3>
+                <div className="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+                    <div className="mb-4">
+                        <h4 className="text-sm font-medium text-blue-800 mb-2">
+                            선택된 날짜 ({selectedDates.length}개):
+                        </h4>
+                        <div className="text-xs text-blue-600 bg-white p-2 rounded">
+                            {selectedDates.length > 0
+                                ? selectedDates.join(", ")
+                                : "아직 선택된 날짜가 없습니다"}
+                        </div>
+                    </div>
+                    <Calendar
+                        selectedDates={selectedDates}
+                        onChange={setSelectedDates}
+                    />
+                    <div className="mt-4 text-xs text-blue-600">
+                        💡 <strong>테스트 방법:</strong>
+                        <br />
+                        • 짧은 터치: 단일 날짜 선택/해제
+                        <br />
+                        • 길게 드래그: 직사각형 범위 선택
+                        <br />• 모바일에서 페이지 스크롤 차단 확인
+                    </div>
+                </div>
+
                 <h3 className="text-lg text-gray-500 font-semibold mb-4">
                     TimetableResult
                 </h3>
@@ -184,13 +217,6 @@ export default function Playground() {
                         <AvailableDates />
                         <AvailableDatesGroup />
                     </div>
-                </div>
-
-                <div>
-                    <h3 className="text-lg text-gray-500 font-semibold mb-4">
-                        캘린더
-                    </h3>
-                    <Calendar />
                 </div>
 
                 <div>
