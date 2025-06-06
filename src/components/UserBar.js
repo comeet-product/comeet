@@ -15,6 +15,36 @@ const USERS = [
 ];
 
 const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick, isScrolling }) => {
+    const [isPressed, setIsPressed] = React.useState(false);
+    const touchStartRef = React.useRef(null);
+
+    const handleTouchStart = (e) => {
+        touchStartRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            time: Date.now()
+        };
+        setIsPressed(true);
+    };
+
+    const handleTouchMove = (e) => {
+        if (!touchStartRef.current) return;
+        
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+        const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+        
+        // 가로 스크롤이 세로 스크롤보다 크면 스크롤로 인식
+        if (deltaX > deltaY && deltaX > 3) {
+            setIsPressed(false);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsPressed(false);
+        touchStartRef.current = null;
+    };
+
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
@@ -42,12 +72,13 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     isSelected 
                         ? 'bg-main/20 border-main' 
                         : 'border-transparent'
-                }`}
+                } ${isPressed && !isScrolling ? 'bg-main/10' : ''}`}
                 style={{
                     WebkitTapHighlightColor: 'transparent', 
                     WebkitUserSelect: 'none',
                     userSelect: 'none',
-                    backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.2)' : 'transparent'
+                    backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.2)' : 
+                                   (isPressed && !isScrolling) ? 'rgba(25, 118, 210, 0.1)' : 'transparent'
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget && !isScrolling) {
@@ -59,6 +90,10 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }
                 }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
                 onClick={(e) => {
                     if (!isScrolling) {
                         e.preventDefault();
@@ -96,8 +131,10 @@ const UserBar = () => {
         startX: 0,
         scrollLeft: 0,
         touchStartX: 0,
+        touchStartY: 0,
         touchStartTime: 0,
-        hasMoved: false
+        hasMoved: false,
+        isTouch: false
     });
 
     const handleUserClick = (id) => {
@@ -122,7 +159,7 @@ const UserBar = () => {
         }
     };
 
-    // 마우스 드래그 스크롤 구현
+    // 마우스 드래그 스크롤 구현 (데스크톱용)
     const handleMouseDown = (e) => {
         if (e.button !== 0) return; // 왼쪽 클릭만
         
@@ -133,6 +170,7 @@ const UserBar = () => {
         scrollStateRef.current.startX = e.pageX - scrollContainer.offsetLeft;
         scrollStateRef.current.scrollLeft = scrollContainer.scrollLeft;
         scrollStateRef.current.hasMoved = false;
+        scrollStateRef.current.isTouch = false;
         
         scrollContainer.style.cursor = 'grabbing';
         scrollContainer.style.userSelect = 'none';
@@ -141,7 +179,7 @@ const UserBar = () => {
     };
 
     const handleMouseMove = (e) => {
-        if (!scrollStateRef.current.isMouseDown) return;
+        if (!scrollStateRef.current.isMouseDown || scrollStateRef.current.isTouch) return;
         
         const scrollContainer = scrollContainerRef.current;
         if (!scrollContainer) return;
@@ -149,9 +187,9 @@ const UserBar = () => {
         e.preventDefault();
         
         const x = e.pageX - scrollContainer.offsetLeft;
-        const walk = (x - scrollStateRef.current.startX) * 2; // 스크롤 속도 조절
+        const walk = (x - scrollStateRef.current.startX) * 2;
         
-        if (Math.abs(walk) > 5) { // 5px 이상 움직였을 때만 스크롤로 인식
+        if (Math.abs(walk) > 3) { // 3px 이상 움직였을 때만 스크롤로 인식
             scrollStateRef.current.hasMoved = true;
             setIsScrolling(true);
         }
@@ -160,7 +198,7 @@ const UserBar = () => {
     };
 
     const handleMouseUp = () => {
-        if (scrollStateRef.current.isMouseDown) {
+        if (scrollStateRef.current.isMouseDown && !scrollStateRef.current.isTouch) {
             const scrollContainer = scrollContainerRef.current;
             if (scrollContainer) {
                 scrollContainer.style.cursor = 'grab';
@@ -169,7 +207,6 @@ const UserBar = () => {
             
             scrollStateRef.current.isMouseDown = false;
             
-            // 스크롤이 끝난 후 잠시 기다렸다가 클릭 가능하게 설정
             if (scrollStateRef.current.hasMoved) {
                 setTimeout(() => {
                     setIsScrolling(false);
@@ -181,41 +218,57 @@ const UserBar = () => {
     };
 
     const handleMouseLeave = () => {
-        if (scrollStateRef.current.isMouseDown) {
+        if (scrollStateRef.current.isMouseDown && !scrollStateRef.current.isTouch) {
             handleMouseUp();
         }
     };
 
-    // 터치 스크롤 개선
+    // 터치 스크롤 개선 (모바일용)
     const handleTouchStart = (e) => {
         const touch = e.touches[0];
         scrollStateRef.current.touchStartX = touch.clientX;
+        scrollStateRef.current.touchStartY = touch.clientY;
         scrollStateRef.current.touchStartTime = Date.now();
         scrollStateRef.current.hasMoved = false;
+        scrollStateRef.current.isTouch = true;
+        scrollStateRef.current.isMouseDown = false; // 마우스 이벤트와 충돌 방지
     };
 
     const handleTouchMove = (e) => {
+        if (!scrollStateRef.current.isTouch) return;
+        
         const touch = e.touches[0];
         const deltaX = Math.abs(touch.clientX - scrollStateRef.current.touchStartX);
+        const deltaY = Math.abs(touch.clientY - scrollStateRef.current.touchStartY);
         
-        if (deltaX > 10) { // 10px 이상 움직였을 때 스크롤로 인식
+        // 가로 스크롤이 세로 스크롤보다 크고, 2px 이상 움직였을 때 스크롤로 인식
+        if (deltaX > deltaY && deltaX > 2) {
             scrollStateRef.current.hasMoved = true;
             setIsScrolling(true);
+            
+            // 세로 스크롤 방지
+            e.preventDefault();
         }
     };
 
     const handleTouchEnd = () => {
+        if (!scrollStateRef.current.isTouch) return;
+        
         const touchDuration = Date.now() - scrollStateRef.current.touchStartTime;
         
-        // 터치 시간이 짧고 움직임이 적으면 클릭으로 인식
-        if (!scrollStateRef.current.hasMoved && touchDuration < 300) {
+        // 빠른 탭이고 움직임이 적으면 클릭으로 인식
+        if (!scrollStateRef.current.hasMoved && touchDuration < 200) {
             setIsScrolling(false);
         } else if (scrollStateRef.current.hasMoved) {
-            // 스크롤이 끝난 후 잠시 기다렸다가 클릭 가능하게 설정
+            // 스크롤이 끝난 후 짧은 딜레이로 클릭 재활성화
             setTimeout(() => {
                 setIsScrolling(false);
-            }, 150);
+            }, 50);
+        } else {
+            setIsScrolling(false);
         }
+        
+        scrollStateRef.current.isTouch = false;
     };
 
     // 스크롤 이벤트 리스너 등록
@@ -223,16 +276,17 @@ const UserBar = () => {
         const scrollContainer = scrollContainerRef.current;
         if (!scrollContainer) return;
 
-        // 마우스 이벤트
+        // 마우스 이벤트 (데스크톱용)
         scrollContainer.addEventListener('mousedown', handleMouseDown);
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
         scrollContainer.addEventListener('mouseleave', handleMouseLeave);
 
-        // 터치 이벤트
-        scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-        scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: true });
-        scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+        // 터치 이벤트 (모바일용) - passive를 제거하여 preventDefault 가능하게 함
+        scrollContainer.addEventListener('touchstart', handleTouchStart);
+        scrollContainer.addEventListener('touchmove', handleTouchMove);
+        scrollContainer.addEventListener('touchend', handleTouchEnd);
+        scrollContainer.addEventListener('touchcancel', handleTouchEnd);
 
         return () => {
             scrollContainer.removeEventListener('mousedown', handleMouseDown);
@@ -242,6 +296,7 @@ const UserBar = () => {
             scrollContainer.removeEventListener('touchstart', handleTouchStart);
             scrollContainer.removeEventListener('touchmove', handleTouchMove);
             scrollContainer.removeEventListener('touchend', handleTouchEnd);
+            scrollContainer.removeEventListener('touchcancel', handleTouchEnd);
         };
     }, []);
 
@@ -257,7 +312,8 @@ const UserBar = () => {
                             scrollSnapType: 'x mandatory',
                             width: '100%',
                             paddingBottom: '4px',
-                            cursor: 'grab'
+                            cursor: 'grab',
+                            touchAction: 'pan-x' // 가로 스크롤만 허용
                         }}
                     >
                         {users.map((user) => (
