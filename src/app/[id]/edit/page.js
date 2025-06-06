@@ -33,11 +33,13 @@ export default function EditPage({ params }) {
     const [isVerifying, setIsVerifying] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
-    const [showTutorial, setShowTutorial] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
     const unwrappedParams = use(params);
     const userId = searchParams.get("userId");
+    
+    // Tutorial은 '추가하기'(userId가 없을 때)에서만 표시
+    const [showTutorial, setShowTutorial] = useState(!userId);
 
     // availability를 시간 슬롯으로 변환하는 함수
     const convertAvailabilityToSlots = (availability, meeting) => {
@@ -419,20 +421,20 @@ export default function EditPage({ params }) {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-80 mx-4">
                     <div className="flex items-center justify-center mb-6 relative">
+                        <h2 className="text-lg text-black font-medium">
+                            비밀번호 확인
+                        </h2>
                         <button
                             onClick={handleVerificationBack}
-                            className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
+                            className="absolute right-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
                             disabled={isVerifying}
                         >
                             <img 
                                 src="/xmark.png" 
                                 alt="닫기"
-                                className="w-5 h-5 object-contain"
+                                className="w-3 h-3 object-contain"
                             />
                         </button>
-                        <h2 className="text-lg text-black font-medium">
-                            비밀번호 확인
-                        </h2>
                     </div>
                     
                     <div className="mb-2 h-10">

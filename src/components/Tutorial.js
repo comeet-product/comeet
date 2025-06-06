@@ -8,7 +8,7 @@ export default function TutorialPage({ onClose }) {
     return (
         <div className="fixed inset-0 bg-black/85 backdrop-sm z-50 flex items-center justify-center p-4">
             {/* Tutorial Content */}
-            <div className="h-full overflow-y-auto max-w-sm w-full text-white">
+            <div className="max-h-[80vh] overflow-y-auto max-w-sm w-full text-white">
                 {/* Header */}
                 <div className="flex items-center justify-end p-4 text-white">
                     <button onClick={onClose} className="p-1">
@@ -216,12 +216,6 @@ export default function TutorialPage({ onClose }) {
                     </p>
                 </div>
 
-                {/* Bottom Button Area */}
-                <div className="p-4 text-center">
-                    <p className="text-white underline" onClick={onClose}>
-                        시간 선택하기
-                    </p>
-                </div>
             </div>
 
             <style jsx>{`
