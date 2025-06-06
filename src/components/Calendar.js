@@ -42,6 +42,9 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         new Set(selectedDates)
     );
 
+    // 컴포넌트 초기화 추적
+    const isInitializedRef = useRef(false);
+
     // 토스트 관련 상태
     const [toastState, setToastState] = useState({
         show: false,
@@ -310,6 +313,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const handleTapSelection = (day) => {
         // 빠른 응답을 위해 필수 체크만 수행
         if (!isSelectionEnabled || isDragSelecting) {
+            console.log("handleTapSelection blocked:", {
+                isSelectionEnabled,
+                isDragSelecting,
+            });
             return;
         }
 
@@ -320,17 +327,27 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
 
+        console.log("handleTapSelection called:", {
+            day,
+            dateStr,
+            currentSize: localSelectedDates.size,
+        });
+
         // 즉시 시각적 피드백을 위해 로컬 상태 먼저 업데이트
         const newLocalDates = new Set(localSelectedDates);
         if (newLocalDates.has(dateStr)) {
             newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
+            console.log("Date removed:", dateStr);
         } else {
             if (newLocalDates.size >= MAX_SELECTED_DATES) {
                 showToast("날짜 선택은 최대 31일까지 가능합니다.");
                 return;
             }
             newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
+            console.log("Date added:", dateStr);
         }
+
+        console.log("New local dates size:", newLocalDates.size);
 
         // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
         setLocalSelectedDates(newLocalDates);
@@ -426,9 +443,13 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         };
     }, []);
 
-    // selectedDates prop 변경 시 로컬 상태 동기화
+    // 초기화 시에만 selectedDates와 동기화 (이후 완전히 무시)
     useEffect(() => {
-        setLocalSelectedDates(new Set(selectedDates));
+        if (!isInitializedRef.current) {
+            setLocalSelectedDates(new Set(selectedDates));
+            isInitializedRef.current = true;
+        }
+        // 초기화 후에는 selectedDates prop 변경 완전히 무시
     }, [selectedDates]);
 
     // ===== 렌더링 데이터 준비 =====
