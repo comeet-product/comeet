@@ -15,7 +15,10 @@ export default function TimetableResult({
     results = [],
     users = [],
     selectedUser = null,
-    selectedUserAvailability = null
+    selectedUserAvailability = null,
+    selectedCell = null,
+    selectedCells = [],
+    onCellSelect = () => {}
 }) {
     // 페이지네이션 상태 관리
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -60,6 +63,20 @@ export default function TimetableResult({
         const hour = dynamicStartTime + Math.floor(halfIndex / 2);
         const minute = (halfIndex % 2) * 30;
         return hour * 100 + minute; // HHMM 형식으로 반환
+    };
+
+    // 시간(HHMM)을 halfIndex로 변환하는 함수
+    const getHalfIndexFromTime = (time) => {
+        if (typeof time === 'string') {
+            // "10:30" 형태 처리
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+        } else {
+            // HHMM 숫자 형태 처리 (예: 1030)
+            const hour = Math.floor(time / 100);
+            const minute = time % 100;
+            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+        }
     };
 
     // 결과 데이터를 시간 슬롯 정보로 변환
@@ -324,6 +341,39 @@ export default function TimetableResult({
     // 현재 표시할 슬롯들 결정
     const currentSelectedSlots = selectedUser ? getUserAvailabilitySlots() : getResultSlots();
 
+    // 셀 클릭 핸들러
+    const handleCellClick = (dayIndex, halfIndex, pageStartDay) => {
+        // 사용자가 선택된 상태가 아닐 때만 작동
+        if (selectedUser) return;
+        
+        const actualDayIndex = pageStartDay + dayIndex;
+        const slotId = `${dayIndex}-${halfIndex}`;
+        
+        console.log('Cell clicked:', { dayIndex, halfIndex, actualDayIndex, slotId });
+        
+        // 해당 셀의 결과 데이터 찾기
+        const clickedResults = results.filter(result => {
+            const resultDateIndex = meeting?.dates?.indexOf(result.date);
+            const resultHalfIndex = getHalfIndexFromTime(result.start_time);
+            
+            return resultDateIndex === actualDayIndex && resultHalfIndex === halfIndex;
+        });
+        
+        console.log('Found results for clicked cell:', clickedResults);
+        
+        if (clickedResults.length > 0) {
+            // 첫 번째 결과에 위치 정보 추가
+            const cellData = {
+                ...clickedResults[0],
+                dayIndex: dayIndex,
+                halfIndex: halfIndex,
+                pageStartDay: pageStartDay,
+                slotId: slotId
+            };
+            onCellSelect(cellData);
+        }
+    };
+
     return (
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
@@ -377,6 +427,12 @@ export default function TimetableResult({
                                         pendingTouchSlot={null}
                                         selectedDates={meeting?.dates}    // 실제 날짜 배열 전달
                                         pageStartDay={pageInfo.startDay}  // 페이지 시작 날짜 정보
+                                        onCellClick={handleCellClick}     // 셀 클릭 핸들러 추가
+                                        selectedCell={selectedCell}       // 선택된 셀 정보 전달
+                                        selectedCells={selectedCells}     // 연속 선택된 셀들 정보 전달
+                                        results={results}                  // 결과 데이터 전달
+                                        meeting={meeting}                  // 미팅 데이터 전달
+                                        dynamicStartTime={dynamicStartTime}  // 동적 시작 시간 전달
                                     />
                                 </div>
                             </div>

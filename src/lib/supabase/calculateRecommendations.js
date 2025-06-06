@@ -10,47 +10,89 @@ import { supabase } from "../supabase.js";
 function calculateContinuousBlocks(timeMap) {
     const recommendations = [];
 
+    console.log('=== calculateContinuousBlocks DEBUG ===');
+    console.log('timeMap:', timeMap);
+
     Object.entries(timeMap).forEach(([date, timeSlots]) => {
+        console.log(`\n--- Processing date: ${date} ---`);
+        console.log('timeSlots:', timeSlots);
+        
         // 시간대별로 정렬
         const sortedTimes = Object.keys(timeSlots)
             .map(Number)
             .sort((a, b) => a - b);
+
+        console.log('sortedTimes:', sortedTimes);
 
         // 각 시간대에서 시작하는 연속 블록 찾기
         for (let i = 0; i < sortedTimes.length; i++) {
             const startTime = sortedTimes[i];
             const startUsers = timeSlots[startTime];
 
-            // 연속된 시간 블록 찾기 (최소 1시간 = 2블록)
-            for (let duration = 2; duration <= 8; duration++) {
-                let canContinue = true;
+            console.log(`\nChecking startTime: ${startTime}, users:`, startUsers);
+
+            // 해당 시작 시간에서 가능한 최대 연속 시간 찾기
+            let maxDuration = 0; // 초기값을 0으로 설정
+            let bestCommonUsers = [];
+
+            // 최대 9블록(4시간 반)까지 확인
+            for (let duration = 1; duration <= 9; duration++) {
                 let commonUsers = [...startUsers];
+                let allSlotsAvailable = true;
+
+                console.log(`  Testing duration ${duration}:`);
 
                 // duration 길이만큼 연속으로 가능한지 확인
-                for (let j = 1; j < duration; j++) {
+                for (let j = 0; j < duration; j++) {
                     const currentTime = startTime + j * 30;
+                    console.log(`    Checking slot ${j}: time ${currentTime}`);
+                    
                     if (!timeSlots[currentTime]) {
-                        canContinue = false;
+                        console.log(`    Slot ${j} (${currentTime}) not available`);
+                        allSlotsAvailable = false;
                         break;
                     }
+                    
                     // 공통 사용자만 남기기
-                    commonUsers = commonUsers.filter((user) =>
-                        timeSlots[currentTime].includes(user)
-                    );
+                    if (j > 0) { // 첫 번째 슬롯은 이미 포함됨
+                        commonUsers = commonUsers.filter((user) =>
+                            timeSlots[currentTime].includes(user)
+                        );
+                        console.log(`    After slot ${j}, common users:`, commonUsers);
+                    }
                 }
 
-                if (canContinue && commonUsers.length > 0) {
-                    recommendations.push({
-                        date,
-                        start_time: startTime,
-                        duration,
-                        members: commonUsers,
-                        number: commonUsers.length,
-                    });
+                if (allSlotsAvailable && commonUsers.length > 0) {
+                    console.log(`  Duration ${duration} is possible with ${commonUsers.length} users:`, commonUsers);
+                    maxDuration = duration;
+                    bestCommonUsers = commonUsers;
+                } else if (!allSlotsAvailable) {
+                    // 슬롯이 없으면 더 이상 연속될 수 없으므로 중단
+                    console.log(`  Duration ${duration} failed - no more slots available`);
+                    break;
+                } else {
+                    // 공통 사용자가 없지만 슬롯은 있는 경우 - 계속 확인
+                    console.log(`  Duration ${duration} failed - no common users, but continuing...`);
                 }
+            }
+
+            // 최소 1블록 이상의 연속 시간이 있으면 추천에 추가
+            if (maxDuration >= 1 && bestCommonUsers.length > 0) {
+                const recommendation = {
+                    date,
+                    start_time: startTime,
+                    duration: maxDuration,
+                    members: bestCommonUsers,
+                    number: bestCommonUsers.length,
+                };
+                console.log(`Adding recommendation:`, recommendation);
+                recommendations.push(recommendation);
             }
         }
     });
+
+    console.log('\n=== Final recommendations ===');
+    console.log(recommendations);
 
     // 참여 인원 수와 지속 시간으로 정렬 (인원 많고, 시간 긴 순)
     return recommendations.sort((a, b) => {
@@ -141,7 +183,7 @@ export async function calculateRecommendations(meetingId) {
         // 6. recommendation 테이블에 저장
         if (recommendations.length > 0) {
             const recommendationData = recommendations
-                .slice(0, 10)
+                .slice(0, 8)
                 .map((rec) => ({
                     meeting_id: meetingId,
                     date: rec.date,
@@ -165,7 +207,7 @@ export async function calculateRecommendations(meetingId) {
             success: true,
             message: "추천 시간이 성공적으로 계산되었습니다.",
             data: {
-                recommendations: recommendations.slice(0, 10),
+                recommendations: recommendations.slice(0, 8),
             },
         };
     } catch (error) {

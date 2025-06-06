@@ -14,10 +14,12 @@ function convertDurationToHours(duration) {
 /**
  * 시간을 읽기 쉬운 형태로 포맷하는 헬퍼 함수
  * @param {number} hours - 시간 (1.5, 2, 2.5 등)
- * @returns {string} 포맷된 시간 문자열 ("1.5시간", "2시간" 등)
+ * @returns {string} 포맷된 시간 문자열 ("1.5시간", "2시간", "4시간+" 등)
  */
 function formatDurationHours(hours) {
-    if (hours === Math.floor(hours)) {
+    if (hours >= 4.5) {
+        return "4시간+";
+    } else if (hours === Math.floor(hours)) {
         return `${hours}시간`;
     } else {
         return `${hours}시간`;
