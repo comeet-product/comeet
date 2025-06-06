@@ -4,7 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableSelect() {
+export default function TimetableSelect({ 
+    selectedSlots: externalSelectedSlots, 
+    onSlotsChange, 
+    meeting 
+}) {
     // States for gesture and view control
     const [visibleDayCount, setVisibleDayCount] = useState(7);
     const [startTouchX, setStartTouchX] = useState(0);
@@ -15,8 +19,11 @@ export default function TimetableSelect() {
     const [centerColumnIndex, setCenterColumnIndex] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
     
-    // 시간 슬롯 선택 상태 관리
-    const [selectedSlots, setSelectedSlots] = useState(new Set());
+    // 시간 슬롯 선택 상태 관리 - 외부 props 또는 내부 상태 사용
+    const [internalSelectedSlots, setInternalSelectedSlots] = useState(new Set());
+    const selectedSlots = externalSelectedSlots || internalSelectedSlots;
+    const setSelectedSlots = onSlotsChange || setInternalSelectedSlots;
+    
     const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
     
     // 드래그 선택 상태 관리
@@ -35,11 +42,38 @@ export default function TimetableSelect() {
     const timetableRef = useRef(null);
     const scrollTimeoutRef = useRef(null);
 
-    // Constants
-    const TOTAL_DAYS = 9;
+    // Constants - meeting 데이터 기반으로 계산
+    const TOTAL_DAYS = meeting?.dates?.length || 9;
     const MIN_VISIBLE_DAYS = 1;
     const MAX_VISIBLE_DAYS = 7;
     const DATE_HEADER_HEIGHT = 28;
+
+    // meeting 기반 시간 설정
+    const getMeetingTimeInfo = () => {
+        if (!meeting?.selectable_time) {
+            return {
+                startTime: 10,
+                halfCount: 16
+            };
+        }
+
+        const startHHMM = meeting.selectable_time.start || 900; // 기본값 9:00 (900)
+        const endHHMM = meeting.selectable_time.end || 1700; // 기본값 17:00 (1700)
+        
+        const startHour = Math.floor(startHHMM / 100);
+        const endHour = Math.floor(endHHMM / 100);
+        const endMinute = endHHMM % 100;
+        
+        // 30분 단위로 계산
+        const totalHalfHours = (endHour - startHour) * 2 + (endMinute >= 30 ? 1 : 0);
+        
+        return {
+            startTime: startHour,
+            halfCount: totalHalfHours
+        };
+    };
+
+    const { startTime, halfCount } = getMeetingTimeInfo();
 
     // 터치 지점에서 컬럼 인덱스 계산
     const getColumnIndexFromTouch = (clientX) => {
@@ -706,8 +740,8 @@ export default function TimetableSelect() {
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
                 <TimeHeader 
-                    halfCount={16}
-                    startTime={10}
+                    halfCount={halfCount}
+                    startTime={startTime}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
@@ -733,8 +767,7 @@ export default function TimetableSelect() {
                     <div style={getTableStyle()}>
                         <Timetable 
                             dayCount={TOTAL_DAYS}
-                            halfCount={16}
-                            startDate="05/19"
+                            halfCount={halfCount}
                             hasDateHeaderAbove={false}
                             selectedSlots={selectedSlots}
                             onSlotSelection={handleSlotSelection}
@@ -752,6 +785,7 @@ export default function TimetableSelect() {
                             isDragSelecting={isDragSelecting}
                             pendingTouchSlot={pendingTouchSlot}
                             verticalDragThreshold={VERTICAL_DRAG_THRESHOLD}
+                            selectedDates={meeting?.dates}
                         />
                     </div>
                 </div>

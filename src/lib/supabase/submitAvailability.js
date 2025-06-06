@@ -175,3 +175,110 @@ export async function updateAvailability(userId, availableSlots) {
         };
     }
 }
+
+/**
+ * 사용자 이름 업데이트
+ * @param {string} userId - 사용자 ID
+ * @param {string} meetingId - 미팅 ID
+ * @param {string} newName - 새로운 이름
+ * @returns {Promise<{success: boolean, message: string, data?: any}>}
+ */
+export async function updateUserName(userId, meetingId, newName) {
+    try {
+        // 1. 이름 중복 체크 (자신 제외)
+        const { data: duplicateData, error: duplicateError } = await supabase
+            .from("user")
+            .select("name")
+            .eq("meetingid", meetingId)
+            .eq("name", newName)
+            .neq("userid", userId);
+
+        if (duplicateError) {
+            console.error("Error checking duplicate name:", duplicateError);
+            throw duplicateError;
+        }
+
+        if (duplicateData && duplicateData.length > 0) {
+            return {
+                success: false,
+                message: "이미 존재하는 이름입니다. 다른 이름을 사용해주세요.",
+            };
+        }
+
+        // 2. 사용자 이름 업데이트
+        const { data, error } = await supabase
+            .from("user")
+            .update({ name: newName })
+            .eq("userid", userId)
+            .select();
+
+        if (error) {
+            console.error("Error updating user name:", error);
+            throw error;
+        }
+
+        return {
+            success: true,
+            message: "사용자 이름이 성공적으로 업데이트되었습니다.",
+            data: data[0],
+        };
+    } catch (error) {
+        console.error("Error in updateUserName:", error);
+        return {
+            success: false,
+            message: "사용자 이름 업데이트 중 오류가 발생했습니다: " + error.message,
+        };
+    }
+}
+
+/**
+ * 사용자 응답 및 이름 수정
+ * @param {string} userId - 사용자 ID
+ * @param {string} meetingId - 미팅 ID
+ * @param {string} newName - 새로운 이름
+ * @param {Object} availableSlots - 새로운 가용성 데이터
+ * @returns {Promise<{success: boolean, message: string, data?: any}>}
+ */
+export async function updateUserAvailability(userId, meetingId, newName, availableSlots) {
+    try {
+        // 1. 사용자 이름 업데이트
+        const nameResult = await updateUserName(userId, meetingId, newName);
+        if (!nameResult.success) {
+            return nameResult;
+        }
+
+        // 2. 가용성 데이터 업데이트
+        const availabilityResult = await updateAvailability(userId, availableSlots);
+        if (!availabilityResult.success) {
+            return availabilityResult;
+        }
+
+        // 3. 결과 데이터 재계산
+        console.log('Recalculating results after user update...');
+        const resultsResult = await calculateResults(meetingId);
+        
+        if (!resultsResult.success) {
+            console.error('Failed to recalculate results:', resultsResult.message);
+            // 결과 계산 실패해도 사용자 업데이트는 성공으로 처리
+        } else {
+            console.log('Results recalculated successfully after user update');
+        }
+
+        return {
+            success: true,
+            message: "사용자 정보가 성공적으로 수정되었습니다.",
+            data: {
+                userid: userId,
+                name: newName,
+                availableSlots: availableSlots,
+                resultsCalculated: resultsResult.success,
+            },
+        };
+    } catch (error) {
+        console.error("Error in updateUserAvailability:", error);
+        return {
+            success: false,
+            message: "사용자 정보 수정 중 오류가 발생했습니다: " + error.message,
+        };
+    }
+}

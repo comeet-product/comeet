@@ -3,18 +3,37 @@
 import React from "react";
 import Avatar from "boring-avatars";
 
-const USERS = [
-    { id: 1, name: "서윤" },
-    { id: 2, name: "예진" },
-    { id: 3, name: "재완" },
-    { id: 4, name: "기훈" },
-    { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
-];
+const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick, isScrolling }) => {
+    const [isPressed, setIsPressed] = React.useState(false);
+    const touchStartRef = React.useRef(null);
 
-const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick }) => {
+    const handleTouchStart = (e) => {
+        touchStartRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            time: Date.now()
+        };
+        setIsPressed(true);
+    };
+
+    const handleTouchMove = (e) => {
+        if (!touchStartRef.current) return;
+        
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+        const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+        
+        // 가로 스크롤이 세로 스크롤보다 크면 스크롤로 인식
+        if (deltaX > deltaY && deltaX > 3) {
+            setIsPressed(false);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsPressed(false);
+        touchStartRef.current = null;
+    };
+  
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
@@ -96,35 +115,31 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
     );
 };
 
-const UserBar = () => {
-
-    const [selectedUser, setSelectedUser] = React.useState(null);
-    const [users, setUsers] = React.useState(USERS);
+const UserBar = ({ 
+    meetingId,
+    users = [],
+    selectedUser = null,
+    onUserSelect = () => {},
+    onShowSelect = () => {},
+    onUserAdded = () => {}
+}) => {
     const containerRef = React.useRef(null);
     const scrollContainerRef = React.useRef(null);
     const [isDragging, setIsDragging] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, scrollLeft: 0 });
 
-    const handleUserClick = (id) => {
-        setSelectedUser(prev => prev === id ? null : id);
+    const handleUserClick = (userId) => {
+        onUserSelect(userId);
     };
 
     const handleAddClick = () => {
-        setIsAddMode(true);
+        // Edit 페이지로 이동
+        onShowSelect();
     };
 
     const handleEditClick = () => {
-        // 수정 로직은 일단 비워둠
-    };
-
-    const handleBack = (newName) => {
-        if (newName) {
-            const newUser = {
-                id: users.length + 1,
-                name: newName
-            };
-            setUsers(prev => [...prev, newUser]);
-        }
+        // Edit 페이지로 이동 (선택된 사용자와 함께)
+        onShowSelect();
     };
 
     // 마우스 드래그 스크롤 이벤트 핸들러
