@@ -2,6 +2,7 @@
 
 import { supabase } from "../supabase.js";
 import { calculateResults } from "./calculateResults.js";
+import { calculateRecommendations } from "./calculateRecommendations.js";
 
 /**
  * 사용자 이름 중복 체크
@@ -99,6 +100,17 @@ export async function submitAvailability(meetingId, name, availableSlots) {
             console.log('Results recalculated successfully');
         }
 
+        // 5. 추천 시간 재계산
+        console.log('Recalculating recommendations...');
+        const recommendationsResult = await calculateRecommendations(meetingId);
+        
+        if (!recommendationsResult.success) {
+            console.error('Failed to recalculate recommendations:', recommendationsResult.message);
+            // 추천 계산 실패해도 사용자 추가는 성공으로 처리
+        } else {
+            console.log('Recommendations recalculated successfully');
+        }
+
         return {
             success: true,
             message: "가용성이 성공적으로 저장되었습니다.",
@@ -107,6 +119,7 @@ export async function submitAvailability(meetingId, name, availableSlots) {
                 name: name,
                 availableSlots: availableSlots,
                 resultsCalculated: resultsResult.success,
+                recommendationsCalculated: recommendationsResult.success,
             },
         };
     } catch (error) {
@@ -264,6 +277,17 @@ export async function updateUserAvailability(userId, meetingId, newName, availab
             console.log('Results recalculated successfully after user update');
         }
 
+        // 4. 추천 시간 재계산
+        console.log('Recalculating recommendations after user update...');
+        const recommendationsResult = await calculateRecommendations(meetingId);
+        
+        if (!recommendationsResult.success) {
+            console.error('Failed to recalculate recommendations:', recommendationsResult.message);
+            // 추천 계산 실패해도 사용자 업데이트는 성공으로 처리
+        } else {
+            console.log('Recommendations recalculated successfully after user update');
+        }
+
         return {
             success: true,
             message: "사용자 정보가 성공적으로 수정되었습니다.",
@@ -272,6 +296,7 @@ export async function updateUserAvailability(userId, meetingId, newName, availab
                 name: newName,
                 availableSlots: availableSlots,
                 resultsCalculated: resultsResult.success,
+                recommendationsCalculated: recommendationsResult.success,
             },
         };
     } catch (error) {
