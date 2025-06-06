@@ -359,8 +359,7 @@ export default function MeetingPage({ params }) {
     if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] min-h-0">
+        <div className="flex flex-col">
                 <div className="px-10 py-8 flex flex-col gap-4">
                     <Title onChange={handleTitleChange}>{meeting.title}</Title>
                     <div className="mb-10">
@@ -372,9 +371,6 @@ export default function MeetingPage({ params }) {
                     </div>
                     
                     <div ref={resultTableRef}>
-                        <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
-                            Schedule Overview
-                        </h5>
                         <TimetableResult 
                             dayCount={7}
                             halfCount={8}
@@ -392,7 +388,6 @@ export default function MeetingPage({ params }) {
                             onCellSelect={handleCellSelect}
                         />
                     </div>
-                </div>
             </div>
             <div className="sticky bottom-0 bg-white">
                 <UserBar 
