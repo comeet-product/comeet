@@ -15,21 +15,21 @@ const USERS = [
     { id: 8, name: "기훈" },
 ];
 
-const UserItem = ({ id, name, isAddButton = false, isSelected, onClick, onAddClick }) => {
+const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick }) => {
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
                 <button 
-                    onClick={onAddClick}
+                    onClick={isEditMode ? onEditClick : onAddClick}
                     className="flex flex-col items-center group py-1 px-2"
                 >
                     <img
-                        src="/addprofile.png"
-                        alt="사용자 추가"
+                        src={isEditMode ? "/editProfile.svg" : "/addprofile.png"}
+                        alt={isEditMode ? "사용자 수정" : "사용자 추가"}
                         className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity"
                     />
                     <span className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity whitespace-nowrap">
-                        추가하기
+                        {isEditMode ? "수정하기" : "추가하기"}
                     </span>
                 </button>
             </div>
@@ -111,6 +111,10 @@ const UserBar = () => {
         setIsAddMode(true);
     };
 
+    const handleEditClick = () => {
+        // 수정 로직은 일단 비워둠
+    };
+
     const handleBack = (newName) => {
         if (newName) {
             const newUser = {
@@ -155,7 +159,9 @@ const UserBar = () => {
                 <div className="flex-shrink-0">
                     <UserItem 
                         isAddButton 
+                        isEditMode={selectedUser !== null}
                         onAddClick={handleAddClick}
+                        onEditClick={handleEditClick}
                     />
                 </div>
             </div>
