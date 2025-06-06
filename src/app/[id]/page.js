@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, use, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getMeeting } from "@/lib/supabase/getMeeting";
 import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import { getUsers } from "@/lib/supabase/getUsers";
@@ -22,7 +22,15 @@ export default function MeetingPage({ params }) {
     const [selectedUserAvailability, setSelectedUserAvailability] = useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const unwrappedParams = use(params);
+    
+    // 결과 테이블 참조를 위한 ref
+    const resultTableRef = useRef(null);
+    
+    // URL 쿼리 파라미터에서 자동 선택할 사용자와 스크롤 위치 가져오기
+    const autoSelectUserId = searchParams.get('selectedUser');
+    const scrollTo = searchParams.get('scrollTo');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -50,6 +58,12 @@ export default function MeetingPage({ params }) {
             if (usersResult.success) {
                 setUsers(usersResult.data.users);
                 console.log('Users loaded:', usersResult.data.users); // 디버깅용
+                
+                // URL에서 autoSelectUserId가 있으면 해당 사용자 자동 선택
+                if (autoSelectUserId && usersResult.data.users.some(user => user.userid === autoSelectUserId)) {
+                    setSelectedUser(autoSelectUserId);
+                    console.log('Auto-selected user:', autoSelectUserId);
+                }
             } else {
                 console.error("Failed to fetch users:", usersResult.message);
             }
@@ -74,7 +88,26 @@ export default function MeetingPage({ params }) {
         };
 
         fetchData();
-    }, [unwrappedParams.id]);
+    }, [unwrappedParams.id, autoSelectUserId]);
+    
+    // 자동 스크롤 처리
+    useEffect(() => {
+        if (scrollTo === 'result' && resultTableRef.current && meeting && users.length > 0) {
+            // 데이터가 모두 로드된 후 약간의 딜레이를 두고 스크롤
+            const timer = setTimeout(() => {
+                resultTableRef.current.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // URL에서 쿼리 파라미터 제거 (깔끔하게 하기 위해)
+                const newUrl = `/${unwrappedParams.id}`;
+                router.replace(newUrl, { shallow: true });
+            }, 500);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [scrollTo, meeting, users, unwrappedParams.id, router]);
 
     // 선택된 사용자의 availability 가져오기
     useEffect(() => {
@@ -130,7 +163,11 @@ export default function MeetingPage({ params }) {
     };
 
     const handleShowSelect = () => {
-        router.push(`/${unwrappedParams.id}/edit`);
+        if (selectedUser) {
+            router.push(`/${unwrappedParams.id}/edit?userId=${selectedUser}`);
+        } else {
+            router.push(`/${unwrappedParams.id}/edit`);
+        }
     };
 
     const handleUserSelect = (userId) => {
@@ -163,42 +200,24 @@ export default function MeetingPage({ params }) {
                         <AvailableDatesGroup />
                     </div>
                     
-                    {/* 임시 디버깅 버튼 */}
-                    <div className="mb-4 flex gap-2">
-                        <button 
-                            onClick={handleCalculateResults}
-                            disabled={isCalculating}
-                            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-                        >
-                            {isCalculating ? '계산 중...' : '결과 재계산'}
-                        </button>
-                        <div className="text-sm text-gray-500 self-center">
-                            사용자: {users.length}명, 결과: {results.length}개
-                            {selectedUser && ` | 선택: ${users.find(u => u.userid === selectedUser)?.name || selectedUser}`}
-                            {results.length > 0 && (
-                                <div className="text-xs mt-1">
-                                    첫 번째 결과: {results[0]?.date} {results[0]?.start_time}분 ({results[0]?.number}명)
-                                </div>
-                            )}
-                        </div>
+                    <div ref={resultTableRef}>
+                        <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
+                            Schedule Overview
+                        </h5>
+                        <TimetableResult 
+                            dayCount={7}
+                            halfCount={8}
+                            startDate="05/19"
+                            startTime={10}
+                            dateHeaderHeight={23}
+                            meetingId={unwrappedParams.id}
+                            meeting={meeting}
+                            results={results}
+                            users={users}
+                            selectedUser={selectedUser}
+                            selectedUserAvailability={selectedUserAvailability}
+                        />
                     </div>
-                    
-                    <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
-                        Schedule Overview
-                    </h5>
-                    <TimetableResult 
-                        dayCount={7}
-                        halfCount={8}
-                        startDate="05/19"
-                        startTime={10}
-                        dateHeaderHeight={23}
-                        meetingId={unwrappedParams.id}
-                        meeting={meeting}
-                        results={results}
-                        users={users}
-                        selectedUser={selectedUser}
-                        selectedUserAvailability={selectedUserAvailability}
-                    />
                 </div>
             </div>
             <div className="flex-shrink-0">

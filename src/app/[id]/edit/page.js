@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, use, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { submitAvailability } from "@/lib/supabase/submitAvailability";
+import { useRouter, useSearchParams } from "next/navigation";
+import { submitAvailability, updateUserAvailability } from "@/lib/supabase/submitAvailability";
 import { getMeeting } from "@/lib/supabase/getMeeting";
+import { getUser } from "@/lib/supabase/getUsers";
+import { getUserAvailability } from "@/lib/supabase/getUserAvailability";
 import Title from "@/components/Title";
 import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
 import Button from "@/components/Button";
@@ -13,9 +15,57 @@ export default function EditPage({ params }) {
     const [name, setName] = useState('');
     const [selectedSlots, setSelectedSlots] = useState(new Set());
     const [meeting, setMeeting] = useState(null);
+    const [user, setUser] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const unwrappedParams = use(params);
+    const userId = searchParams.get('userId');
+
+    // availability를 시간 슬롯으로 변환하는 함수
+    const convertAvailabilityToSlots = (availability, meeting) => {
+        const slots = new Set();
+        const selectedDates = meeting?.dates || [];
+
+        console.log('=== Converting availability to slots ===');
+        console.log('Availability:', availability);
+        console.log('Meeting dates:', selectedDates);
+        console.log('Meeting selectable_time:', meeting?.selectable_time);
+
+        // HHMM 형식(900 = 9:00)을 분 단위로 변환하는 함수
+        const convertHHMMToMinutes = (hhmm) => {
+            const hours = Math.floor(hhmm / 100);
+            const minutes = hhmm % 100;
+            return hours * 60 + minutes;
+        };
+
+        Object.entries(availability).forEach(([date, times]) => {
+            const dateIndex = selectedDates.indexOf(date);
+            console.log(`Processing date ${date}, index: ${dateIndex}`);
+            
+            if (dateIndex !== -1 && Array.isArray(times)) {
+                times.forEach(time => {
+                    // 시간을 halfIndex로 변환
+                    const startTimeHHMM = meeting?.selectable_time?.start || 900;
+                    const startTimeMinutes = convertHHMMToMinutes(startTimeHHMM);
+                    const timeMinutes = convertHHMMToMinutes(time);
+                    const halfIndex = Math.floor((timeMinutes - startTimeMinutes) / 30);
+                    
+                    console.log(`Time ${time} -> ${timeMinutes} minutes -> halfIndex ${halfIndex}`);
+                    
+                    if (halfIndex >= 0) {
+                        const slotId = `${dateIndex}-${halfIndex}`;
+                        slots.add(slotId);
+                        console.log(`Added slot: ${slotId}`);
+                    }
+                });
+            }
+        });
+
+        console.log('Final slots:', Array.from(slots));
+        return slots;
+    };
 
     // 미팅 데이터 가져오기
     useEffect(() => {
@@ -33,6 +83,48 @@ export default function EditPage({ params }) {
         
         fetchMeeting();
     }, [unwrappedParams.id, router]);
+
+    // 유저 정보 및 availability 가져오기
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (userId && meeting) {
+                setIsEditMode(true);
+                
+                try {
+                    // 사용자 정보 가져오기
+                    const userResult = await getUser(userId);
+                    if (userResult.success) {
+                        console.log('User data loaded:', userResult.data);
+                        setUser(userResult.data);
+                        setName(userResult.data.name);
+                    } else {
+                        console.error("Failed to fetch user:", userResult.message);
+                        alert("사용자 정보를 불러올 수 없습니다.");
+                        router.push(`/${unwrappedParams.id}`);
+                        return;
+                    }
+
+                    // 사용자 availability 가져오기
+                    const availabilityResult = await getUserAvailability(userId);
+                    if (availabilityResult.success) {
+                        console.log('User availability loaded:', availabilityResult.data.availability);
+                        const slots = convertAvailabilityToSlots(availabilityResult.data.availability, meeting);
+                        setSelectedSlots(slots);
+                    } else {
+                        console.error("Failed to fetch user availability:", availabilityResult.message);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    alert("사용자 정보를 불러오는 중 오류가 발생했습니다.");
+                    router.push(`/${unwrappedParams.id}`);
+                }
+            } else {
+                setIsEditMode(false);
+            }
+        };
+
+        fetchUserData();
+    }, [userId, meeting, unwrappedParams.id, router]);
 
     // 시간 슬롯을 날짜와 시간으로 변환하는 함수
     const convertSlotsToAvailability = (slots) => {
@@ -125,12 +217,27 @@ export default function EditPage({ params }) {
             // 선택된 슬롯을 availability 형식으로 변환
             const availableSlots = convertSlotsToAvailability(selectedSlots);
             
-            // 데이터베이스에 저장
-            const result = await submitAvailability(unwrappedParams.id, name.trim(), availableSlots);
+            let result;
+            if (isEditMode && userId) {
+                // 기존 사용자 수정
+                result = await updateUserAvailability(userId, unwrappedParams.id, name.trim(), availableSlots);
+            } else {
+                // 새 사용자 추가
+                result = await submitAvailability(unwrappedParams.id, name.trim(), availableSlots);
+            }
             
             if (result.success) {
-                alert('가용성이 성공적으로 저장되었습니다.');
-                router.push(`/${unwrappedParams.id}`);
+                alert(isEditMode ? '사용자 정보가 성공적으로 수정되었습니다.' : '가용성이 성공적으로 저장되었습니다.');
+                
+                // 수정 모드일 때는 수정한 사용자를 선택된 상태로 돌아가기
+                if (isEditMode && userId) {
+                    router.push(`/${unwrappedParams.id}?selectedUser=${userId}&scrollTo=result`);
+                } else if (result.data && result.data.userid) {
+                    // 새 사용자 추가일 때는 새로 생성된 사용자를 선택된 상태로 돌아가기
+                    router.push(`/${unwrappedParams.id}?selectedUser=${result.data.userid}&scrollTo=result`);
+                } else {
+                    router.push(`/${unwrappedParams.id}`);
+                }
             } else {
                 alert(result.message);
             }
@@ -158,7 +265,9 @@ export default function EditPage({ params }) {
         <div className="h-full flex flex-col">
             <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] min-h-0">
                 <div className="px-10 py-8 flex flex-col gap-4">
-                    <Title link={false} editable={false}>{meeting.title}</Title>
+                    <Title link={false} editable={false}>
+                        {meeting.title} {isEditMode ? '- 수정하기' : ''}
+                    </Title>
                     <div className="w-full flex-1 min-h-0">
                         <TimetableSelect 
                             selectedSlots={selectedSlots}
@@ -185,7 +294,7 @@ export default function EditPage({ params }) {
                         disabled={!name.trim() || selectedSlots.size === 0 || isSubmitting}
                         className="whitespace-nowrap"
                     >
-                        {isSubmitting ? '저장 중...' : '저장'}
+                        {isSubmitting ? (isEditMode ? '수정 중...' : '저장 중...') : (isEditMode ? '수정 완료' : '저장')}
                     </Button>
                 </form>
             </div>

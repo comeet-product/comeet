@@ -4,7 +4,6 @@ import DateSelector from "./DateSelector";
 export default function Timetable({ 
   dayCount, 
   halfCount, 
-  startDate, 
   hasDateHeaderAbove = true,
   selectedSlots, 
   onSlotSelection, 
@@ -21,13 +20,16 @@ export default function Timetable({
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  verticalDragThreshold
+  verticalDragThreshold,
+  selectedDates,
+  pageStartDay = 0
 }) {
   return (
     <div className="flex flex-col">
       <DateHeader 
         dayCount={dayCount} 
-        startDate={startDate}
+        selectedDates={selectedDates}
+        pageStartDay={pageStartDay}
       />
       <div className="h-[5px]"></div>
       <DateSelector 
