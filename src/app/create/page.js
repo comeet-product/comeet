@@ -66,12 +66,10 @@ export default function Create() {
     };
 
     return (
-        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 pt-4 pb-10">
-            <div className="mt-8">
-                <Title onChange={setTitle} link={false}>
-                    {title}
-                </Title>
-            </div>
+        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 pt-4 pb-10 gap-10">
+            <Title onChange={setTitle} link={false}>
+                {title}
+            </Title>
             <div className="flex flex-col gap-4 w-full">
                 <Calendar
                     selectedDates={selectedDates}
@@ -87,14 +85,12 @@ export default function Create() {
                     onValidityChange={setIsTimeValid}
                 />
             </div>
-            <div className="w-full">
-                <Button
-                    onClick={handleCreateMeeting}
-                    disabled={isLoading || !isTimeValid}
-                >
-                    미팅 생성
-                </Button>
-            </div>
+            <Button
+                onClick={handleCreateMeeting}
+                disabled={isLoading || !isTimeValid}
+            >
+                미팅 생성
+            </Button>
             
             {/* 로딩 오버레이 */}
             {isLoading && (

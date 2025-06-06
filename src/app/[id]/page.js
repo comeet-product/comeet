@@ -28,6 +28,7 @@ export default function MeetingPage({ params }) {
         useState(0);
     const [selectedCell, setSelectedCell] = useState(null);
     const [selectedCells, setSelectedCells] = useState([]); // 연속된 시간대 선택을 위한 배열
+    const [selectedRecommendation, setSelectedRecommendation] = useState(null); // 선택된 추천 정보
     const router = useRouter();
     const searchParams = useSearchParams();
     const unwrappedParams = use(params);
@@ -102,45 +103,13 @@ export default function MeetingPage({ params }) {
                     console.error("Failed to fetch users:", usersResult.message);
                 }
 
-                // 사용자가 있는 경우에만 결과 및 추천 계산
-                if (usersResult.success && usersResult.data.users.length > 0) {
-                    console.log('=== 사용자가 있으므로 결과 및 추천 계산 시작 ===');
-                    
-                    // 결과 데이터 다시 계산 및 가져오기
-                    console.log('Calculating fresh results...');
-                    const calculateResult = await calculateResults(unwrappedParams.id);
-                    if (calculateResult.success) {
-                        console.log('Results calculated successfully');
-                        
-                        // 계산 후 최신 결과 가져오기
-                        const resultsResult = await getResults(unwrappedParams.id);
-                        if (resultsResult.success) {
-                            console.log('Fresh results loaded:', resultsResult.data.results.length, 'results');
-                            setResults(resultsResult.data.results);
-                        }
-                    } else {
-                        console.error("Failed to calculate results:", calculateResult.message);
-                    }
-
-                    // 추천 데이터 다시 계산
-                    console.log('Calculating fresh recommendations...');
-                    const recResult = await calculateRecommendations(unwrappedParams.id);
-                    if (recResult.success) {
-                        console.log('Recommendations calculated successfully:', recResult.data?.recommendations?.length || 0, 'recommendations');
-                        setRecommendationsRefreshKey(prev => prev + 1);
-                    } else {
-                        console.error("Failed to calculate recommendations:", recResult.message);
-                    }
+                // 결과 데이터 가져오기 (계산하지 않고 기존 데이터만 가져오기)
+                const resultsResult = await getResults(unwrappedParams.id);
+                if (resultsResult.success) {
+                    console.log('Results loaded from database:', resultsResult.data.results.length, 'results');
+                    setResults(resultsResult.data.results);
                 } else {
-                    console.log('=== 사용자가 없으므로 결과만 가져오기 ===');
-                    // 사용자가 없어도 기존 결과는 가져오기
-                    const resultsResult = await getResults(unwrappedParams.id);
-                    if (resultsResult.success) {
-                        console.log('Results loaded from database:', resultsResult.data.results.length, 'results');
-                        setResults(resultsResult.data.results);
-                    } else {
-                        console.error("Failed to fetch results:", resultsResult.message);
-                    }
+                    console.error("Failed to fetch results:", resultsResult.message);
                 }
                 
                 console.log('=== 페이지 데이터 로딩 완료 ===');
@@ -288,6 +257,7 @@ export default function MeetingPage({ params }) {
         setSelectedUser((prev) => (prev === userId ? null : userId));
         setSelectedCell(null); // 하이라이트 해제
         setSelectedCells([]); // 연속 셀 선택 해제
+        setSelectedRecommendation(null); // 추천 선택 해제
     };
 
     const handleCellSelect = (cellData) => {
@@ -305,6 +275,7 @@ export default function MeetingPage({ params }) {
             });
             // 단일 셀 선택 시 연속 셀 초기화
             setSelectedCells([]);
+            setSelectedRecommendation(null); // 추천 선택 해제
         }
     };
 
@@ -317,16 +288,20 @@ export default function MeetingPage({ params }) {
         setSelectedCell(null);
         
         // 현재 선택된 추천과 같은지 확인 (토글 기능)
-        const isCurrentlySelected = selectedCells && selectedCells.length > 0 && 
-            selectedCells[0].date === recommendation.date && 
-            selectedCells[0].start_time === recommendation.start_time;
+        const isCurrentlySelected = selectedRecommendation && 
+            selectedRecommendation.date === recommendation.date && 
+            selectedRecommendation.start_time === recommendation.start_time;
         
         if (isCurrentlySelected) {
             // 이미 선택된 추천을 다시 클릭하면 선택 해제
             console.log('Deselecting current recommendation');
             setSelectedCells([]);
+            setSelectedRecommendation(null);
             return;
         }
+        
+        // 새로운 추천 선택
+        setSelectedRecommendation(recommendation);
         
         // 연속된 시간대 계산
         const { date, start_time, duration } = recommendation;
@@ -346,15 +321,23 @@ export default function MeetingPage({ params }) {
             const newMinute = totalMinutes % 60;
             const newTime = newHour * 100 + newMinute;
 
+            // 해당 시간대의 실제 결과 데이터에서 참여자 수 찾기
+            const correspondingResult = results.find(result => 
+                result.date === date && result.start_time === newTime
+            );
+            
+            const participantCount = correspondingResult ? correspondingResult.number : 0;
+            console.log(`Time slot ${newTime}: found ${participantCount} participants`);
+
             selectedCellsArray.push({
                 date: date,
                 start_time: newTime,
                 duration: 1,
-                number: recommendation.number,
+                number: participantCount, // 실제 참여자 수 설정
             });
         }
 
-        console.log("Selected cells array:", selectedCellsArray);
+        console.log("Selected cells array with participant counts:", selectedCellsArray);
         setSelectedCells(selectedCellsArray);
 
         // 결과 테이블로 스크롤
@@ -375,7 +358,7 @@ export default function MeetingPage({ params }) {
                 setUsers(usersResult.data.users);
             }
 
-            // 결과 데이터도 다시 가져오기 (submitAvailability에서 이미 계산됨)
+            // 결과 데이터 가져오기 (edit 페이지에서 이미 계산됨)
             const resultsResult = await getResults(unwrappedParams.id);
             if (resultsResult.success) {
                 setResults(resultsResult.data.results);
@@ -395,20 +378,18 @@ export default function MeetingPage({ params }) {
     if (isLoading) return <Loading message="데이터를 처리하고 있습니다..." />;
 
     return (
-
         <div className="h-full flex flex-col">
             <div className="flex-1">
-                <div className="px-10 py-8 pb-24 flex flex-col gap-4">
+                <div className="px-10 py-8 flex flex-col gap-6 pb-24">
                     <Title onChange={handleTitleChange}>{meeting.title}</Title>
-                    <div className="mb-10">
-                        <AvailableDatesGroup 
-                            meetingId={unwrappedParams.id}
-                            refreshKey={recommendationsRefreshKey}
-                            onRecommendationClick={handleRecommendationClick}
-                        />
-                    </div>
+                    <AvailableDatesGroup 
+                        meetingId={unwrappedParams.id}
+                        refreshKey={recommendationsRefreshKey}
+                        onRecommendationClick={handleRecommendationClick}
+                        selectedRecommendation={selectedRecommendation}
+                    />
                     
-                    <div ref={resultTableRef}>
+                    <div className="my-5" ref={resultTableRef}>
                         <TimetableResult 
                             dayCount={7}
                             halfCount={8}
@@ -431,11 +412,11 @@ export default function MeetingPage({ params }) {
             <div className="flex-shrink-0 bg-white border-t border-gray-200">
                 <UserBar 
                     meetingId={unwrappedParams.id} 
-
                     users={users}
                     selectedUser={selectedUser}
                     selectedCell={selectedCell}
                     selectedCells={selectedCells}
+                    selectedRecommendationMembers={selectedRecommendation?.members || null}
                     onUserSelect={handleUserSelect}
                     onShowSelect={handleShowSelect}
                     onUserAdded={handleUserAdded}
