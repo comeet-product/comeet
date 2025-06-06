@@ -107,6 +107,9 @@ const UserItem = ({
                 order: animationOrder,
                 transform: 'translateX(0)',
                 width: '60px',
+                // 터치 영역 최적화
+                touchAction: 'manipulation',
+                WebkitTouchCallout: 'none',
             }}
         >
             <button 
@@ -433,37 +436,64 @@ const UserBar = ({
 
                 /* 모바일 터치 디바이스용 개선 */
                 @media (pointer: coarse) {
+                    .custom-scrollbar {
+                        /* iOS에서 터치 스크롤 강화 */
+                        -webkit-overflow-scrolling: touch !important;
+                        scroll-behavior: smooth !important;
+                    }
+                    
                     .custom-scrollbar::-webkit-scrollbar {
-                        height: 18px !important;
+                        height: 20px !important;
+                        display: block !important;
                     }
                     
                     .custom-scrollbar::-webkit-scrollbar-track {
-                        background: rgba(54, 116, 181, 0.1) !important;
-                        margin: 1px !important;
+                        background: rgba(54, 116, 181, 0.15) !important;
+                        margin: 0px !important;
+                        border-radius: 10px !important;
                     }
                     
                     .custom-scrollbar::-webkit-scrollbar-thumb {
-                        background: rgba(54, 116, 181, 0.5) !important;
-                        min-width: 50px !important;
-                        border: 2px solid rgba(255,255,255,0.3) !important;
+                        background: rgba(54, 116, 181, 0.6) !important;
+                        min-width: 60px !important;
+                        border: 3px solid rgba(255,255,255,0.4) !important;
+                        border-radius: 10px !important;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
                     }
 
                     .custom-scrollbar::-webkit-scrollbar-thumb:active {
                         background: rgba(54, 116, 181, 0.9) !important;
+                        box-shadow: 0 3px 6px rgba(0,0,0,0.2) !important;
+                    }
+                }
+                
+                /* iOS Safari 특별 최적화 */
+                @supports (-webkit-touch-callout: none) {
+                    .custom-scrollbar {
+                        -webkit-overflow-scrolling: touch !important;
+                        overflow-scrolling: touch !important;
+                        will-change: scroll-position !important;
                     }
                 }
             `}</style>
             <div className="absolute bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
-                <div className="relative flex items-center" ref={containerRef}>
+                <div className="relative flex items-center" ref={containerRef}
+                     style={{
+                         // 전체 컨테이너에서 터치 최적화
+                         touchAction: "pan-x",
+                         WebkitTouchCallout: "none",
+                         WebkitUserSelect: "none",
+                         userSelect: "none",
+                     }}>
                     <div className="relative flex-1 overflow-hidden">
                         <div
                             ref={scrollContainerRef}
-                            className="flex items-center px-2 gap-2 custom-scrollbar"
+                            className="flex items-center gap-2 custom-scrollbar"
                             style={{
                                 WebkitOverflowScrolling: "touch",
                                 scrollSnapType: "none",
                                 width: "100%",
-                                paddingBottom: "8px",
+                                padding: "8px 16px 16px 16px", // 터치 영역 확장
                                 cursor: isDragging
                                     ? "grabbing"
                                     : typeof window !== "undefined" &&
@@ -476,6 +506,17 @@ const UserBar = ({
                                 // iPhone Safari 스크롤 개선
                                 scrollBehavior: "smooth",
                                 position: "relative",
+                                // iOS에서 터치 스크롤 최적화
+                                WebkitUserSelect: "none",
+                                userSelect: "none",
+                                WebkitTouchCallout: "none",
+                                WebkitTapHighlightColor: "transparent",
+                                // 스크롤 관성 및 바운스 효과
+                                overscrollBehaviorX: "contain",
+                                // 최소 높이 설정으로 터치 영역 확보
+                                minHeight: "60px",
+                                display: "flex",
+                                alignItems: "center",
                             }}
                             onMouseDown={handleMouseDown}
                         >
@@ -493,7 +534,11 @@ const UserBar = ({
                                 />
                             ))}
                         </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-200 to-transparent pointer-events-none" />
+                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-200 to-transparent pointer-events-none" 
+                             style={{
+                                 // 그라데이션 영역에서도 터치 이벤트 통과
+                                 touchAction: "pan-x",
+                             }} />
                     </div>
 
                     <div className="flex-shrink-0">
