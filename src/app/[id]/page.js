@@ -24,7 +24,6 @@ export default function MeetingPage({ params }) {
         useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [shouldShow404, setShouldShow404] = useState(false);
     const router = useRouter();
     const unwrappedParams = use(params);
 
@@ -75,9 +74,8 @@ export default function MeetingPage({ params }) {
                         "Failed to fetch meeting:",
                         meetingResult.message
                     );
-                    // 미팅을 찾을 수 없으면 404 상태로 설정
-                    setShouldShow404(true);
-                    setIsLoading(false);
+                    // 미팅을 찾을 수 없으면 404 페이지 표시
+                    notFound();
                     return;
                 }
 
@@ -131,8 +129,8 @@ export default function MeetingPage({ params }) {
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
-                // 에러 발생 시에도 404 상태로 설정
-                setShouldShow404(true);
+                // 에러 발생 시에도 404 표시
+                notFound();
             } finally {
                 setIsLoading(false);
             }
@@ -140,13 +138,6 @@ export default function MeetingPage({ params }) {
 
         fetchData();
     }, [unwrappedParams.id]);
-
-    // 404 상태라면 notFound() 호출
-    useEffect(() => {
-        if (shouldShow404) {
-            notFound();
-        }
-    }, [shouldShow404]);
 
     // 선택된 사용자의 availability 가져오기
     useEffect(() => {
@@ -243,9 +234,8 @@ export default function MeetingPage({ params }) {
     // loading 상태일 때만 Loading 컴포넌트 표시
     if (isLoading) return <Loading message="정보를 불러오고 있습니다..." />;
 
-    // 404 상태이거나 meeting이 없으면 Loading (notFound()가 곧 호출됨)
-    if (shouldShow404 || !meeting)
-        return <Loading message="정보를 불러오고 있습니다..." />;
+    // meeting이 없으면 이미 notFound()가 호출되었으므로 여기까지 오지 않음
+    if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
         <div className="flex flex-col h-full">
