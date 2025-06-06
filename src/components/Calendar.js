@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 
 export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     // ===== 상수 정의 =====
-    const MOVE_THRESHOLD = 15; // 8px 이상 움직이면 드래그
     const MAX_SELECTED_DATES = 31;
 
     const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -26,24 +25,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
 
-    // 드래그 선택 상태 관리 - TimetableSelect와 동일
-    const [isDragSelecting, setIsDragSelecting] = useState(false);
-    const [dragStartDay, setDragStartDay] = useState(null);
-    const [dragMode, setDragMode] = useState("select"); // 'select' or 'deselect'
-
-    // 터치 처리 상태 - TimetableSelect와 동일
-    const [pendingTouchDay, setPendingTouchDay] = useState(null);
-    const [touchStartPosition, setTouchStartPosition] = useState(null);
-    const [hasMoved, setHasMoved] = useState(false);
-    const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
-
     // 즉시 시각적 피드백을 위한 로컬 선택 상태
     const [localSelectedDates, setLocalSelectedDates] = useState(
         new Set(selectedDates)
     );
-
-    // 컴포넌트 초기화 추적
-    const isInitializedRef = useRef(false);
 
     // 토스트 관련 상태
     const [toastState, setToastState] = useState({
@@ -52,6 +37,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     });
 
     const dateSelectorRef = useRef(null);
+    const calendarRef = useRef(null);
 
     // ===== 유틸리티 함수들 =====
     const formatDate = (year, month, day) => {
@@ -60,39 +46,9 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         return `${year}-${monthStr}-${dayStr}`;
     };
 
-    const toggleDate = (dateStr, dates, isAdd = null) => {
-        const newDates = new Set(dates);
-        const shouldAdd = isAdd === null ? !newDates.has(dateStr) : isAdd;
-
-        if (shouldAdd && newDates.size >= MAX_SELECTED_DATES) {
-            return [...dates];
-        }
-
-        if (isAdd === null) {
-            newDates.has(dateStr)
-                ? newDates.delete(dateStr)
-                : newDates.add(dateStr);
-        } else if (isAdd) {
-            newDates.add(dateStr);
-        } else {
-            newDates.delete(dateStr);
-        }
-
-        return [...newDates];
-    };
-
     const showToast = (message, duration = 1500) => {
         setToastState({ show: true, message });
         setTimeout(() => setToastState({ show: false, message: "" }), duration);
-    };
-
-    const getRowColFromDay = (dayNum, startingDay) => {
-        const dayIndex = dayNum - 1;
-        const cellIndex = startingDay + dayIndex;
-        return {
-            row: Math.floor(cellIndex / 7),
-            col: cellIndex % 7,
-        };
     };
 
     // ===== 달력 계산 함수들 =====
@@ -131,251 +87,69 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         return Array.from({ length: 11 }, (_, i) => currentYear + i);
     };
 
-    // ===== TimetableSelect에서 가져온 선택/드래그 로직 =====
+    // ===== 새로운 터치 처리 로직 (reference.js 방식) =====
 
-    // 터치 시작 처리 (즉시 선택 및 드래그 준비) - 무조건 선택
-    const handleTouchStart = (day, clientX, clientY) => {
-        if (day === null) {
-            return;
-        }
+    // 날짜 선택/해제 함수
+    const toggleDateSelection = (day) => {
+        if (day === null) return;
 
-        // 터치 시작 위치와 대기 날짜 설정
-        setTouchStartPosition({ x: clientX, y: clientY });
-        setPendingTouchDay(day);
-        setHasMoved(false);
-
-        // 터치 시작 시 무조건 즉시 선택 (조건 없이, 단순하게)
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
 
-        console.log("Touch started on day:", day, "dateStr:", dateStr);
+        console.log("=== DATE TOGGLE ===");
+        console.log("Toggling day:", day, "dateStr:", dateStr);
 
         const newLocalDates = new Set(localSelectedDates);
+
         if (newLocalDates.has(dateStr)) {
-            newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
-            console.log("Date removed on touch start:", dateStr);
+            newLocalDates.delete(dateStr);
+            console.log("Date removed:", dateStr);
         } else {
             if (newLocalDates.size >= MAX_SELECTED_DATES) {
                 showToast("날짜 선택은 최대 31일까지 가능합니다.");
+                console.log("Max dates reached");
                 return;
             }
-            newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
-            console.log("Date added on touch start:", dateStr);
+            newLocalDates.add(dateStr);
+            console.log("Date added:", dateStr);
         }
 
-        // 즉시 상태 업데이트
+        console.log("New selected dates:", [...newLocalDates]);
         setLocalSelectedDates(newLocalDates);
         onChange([...newLocalDates]);
+        console.log("=== TOGGLE COMPLETE ===");
     };
 
-    // 터치 이동 처리 (드래그 감지) - TimetableSelect 그대로
-    const handleTouchMove = (day, clientX, clientY) => {
-        if (!touchStartPosition || !pendingTouchDay || !isSelectionEnabled) {
+    // 전역 터치 이벤트 핸들러 (reference.js 방식)
+    const handleGlobalTouch = (e) => {
+        // Calendar 영역 내에서만 처리
+        if (!calendarRef.current?.contains(e.target)) {
             return;
         }
 
-        const dx = Math.abs(clientX - touchStartPosition.x);
-        const dy = Math.abs(clientY - touchStartPosition.y);
-        const moved = dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD;
+        console.log("=== GLOBAL TOUCH EVENT ===");
+        console.log("Touch type:", e.type);
+        console.log("Target:", e.target);
 
-        // 움직임이 감지되고 아직 드래그 모드가 아니면 드래그 시작
-        if (!hasMoved && moved) {
-            setHasMoved(true);
-
-            // 드래그 선택 시작
-            if (!isDragSelecting) {
-                handleDragSelectionStart(pendingTouchDay);
-            }
-        }
-
-        // 드래그 중이면 현재 위치까지 선택 확장
-        if (isDragSelecting && hasMoved) {
-            handleDragSelectionMove(day);
-        }
-    };
-
-    // 터치 종료 처리 (드래그가 아니면 이미 선택된 상태 유지) - TimetableSelect 그대로
-    const handleTouchEnd = () => {
-        if (!isSelectionEnabled) {
+        // 날짜 셀인지 확인
+        const dayElement = e.target.closest("[data-day]");
+        if (!dayElement) {
+            console.log("Not a day element");
             return;
         }
 
-        // 드래그 선택 중이었다면 종료
-        if (isDragSelecting) {
-            handleDragSelectionEnd();
-        }
-
-        // 드래그가 아니었다면 이미 터치 시작 시점에 선택 처리되었으므로 추가 처리 없음
-
-        // 상태 초기화
-        setTouchStartPosition(null);
-        setPendingTouchDay(null);
-        setHasMoved(false);
-    };
-
-    // 마우스 시작 처리 (터치와 동일한 로직) - 무조건 선택
-    const handleMouseStart = (day, clientX, clientY) => {
-        if (day === null) {
+        const day = parseInt(dayElement.getAttribute("data-day"));
+        if (!day) {
+            console.log("Invalid day:", day);
             return;
         }
 
-        // 마우스 시작 위치와 대기 날짜 설정
-        setTouchStartPosition({ x: clientX, y: clientY });
-        setPendingTouchDay(day);
-        setHasMoved(false);
-
-        // 마우스 시작 시 무조건 즉시 선택 (조건 없이, 단순하게)
-        const { year, month } = getCalendarData();
-        const dateStr = formatDate(year, month, day);
-
-        console.log("Mouse started on day:", day, "dateStr:", dateStr);
-
-        const newLocalDates = new Set(localSelectedDates);
-        if (newLocalDates.has(dateStr)) {
-            newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
-            console.log("Date removed on mouse start:", dateStr);
-        } else {
-            if (newLocalDates.size >= MAX_SELECTED_DATES) {
-                showToast("날짜 선택은 최대 31일까지 가능합니다.");
-                return;
-            }
-            newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
-            console.log("Date added on mouse start:", dateStr);
+        // 터치 시작 시에만 선택 처리
+        if (e.type === "touchstart") {
+            console.log("Processing touch start for day:", day);
+            e.preventDefault(); // 기본 동작 방지
+            toggleDateSelection(day);
         }
-
-        // 즉시 상태 업데이트
-        setLocalSelectedDates(newLocalDates);
-        onChange([...newLocalDates]);
-    };
-
-    // 마우스 이동 처리 (터치와 동일한 로직) - TimetableSelect 그대로
-    const handleMouseMove = (day, clientX, clientY) => {
-        if (!touchStartPosition || !pendingTouchDay || !isSelectionEnabled) {
-            return;
-        }
-
-        const dx = Math.abs(clientX - touchStartPosition.x);
-        const dy = Math.abs(clientY - touchStartPosition.y);
-        const moved = dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD;
-
-        // 움직임이 감지되고 아직 드래그 모드가 아니면 드래그 시작
-        if (!hasMoved && moved) {
-            setHasMoved(true);
-
-            // 드래그 선택 시작
-            if (!isDragSelecting) {
-                handleDragSelectionStart(pendingTouchDay);
-            }
-        }
-
-        // 드래그 중이면 현재 위치까지 선택 확장
-        if (isDragSelecting && hasMoved) {
-            handleDragSelectionMove(day);
-        }
-    };
-
-    // 마우스 종료 처리 (터치와 동일한 로직) - TimetableSelect 그대로
-    const handleMouseEnd = () => {
-        if (!isSelectionEnabled) {
-            return;
-        }
-
-        // 드래그 선택 중이었다면 종료
-        if (isDragSelecting) {
-            handleDragSelectionEnd();
-        }
-
-        // 상태 초기화
-        setTouchStartPosition(null);
-        setPendingTouchDay(null);
-        setHasMoved(false);
-    };
-
-    // 드래그 선택 시작 (움직임이 감지되었을 때) - TimetableSelect 그대로
-    const handleDragSelectionStart = (day) => {
-        if (!isSelectionEnabled) {
-            return;
-        }
-
-        const { year, month } = getCalendarData();
-        const dateStr = formatDate(year, month, day);
-        const isCurrentlySelected = localSelectedDates.has(dateStr);
-
-        // 현재 날짜의 선택 상태에 따라 드래그 모드 결정
-        // 터치 시작 시 이미 선택 처리되었으므로, 현재 선택 상태로 드래그 모드 결정
-        const mode = isCurrentlySelected ? "select" : "deselect";
-
-        setIsDragSelecting(true);
-        setDragStartDay(day);
-        setDragMode(mode);
-
-        // 시작 날짜는 이미 터치 시작 시점에 처리되었으므로 추가 처리 없음
-        // 드래그 모드만 설정하고 실제 선택/해제는 드래그 이동 시 처리
-    };
-
-    // 드래그 선택 중 - Calendar.js는 직사각형 선택 지원
-    const handleDragSelectionMove = (day) => {
-        if (!isDragSelecting || !isSelectionEnabled || !dragStartDay) {
-            return;
-        }
-
-        // 직사각형 범위의 모든 날짜 선택
-        selectDatesInRange(dragStartDay, day);
-    };
-
-    // 드래그 선택 종료 - TimetableSelect 그대로
-    const handleDragSelectionEnd = () => {
-        setIsDragSelecting(false);
-        setDragStartDay(null);
-        setDragMode("select");
-    };
-
-    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - 단순화
-    const handleTapSelection = (day) => {
-        // 터치 시작에서 이미 처리되므로 여기서는 추가 작업 없음
-        console.log(
-            "handleTapSelection called but already handled in touch start"
-        );
-    };
-
-    // 범위 내 날짜들 선택/해제 - 연속 날짜 선택 (16일→26일 = 16~26일)
-    const selectDatesInRange = (startDay, endDay) => {
-        if (!startDay || !endDay) return;
-
-        const { daysInMonth, year, month } = getCalendarData();
-
-        // 시작일과 끝일 정렬 (작은 값이 시작)
-        const minDay = Math.min(startDay, endDay);
-        const maxDay = Math.max(startDay, endDay);
-
-        console.log(`Selecting range: ${minDay} to ${maxDay}`);
-
-        const newSelectedDates = new Set(localSelectedDates);
-
-        // 시작일부터 끝일까지 연속으로 선택
-        for (let dayNum = minDay; dayNum <= maxDay; dayNum++) {
-            if (dayNum >= 1 && dayNum <= daysInMonth) {
-                const dateStr = formatDate(year, month, dayNum);
-
-                if (dragMode === "select") {
-                    newSelectedDates.add(dateStr);
-                } else {
-                    newSelectedDates.delete(dateStr);
-                }
-            }
-        }
-
-        if (newSelectedDates.size > MAX_SELECTED_DATES) {
-            showToast("날짜 선택은 최대 31일까지 가능합니다.");
-            handleDragSelectionEnd();
-            return;
-        }
-
-        // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
-        setLocalSelectedDates(newSelectedDates);
-
-        // 부모 컴포넌트에 변경사항 전달
-        onChange([...newSelectedDates]);
     };
 
     // ===== 네비게이션 핸들러들 =====
@@ -413,19 +187,31 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         };
 
         document.addEventListener("mouseup", handleClickOutside);
-
         return () => {
             document.removeEventListener("mouseup", handleClickOutside);
         };
     }, []);
 
-    // 초기화 시에만 selectedDates와 동기화 (이후 완전히 무시)
+    // 전역 터치 이벤트 등록 (reference.js 방식)
     useEffect(() => {
-        if (!isInitializedRef.current) {
-            setLocalSelectedDates(new Set(selectedDates));
-            isInitializedRef.current = true;
-        }
-        // 초기화 후에는 selectedDates prop 변경 완전히 무시
+        console.log("Setting up global touch listeners");
+        window.addEventListener("touchstart", handleGlobalTouch, {
+            passive: false,
+        });
+        window.addEventListener("touchend", handleGlobalTouch, {
+            passive: false,
+        });
+
+        return () => {
+            console.log("Cleaning up global touch listeners");
+            window.removeEventListener("touchstart", handleGlobalTouch);
+            window.removeEventListener("touchend", handleGlobalTouch);
+        };
+    }, [localSelectedDates]); // localSelectedDates 의존성 추가
+
+    // selectedDates prop 변경 시 localSelectedDates 동기화
+    useEffect(() => {
+        setLocalSelectedDates(new Set(selectedDates));
     }, [selectedDates]);
 
     // ===== 렌더링 데이터 준비 =====
@@ -546,29 +332,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                 <div
                     className="grid grid-cols-7 gap-2 w-full"
                     style={{ touchAction: "none" }}
-                    onMouseLeave={handleDragSelectionEnd}
-                    onMouseUp={handleMouseEnd}
-                    onTouchMove={(e) => {
-                        const touch = e.touches[0];
-                        const element = document.elementFromPoint(
-                            touch.clientX,
-                            touch.clientY
-                        );
-                        const dayElement = element?.closest("[data-day]");
-                        if (dayElement) {
-                            const day = parseInt(
-                                dayElement.getAttribute("data-day")
-                            );
-                            if (day) {
-                                handleTouchMove(
-                                    day,
-                                    touch.clientX,
-                                    touch.clientY
-                                );
-                            }
-                        }
-                    }}
-                    onTouchEnd={handleTouchEnd}
+                    ref={calendarRef}
                 >
                     {days.map((day, index) => {
                         const dateStr = day
@@ -576,28 +340,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                             : null;
                         const isSelected =
                             day !== null && localSelectedDates.has(dateStr);
-                        const isDragStartDay =
-                            isDragSelecting &&
-                            dragStartDay === day &&
-                            dragMode === "select";
 
                         return (
                             <div
                                 key={index}
                                 data-day={day}
-                                onMouseDown={(e) =>
-                                    handleMouseStart(day, e.clientX, e.clientY)
-                                }
-                                onMouseEnter={(e) =>
-                                    handleMouseMove(day, e.clientX, e.clientY)
-                                }
-                                onTouchStart={(e) =>
-                                    handleTouchStart(
-                                        day,
-                                        e.touches[0].clientX,
-                                        e.touches[0].clientY
-                                    )
-                                }
+                                onClick={() => day && toggleDateSelection(day)}
                                 onSelectStart={(e) => e.preventDefault()}
                                 onDragStart={(e) => e.preventDefault()}
                                 className={`
@@ -621,14 +369,8 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                             : ""
                                     }
                                     ${
-                                        isDragStartDay
-                                            ? "bg-blue-200 rounded-full ring-2 ring-blue-300 ring-opacity-50"
-                                            : ""
-                                    }
-                                    ${
                                         day !== null &&
                                         !isSelected &&
-                                        !isDragStartDay &&
                                         (!isCurrentMonth || day !== today)
                                             ? "md:hover:bg-gray-200 rounded-full"
                                             : ""
