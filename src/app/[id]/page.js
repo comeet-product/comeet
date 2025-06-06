@@ -7,6 +7,7 @@ import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import { getUsers } from "@/lib/supabase/getUsers";
 import { getResults } from "@/lib/supabase/getResults";
 import { calculateResults } from "@/lib/supabase/calculateResults";
+import { calculateRecommendations } from "@/lib/supabase/calculateRecommendations";
 import { getUserAvailability } from "@/lib/supabase/getUserAvailability";
 import Title from "@/components/Title";
 import TimetableResult from "@/components/TimetableComponent/TimetableResult";
@@ -21,6 +22,9 @@ export default function MeetingPage({ params }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedUserAvailability, setSelectedUserAvailability] = useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [recommendationsRefreshKey, setRecommendationsRefreshKey] = useState(0);
+    const [selectedCell, setSelectedCell] = useState(null);
+    const [selectedCells, setSelectedCells] = useState([]); // 연속된 시간대 선택을 위한 배열
     const router = useRouter();
     const searchParams = useSearchParams();
     const unwrappedParams = use(params);
@@ -85,9 +89,92 @@ export default function MeetingPage({ params }) {
             } else {
                 console.error("Failed to fetch results:", resultsResult.message);
             }
+
+            // 사용자가 있으면 recommendations 다시 계산 (기존 잘못된 데이터 수정)
+            if (usersResult.success && usersResult.data.users.length > 0) {
+                console.log('Recalculating recommendations to fix duration...');
+                const recResult = await calculateRecommendations(unwrappedParams.id);
+                if (recResult.success) {
+                    console.log('Recommendations recalculated:', recResult.data);
+                    setRecommendationsRefreshKey(prev => prev + 1);
+                }
+            }
         };
 
         fetchData();
+        
+        // 실시간 구독 설정
+        const { supabase } = require('@/lib/supabase');
+        
+        // recommendation 테이블 구독
+        const recommendationSubscription = supabase
+            .channel('recommendation-changes')
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'recommendation',
+                    filter: `meeting_id=eq.${unwrappedParams.id}`
+                }, 
+                (payload) => {
+                    console.log('Recommendation data changed:', payload);
+                    // 추천 데이터 새로고침
+                    setRecommendationsRefreshKey(prev => prev + 1);
+                }
+            )
+            .subscribe();
+
+        // result 테이블 구독  
+        const resultSubscription = supabase
+            .channel('result-changes')
+            .on('postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public', 
+                    table: 'result',
+                    filter: `meeting_id=eq.${unwrappedParams.id}`
+                },
+                async (payload) => {
+                    console.log('Result data changed:', payload);
+                    // 결과 데이터 다시 가져오기
+                    const resultsResult = await getResults(unwrappedParams.id);
+                    if (resultsResult.success) {
+                        setResults(resultsResult.data.results);
+                    }
+                }
+            )
+            .subscribe();
+
+        // availability 테이블 구독
+        const availabilitySubscription = supabase
+            .channel('availability-changes')
+            .on('postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'availability'
+                },
+                async (payload) => {
+                    console.log('Availability data changed:', payload);
+                    // 선택된 사용자의 availability 새로고침
+                    if (selectedUser) {
+                        const availabilityResult = await getUserAvailability(selectedUser);
+                        if (availabilityResult.success) {
+                            setSelectedUserAvailability(availabilityResult.data.availability);
+                        }
+                    }
+                    // 추천 데이터도 새로고침
+                    setRecommendationsRefreshKey(prev => prev + 1);
+                }
+            )
+            .subscribe();
+
+        // 정리 함수
+        return () => {
+            recommendationSubscription.unsubscribe();
+            resultSubscription.unsubscribe(); 
+            availabilitySubscription.unsubscribe();
+        };
     }, [unwrappedParams.id, autoSelectUserId]);
     
     // 자동 스크롤 처리
@@ -153,6 +240,23 @@ export default function MeetingPage({ params }) {
         }
     };
 
+    // Recommendations 다시 계산하는 함수
+    const handleRecalculateRecommendations = async () => {
+        try {
+            console.log('Recalculating recommendations...');
+            const result = await calculateRecommendations(unwrappedParams.id);
+            if (result.success) {
+                console.log('Recommendations recalculated successfully:', result.data);
+                // 추천 데이터 새로고침
+                setRecommendationsRefreshKey(prev => prev + 1);
+            } else {
+                console.error('Failed to recalculate recommendations:', result.message);
+            }
+        } catch (error) {
+            console.error('Error recalculating recommendations:', error);
+        }
+    };
+
     const handleTitleChange = async (newTitle) => {
         const result = await updateMeetingTitle(unwrappedParams.id, newTitle);
         if (result.success) {
@@ -173,6 +277,66 @@ export default function MeetingPage({ params }) {
     const handleUserSelect = (userId) => {
         console.log('User selected:', userId);
         setSelectedUser(prev => prev === userId ? null : userId);
+        setSelectedCell(null); // 하이라이트 해제
+        setSelectedCells([]); // 연속 셀 선택 해제
+    };
+
+    const handleCellSelect = (cellData) => {
+        console.log('Cell selected:', cellData);
+        if (selectedUser === null) {
+            setSelectedCell(prev => {
+                if (prev && prev.date === cellData.date && prev.start_time === cellData.start_time) {
+                    return null;
+                }
+                return cellData;
+            });
+            // 단일 셀 선택 시 연속 셀 초기화
+            setSelectedCells([]);
+        }
+    };
+
+    // 추천 시간 클릭 핸들러
+    const handleRecommendationClick = (recommendation) => {
+        console.log('Recommendation clicked:', recommendation);
+        
+        // 사용자 선택 해제
+        setSelectedUser(null);
+        setSelectedCell(null);
+        
+        // 연속된 시간대 계산
+        const { date, start_time, duration } = recommendation;
+        const selectedCellsArray = [];
+        
+        for (let i = 0; i < duration; i++) {
+            // 시작 시간에서 i * 30분씩 더한 시간 계산
+            const startTimeNum = typeof start_time === 'string' ? 
+                parseInt(start_time.replace(':', '')) : start_time;
+            const startHour = Math.floor(startTimeNum / 100);
+            const startMinute = startTimeNum % 100;
+            
+            const totalMinutes = startHour * 60 + startMinute + (i * 30);
+            const newHour = Math.floor(totalMinutes / 60);
+            const newMinute = totalMinutes % 60;
+            const newTime = newHour * 100 + newMinute;
+            
+            selectedCellsArray.push({
+                date: date,
+                start_time: newTime,
+                duration: 1,
+                number: recommendation.number
+            });
+        }
+        
+        console.log('Selected cells array:', selectedCellsArray);
+        setSelectedCells(selectedCellsArray);
+        
+        // 결과 테이블로 스크롤
+        if (resultTableRef.current) {
+            resultTableRef.current.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
     };
 
     // 새 사용자가 추가되었을 때 목록 업데이트
@@ -187,23 +351,26 @@ export default function MeetingPage({ params }) {
         if (resultsResult.success) {
             setResults(resultsResult.data.results);
         }
+        
+        // 추천 데이터 새로고침을 위해 refreshKey 업데이트
+        setRecommendationsRefreshKey(prev => prev + 1);
     };
 
     if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] min-h-0">
+        <div className="flex flex-col">
                 <div className="px-10 py-8 flex flex-col gap-4">
                     <Title onChange={handleTitleChange}>{meeting.title}</Title>
                     <div className="mb-10">
-                        <AvailableDatesGroup />
+                        <AvailableDatesGroup 
+                            meetingId={unwrappedParams.id}
+                            refreshKey={recommendationsRefreshKey}
+                            onRecommendationClick={handleRecommendationClick}
+                        />
                     </div>
                     
                     <div ref={resultTableRef}>
-                        <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
-                            Schedule Overview
-                        </h5>
                         <TimetableResult 
                             dayCount={7}
                             halfCount={8}
@@ -216,15 +383,19 @@ export default function MeetingPage({ params }) {
                             users={users}
                             selectedUser={selectedUser}
                             selectedUserAvailability={selectedUserAvailability}
+                            selectedCell={selectedCell}
+                            selectedCells={selectedCells}
+                            onCellSelect={handleCellSelect}
                         />
                     </div>
-                </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="sticky bottom-0 bg-white">
                 <UserBar 
                     meetingId={unwrappedParams.id} 
                     users={users}
                     selectedUser={selectedUser}
+                    selectedCell={selectedCell}
+                    selectedCells={selectedCells}
                     onUserSelect={handleUserSelect}
                     onShowSelect={handleShowSelect}
                     onUserAdded={handleUserAdded}

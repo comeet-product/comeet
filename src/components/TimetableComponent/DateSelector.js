@@ -20,7 +20,14 @@ export default function DateSelector({
     isSelectionEnabled,
     isDragSelecting,
     pendingTouchSlot,
-    verticalDragThreshold
+    verticalDragThreshold,
+    onCellClick,
+    selectedCell,
+    selectedCells = [],
+    results,
+    pageStartDay = 0,
+    meeting,
+    dynamicStartTime
 }) {
     return (
         <div className="flex">
@@ -47,6 +54,13 @@ export default function DateSelector({
                         isDragSelecting={isDragSelecting}
                         pendingTouchSlot={pendingTouchSlot}
                         verticalDragThreshold={verticalDragThreshold}
+                        onCellClick={onCellClick}
+                        selectedCell={selectedCell}
+                        selectedCells={selectedCells}
+                        results={results}
+                        pageStartDay={pageStartDay}
+                        meeting={meeting}
+                        dynamicStartTime={dynamicStartTime}
                     />
                 </div>
             ))}

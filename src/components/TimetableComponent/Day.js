@@ -21,7 +21,14 @@ export default function Day({
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  verticalDragThreshold
+  verticalDragThreshold,
+  onCellClick,
+  selectedCell,
+  selectedCells = [],
+  results,
+  pageStartDay = 0,
+  meeting,
+  dynamicStartTime
 }) {
   const hourCount = Math.floor(halfCount / 2);
   const hasExtraHalf = halfCount % 2 === 1;
@@ -53,6 +60,13 @@ export default function Day({
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
           verticalDragThreshold={verticalDragThreshold}
+          onCellClick={onCellClick}
+          selectedCell={selectedCell}
+          selectedCells={selectedCells}
+          results={results}
+          pageStartDay={pageStartDay}
+          meeting={meeting}
+          dynamicStartTime={dynamicStartTime}
         />
       ))}
       
@@ -80,6 +94,13 @@ export default function Day({
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
           verticalDragThreshold={verticalDragThreshold}
+          onCellClick={onCellClick}
+          selectedCell={selectedCell}
+          selectedCells={selectedCells}
+          results={results}
+          pageStartDay={pageStartDay}
+          meeting={meeting}
+          dynamicStartTime={dynamicStartTime}
         />
       )}
     </div>
