@@ -52,7 +52,7 @@ export default function TimeHeader({ halfCount, startTime, dateHeaderHeight }) {
             {timeLabels.map((time, index) => {
                 // 30분 시작의 경우 첫 번째 라벨 위치 조정
                 const startHasHalf = startTime % 1 >= 0.5;
-                const baseOffset = startHasHalf ? hourHeight : 0; // 30분 시작이면 한 시간 아래로
+                const baseOffset = startHasHalf ? halfHeight : 0; // 30분 시작이면 halfHeight(17px)만큼 아래로
                 const topPosition =
                     dateHeaderHeight + baseOffset + index * hourHeight;
 
