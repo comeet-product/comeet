@@ -6,7 +6,9 @@ import { supabase } from "../supabase.js";
  * 새로운 미팅 생성
  * @param {Object} meetingData - 미팅 데이터
  * @param {string} meetingData.title - 미팅 제목
- * @param {string[]} meetingData.dates - 가능한 날짜 배열 (YYYY-MM-DD 형식)
+
+ * @param {string[]} meetingData.dates - 가능한 날짜 배열 (예: ["2024-12-20", "2024-12-22", "2024-12-25"])
+
  * @param {Object} meetingData.selectableTime - 선택 가능한 시간 설정
  * @param {number} meetingData.selectableTime.start - 시작 시간 (예: 900)
  * @param {number} meetingData.selectableTime.end - 종료 시간 (예: 1800)
@@ -15,13 +17,22 @@ import { supabase } from "../supabase.js";
  */
 export async function createMeeting(meetingData) {
     try {
-        // meeting 테이블에 미팅 생성
+
+        // dates 배열 정렬 (오름차순)
+        const sortedDates = [...meetingData.dates].sort((a, b) => {
+            return new Date(a).getTime() - new Date(b).getTime();
+        });
+
+        // meeting 테이블에 미팅 생성 (createdAt은 DEFAULT NOW()로 자동 설정)
+
         const { data: meeting, error: meetingError } = await supabase
             .from("meeting")
             .insert([
                 {
                     title: meetingData.title,
-                    dates: meetingData.dates || [], // 날짜 배열 저장
+
+                    dates: sortedDates,
+
                     selectable_time: meetingData.selectableTime,
                     // createdAt은 DEFAULT NOW()로 자동 설정되므로 생략
                 },

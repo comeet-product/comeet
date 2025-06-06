@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "../supabase.js";
+import { calculateResults } from "./calculateResults.js";
 
 /**
  * 사용자 이름 중복 체크
@@ -32,6 +33,8 @@ async function checkDuplicateName(meetingId, name) {
  */
 export async function submitAvailability(meetingId, name, availableSlots) {
     try {
+        console.log('Submitting availability:', { meetingId, name, availableSlots });
+
         // 1. 이름 중복 체크
         const isDuplicate = await checkDuplicateName(meetingId, name);
         if (isDuplicate) {
@@ -58,6 +61,7 @@ export async function submitAvailability(meetingId, name, availableSlots) {
         }
 
         const userId = userData[0].userid;
+        console.log('User created with ID:', userId);
 
         // 3. availability 테이블에 날짜별 가용성 저장
         const availabilityInsertData = [];
@@ -82,6 +86,19 @@ export async function submitAvailability(meetingId, name, availableSlots) {
             }
         }
 
+        console.log('Availability saved successfully');
+
+        // 4. 결과 데이터 재계산
+        console.log('Recalculating results...');
+        const resultsResult = await calculateResults(meetingId);
+        
+        if (!resultsResult.success) {
+            console.error('Failed to recalculate results:', resultsResult.message);
+            // 결과 계산 실패해도 사용자 추가는 성공으로 처리
+        } else {
+            console.log('Results recalculated successfully');
+        }
+
         return {
             success: true,
             message: "가용성이 성공적으로 저장되었습니다.",
@@ -89,9 +106,11 @@ export async function submitAvailability(meetingId, name, availableSlots) {
                 userid: userId,
                 name: name,
                 availableSlots: availableSlots,
+                resultsCalculated: resultsResult.success,
             },
         };
     } catch (error) {
+        console.error("Error in submitAvailability:", error);
         return {
             success: false,
             message: "가용성 저장 중 오류가 발생했습니다: " + error.message,

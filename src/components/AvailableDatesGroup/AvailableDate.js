@@ -14,7 +14,7 @@ export default function AvailableDate({
             onClick={onClick}
             disabled={disabled}
             className={`
-                w-full
+                w-[143px]
                 rounded-md
                 bg-white
                 border border-gray-200
@@ -22,14 +22,13 @@ export default function AvailableDate({
                 relative
                 py-0.5
                 px-3
+                whitespace-nowrap
                 ${disabled ? "opacity-50 cursor-not-allowed" : ""}
                 ${className}
             `}
         >
             <div className="flex items-center gap-2 mx-auto">
-                <span className="text-sm text-gray-900">
-                    {date}
-                </span>
+                <span className="text-sm text-gray-900">{date}</span>
                 <Time text={timeText} backgroundColor={backgroundColor} />
             </div>
             <svg
