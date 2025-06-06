@@ -498,7 +498,40 @@ export default function TimetableSelect({
     const handlePCDragSelectionMove = (currentSlot) => {
         if (!dragStartSlot || !isDragSelecting) return;
 
-        selectSlotsInRange(dragStartSlot, currentSlot);
+        // PC에서도 모바일처럼 수직으로만 드래그 선택
+        if (dragStartSlot.dayIndex !== currentSlot.dayIndex) {
+            return;
+        }
+
+        // 시작점보다 아래쪽(halfIndex가 더 큰)이 아니면 무시
+        if (currentSlot.halfIndex < dragStartSlot.halfIndex) {
+            return;
+        }
+
+        const dayIndex = dragStartSlot.dayIndex;
+        const startHalfIndex = dragStartSlot.halfIndex;
+        const endHalfIndex = currentSlot.halfIndex;
+
+        setSelectedSlots((prev) => {
+            const newSelectedSlots = new Set(prev);
+
+            // 시작점부터 끝점까지 세로로 선택
+            for (
+                let halfIndex = startHalfIndex;
+                halfIndex <= endHalfIndex;
+                halfIndex++
+            ) {
+                const slotId = `${dayIndex}-${halfIndex}`;
+
+                if (dragMode === "select") {
+                    newSelectedSlots.add(slotId);
+                } else {
+                    newSelectedSlots.delete(slotId);
+                }
+            }
+
+            return newSelectedSlots;
+        });
     };
 
     // PC 전용 탭 선택 (단일 클릭)
@@ -1048,7 +1081,7 @@ export default function TimetableSelect({
                 className="flex-1 min-w-0"
                 style={{
                     position: "relative",
-                    touchAction: "manipulation", // 더블탭 줌만 차단하고 다른 제스처는 허용
+                    touchAction: isMobile ? "none" : "manipulation", // 모바일에서는 모든 터치 동작 차단
                 }}
             >
                 <div
@@ -1057,7 +1090,7 @@ export default function TimetableSelect({
                     style={{
                         overflowX:
                             visibleDayCount < TOTAL_DAYS ? "auto" : "hidden",
-                        touchAction: "manipulation", // 더블탭 줌만 차단하고 다른 제스처는 허용
+                        touchAction: isMobile ? "none" : "manipulation", // 모바일에서는 모든 터치 동작 차단
                         scrollSnapType: "none", // 브라우저 기본 snap 비활성화
                         paddingLeft:
                             visibleDayCount < TOTAL_DAYS ? "1.3px" : "0", // 왼쪽 border 보정
