@@ -212,24 +212,16 @@ export default function TimetableSelect() {
         // 대기 중인 슬롯 설정
         setPendingTouchSlot({ dayIndex, halfIndex });
 
-        // 짧은 시간 후 탭 선택으로 확정 (더 빠른 반응)
-        const tapTimer = setTimeout(() => {
-            if (!isDragSelecting) {
-                handleTapSelection(dayIndex, halfIndex);
-                setPendingTouchSlot(null);
-            }
-        }, TAP_THRESHOLD);
+        // 즉시 탭 선택 처리 (더 빠른 반응을 위해)
+        if (!isDragSelecting) {
+            handleTapSelection(dayIndex, halfIndex);
+        }
 
-        // 더 긴 시간 후 드래그 선택 준비 모드로 전환
+        // 드래그 준비 모드로 전환하기 위한 타이머만 설정
         const dragTimer = setTimeout(() => {
-            // 아직 드래그가 시작되지 않았다면 드래그 준비 상태로 설정
-            if (!isDragSelecting && pendingTouchSlot) {
-                // 이미 탭 선택이 완료되었을 수도 있으므로 추가 처리 없음
-                setPendingTouchSlot(null);
-            }
+            setPendingTouchSlot(null);
         }, DRAG_THRESHOLD);
 
-        setTouchTimeout(tapTimer);
         setDragTimeout(dragTimer);
     };
 
@@ -261,10 +253,9 @@ export default function TimetableSelect() {
         setDragStartSlot({ dayIndex, halfIndex });
         setDragMode(mode);
         
-        // 시작 슬롯 선택/해제
-        if (mode === 'select') {
-            setSelectedSlots(prev => new Set([...prev, slotId]));
-        } else {
+        // 시작 슬롯은 이미 handleTouchPending에서 처리되었으므로
+        // 드래그 모드에 따라 추가 처리만 수행
+        if (mode === 'deselect' && isCurrentlySelected) {
             setSelectedSlots(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(slotId);
@@ -304,8 +295,8 @@ export default function TimetableSelect() {
             clearTimeout(dragTimeout);
             setDragTimeout(null);
         }
-        setPendingTouchSlot(null);
         
+        setPendingTouchSlot(null);
         setIsDragSelecting(false);
         setDragStartSlot(null);
         setDragMode('select');
@@ -314,7 +305,7 @@ export default function TimetableSelect() {
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
     const handleTapSelection = (dayIndex, halfIndex) => {
         // 빠른 응답을 위해 필수 체크만 수행
-        if (!isSelectionEnabled) {
+        if (!isSelectionEnabled || isDragSelecting) {
             return;
         }
 
@@ -598,11 +589,9 @@ export default function TimetableSelect() {
             
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
-                // 짧은 지연 후 상태 초기화
-                setTimeout(() => {
-                    setIsSelectionEnabled(true);
-                    setPendingTouchSlot(null);
-                }, 50);
+                // 즉시 상태 초기화 (지연 없이)
+                setIsSelectionEnabled(true);
+                setPendingTouchSlot(null);
                 
                 handleScrollEnd();
             }
