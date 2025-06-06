@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased bg-white h-full">
         <div className="h-full flex justify-center lg:py-4">
           <div className="w-screen lg:w-[25%] lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col">
-            <div className="flex-1 flex flex-col mt-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex-1 flex flex-col mt-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <Header />
               {children}
             </div>
