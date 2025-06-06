@@ -7,6 +7,7 @@ export default function Hour({
   isFirstDay, 
   hasDateHeaderAbove, 
   selectedSlots, 
+  slotOpacities = null,
   onSlotSelection, 
   onTapSelection,
   onTouchPending,
@@ -35,6 +36,7 @@ export default function Hour({
           isFirstDay={isFirstDay} 
           hasDateHeaderAbove={hasDateHeaderAbove}
           selectedSlots={selectedSlots}
+          slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
           onTouchPending={onTouchPending}
@@ -56,6 +58,7 @@ export default function Hour({
           isTop={false} 
           isFirstDay={isFirstDay}
           selectedSlots={selectedSlots}
+          slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
           onTouchPending={onTouchPending}

@@ -81,24 +81,13 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }
     );
 };
 
-const USERS = [
-    { id: 1, name: "신서윤" },
-    { id: 2, name: "한예진" },
-    { id: 3, name: "김재완" },
-    { id: 4, name: "박기훈" },
-    { id: 5, name: "박기훈" },
-    { id: 6, name: "박기훈" },
-    { id: 7, name: "박기훈" },
-    { id: 8, name: "박기훈" },
-];
-
-const UserBar = ({ meetingId, onShowSelect }) => {
-    const [selectedUser, setSelectedUser] = React.useState(null);
-    const [users, setUsers] = React.useState(USERS);
+const UserBar = ({ meetingId, users = [], selectedUser, onUserSelect, onShowSelect, onUserAdded }) => {
     const containerRef = React.useRef(null);
 
-    const handleUserClick = (id) => {
-        setSelectedUser(prev => prev === id ? null : id);
+    const handleUserClick = (userId) => {
+        if (onUserSelect) {
+            onUserSelect(userId);
+        }
     };
 
     const handleAddClick = () => {
@@ -122,10 +111,10 @@ const UserBar = ({ meetingId, onShowSelect }) => {
                     >
                         {users.map((user) => (
                             <UserItem 
-                                key={user.id} 
+                                key={user.userid} 
                                 name={user.name} 
-                                isSelected={selectedUser === user.id}
-                                onClick={() => handleUserClick(user.id)}
+                                isSelected={selectedUser === user.userid}
+                                onClick={() => handleUserClick(user.userid)}
                             />
                         ))}
                     </div>

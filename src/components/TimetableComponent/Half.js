@@ -11,6 +11,7 @@ export default function Half({
   isFirstDay, 
   hasDateHeaderAbove,
   selectedSlots,
+  slotOpacities = null,
   onSlotSelection,
   onTapSelection,
   onTouchPending,
@@ -46,6 +47,32 @@ export default function Half({
   const CLICK_THRESHOLD = 200; // 200ms 이하만 빠른 클릭으로 간주
   const DRAG_TIME_THRESHOLD = 200; // 200ms 이상 누르면 드래그 모드로 전환
   const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
+
+  // 투명도 계산
+  const getBackgroundStyle = () => {
+    if (isPending) {
+      return { className: 'bg-main/10', style: {} };
+    }
+    
+    if (isSelected) {
+      // 투명도 정보가 있는 경우 CSS 변수로 동적 설정 (결과 모드)
+      if (slotOpacities && slotOpacities.has(slotId)) {
+        const opacity = slotOpacities.get(slotId);
+        return { 
+          className: 'bg-main', 
+          style: { 
+            '--tw-bg-opacity': opacity / 100
+          }
+        };
+      }
+      // 기본 투명도 (TimetableSelect용 또는 개별 사용자 availability) - 100% 불투명도
+      return { className: 'bg-main', style: {} };
+    }
+    
+    return { className: '', style: {} };
+  };
+
+  const backgroundStyle = getBackgroundStyle();
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -199,15 +226,14 @@ export default function Half({
 
   return (
     <div 
-      className={`w-full h-[17px] border-main cursor-pointer transition-colors duration-150 ${
+      className={`w-full h-[17px] border-gray-400 cursor-pointer transition-colors duration-150 ${
         isTop === undefined
           ? `border-[1.3px] ${hasHourAbove ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}`
           : isTop 
-            ? `border-[1.3px] border-b-[1px] border-b-main/50 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
+            ? `border-[1.3px] border-b-[1px] border-b-gray-400/30 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
             : `border-[1.3px] border-t-0 ${!isFirstDay ? 'border-l-0' : ''}`
       } ${
-        isSelected ? 'bg-main/30' : 
-        isPending ? 'bg-main/10' : ''
+        backgroundStyle.className
       }`}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
@@ -222,7 +248,8 @@ export default function Half({
       style={{
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        touchAction: 'none'
+        touchAction: 'none',
+        ...backgroundStyle.style
       }}
     >
     </div>
