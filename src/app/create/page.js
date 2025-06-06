@@ -38,8 +38,8 @@ export default function Create() {
         setIsLoading(true);
         try {
             // 1초 딜레이 추가
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             const meetingData = {
                 title,
                 dates: selectedDates,
@@ -95,7 +95,7 @@ export default function Create() {
                     미팅 생성
                 </Button>
             </div>
-            
+
             {/* 로딩 오버레이 */}
             {isLoading && (
                 <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
