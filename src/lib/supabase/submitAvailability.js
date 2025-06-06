@@ -30,9 +30,10 @@ async function checkDuplicateName(meetingId, name) {
  * @param {string} meetingId - 미팅 ID
  * @param {string} name - 사용자 이름
  * @param {Object} availableSlots - 날짜별 가능한 시간 슬롯 {"2024-12-20": [900, 930, 1000], "2024-12-21": [1400, 1430]}
+ * @param {string|null} password - 사용자 비밀번호 (선택사항)
  * @returns {Promise<{success: boolean, message: string, data?: any}>}
  */
-export async function submitAvailability(meetingId, name, availableSlots) {
+export async function submitAvailability(meetingId, name, availableSlots, password = null) {
     try {
         console.log('Submitting availability:', { meetingId, name, availableSlots });
 
@@ -52,6 +53,7 @@ export async function submitAvailability(meetingId, name, availableSlots) {
                 {
                     meetingid: meetingId,
                     name: name,
+                    password: password, // 항상 포함 (null일 수 있음)
                 },
             ])
             .select();
@@ -118,6 +120,7 @@ export async function submitAvailability(meetingId, name, availableSlots) {
                 userid: userId,
                 name: name,
                 availableSlots: availableSlots,
+                password: password,
                 resultsCalculated: resultsResult.success,
                 recommendationsCalculated: recommendationsResult.success,
             },
@@ -190,13 +193,14 @@ export async function updateAvailability(userId, availableSlots) {
 }
 
 /**
- * 사용자 이름 업데이트
+ * 사용자 이름 및 비밀번호 업데이트
  * @param {string} userId - 사용자 ID
  * @param {string} meetingId - 미팅 ID
  * @param {string} newName - 새로운 이름
+ * @param {string|null} newPassword - 새로운 비밀번호 (선택사항)
  * @returns {Promise<{success: boolean, message: string, data?: any}>}
  */
-export async function updateUserName(userId, meetingId, newName) {
+export async function updateUserName(userId, meetingId, newName, newPassword = null) {
     try {
         // 1. 이름 중복 체크 (자신 제외)
         const { data: duplicateData, error: duplicateError } = await supabase
@@ -218,10 +222,13 @@ export async function updateUserName(userId, meetingId, newName) {
             };
         }
 
-        // 2. 사용자 이름 업데이트
+        // 2. 사용자 정보 업데이트
         const { data, error } = await supabase
             .from("user")
-            .update({ name: newName })
+            .update({ 
+                name: newName,
+                password: newPassword // 항상 포함 (null일 수 있음)
+            })
             .eq("userid", userId)
             .select();
 
@@ -232,30 +239,31 @@ export async function updateUserName(userId, meetingId, newName) {
 
         return {
             success: true,
-            message: "사용자 이름이 성공적으로 업데이트되었습니다.",
+            message: "사용자 정보가 성공적으로 업데이트되었습니다.",
             data: data[0],
         };
     } catch (error) {
         console.error("Error in updateUserName:", error);
         return {
             success: false,
-            message: "사용자 이름 업데이트 중 오류가 발생했습니다: " + error.message,
+            message: "사용자 정보 업데이트 중 오류가 발생했습니다: " + error.message,
         };
     }
 }
 
 /**
- * 사용자 응답 및 이름 수정
+ * 사용자 응답 및 정보 수정
  * @param {string} userId - 사용자 ID
  * @param {string} meetingId - 미팅 ID
  * @param {string} newName - 새로운 이름
  * @param {Object} availableSlots - 새로운 가용성 데이터
+ * @param {string|null} newPassword - 새로운 비밀번호 (선택사항)
  * @returns {Promise<{success: boolean, message: string, data?: any}>}
  */
-export async function updateUserAvailability(userId, meetingId, newName, availableSlots) {
+export async function updateUserAvailability(userId, meetingId, newName, availableSlots, newPassword = null) {
     try {
-        // 1. 사용자 이름 업데이트
-        const nameResult = await updateUserName(userId, meetingId, newName);
+        // 1. 사용자 정보 업데이트
+        const nameResult = await updateUserName(userId, meetingId, newName, newPassword);
         if (!nameResult.success) {
             return nameResult;
         }
@@ -295,6 +303,7 @@ export async function updateUserAvailability(userId, meetingId, newName, availab
                 userid: userId,
                 name: newName,
                 availableSlots: availableSlots,
+                password: newPassword,
                 resultsCalculated: resultsResult.success,
                 recommendationsCalculated: recommendationsResult.success,
             },
