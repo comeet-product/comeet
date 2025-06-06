@@ -338,7 +338,7 @@ const UserBar = ({
         onShowSelect();
     };
 
-    // 마우스 드래그 스크롤 이벤트 핸들러
+    // 터치/마우스 드래그 스크롤 이벤트 핸들러
     const handleMouseDown = (e) => {
         // 터치 디바이스가 아닌 경우에만 마우스 드래그 적용
         if (typeof window !== "undefined" && "ontouchstart" in window) return;
@@ -381,6 +381,25 @@ const UserBar = ({
         }
     };
 
+    // 터치 스크롤 개선을 위한 터치 이벤트 핸들러
+    const handleTouchStart = (e) => {
+        const scrollContainer = scrollContainerRef.current;
+        if (scrollContainer) {
+            setDragStart({
+                x: e.touches[0].clientX,
+                scrollLeft: scrollContainer.scrollLeft,
+            });
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        const scrollContainer = scrollContainerRef.current;
+        if (scrollContainer && dragStart) {
+            const deltaX = e.touches[0].clientX - dragStart.x;
+            scrollContainer.scrollLeft = dragStart.scrollLeft - deltaX;
+        }
+    };
+
     // 전역 마우스 이벤트 리스너
     React.useEffect(() => {
         if (isDragging) {
@@ -398,51 +417,51 @@ const UserBar = ({
             <style jsx>{`
                 .custom-scrollbar {
                     scrollbar-width: thin !important;
-                    scrollbar-color: #f5f5f5 transparent !important;
+                    scrollbar-color: rgba(0,0,0,0.2) transparent !important;
                     -ms-overflow-style: auto !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar {
-                    height: 8px !important;
+                    height: 12px !important;
                     -webkit-appearance: none !important;
                     display: block !important;
-                    width: 8px !important;
+                    width: 12px !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent !important;
+                    background: rgba(0,0,0,0.05) !important;
+                    border-radius: 6px !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    border-radius: 4px !important;
+                    background: rgba(0,0,0,0.2) !important;
+                    border-radius: 6px !important;
                     transition: all 0.2s ease !important;
-                    min-height: 20px !important;
+                    min-width: 30px !important;
+                    border: 2px solid transparent !important;
+                    background-clip: content-box !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    transform: scaleY(1.3) !important;
+                    background: rgba(0,0,0,0.3) !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                    transform: scaleY(1.5) !important;
-                }
-
-                .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-                    transform: scaleY(1.3) !important;
-                }
-
-                .custom-scrollbar:active::-webkit-scrollbar-thumb,
-                .custom-scrollbar.dragging::-webkit-scrollbar-thumb {
-                    transform: scaleY(1.5) !important;
+                    background: rgba(0,0,0,0.4) !important;
                 }
 
                 @media (pointer: coarse) {
                     .custom-scrollbar::-webkit-scrollbar {
-                        height: 10px !important;
+                        height: 16px !important;
+                    }
+                    
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                        background: rgba(0,0,0,0.3) !important;
+                        min-width: 40px !important;
                     }
 
                     .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                        transform: scaleY(1.8) !important;
+                        background: rgba(0,0,0,0.5) !important;
                     }
                 }
             `}</style>
@@ -454,7 +473,7 @@ const UserBar = ({
                             className="flex items-center px-2 gap-2 custom-scrollbar"
                             style={{
                                 WebkitOverflowScrolling: "touch",
-                                scrollSnapType: "x mandatory",
+                                scrollSnapType: "none", // 모바일에서 자연스러운 스크롤을 위해 변경
                                 width: "100%",
                                 paddingBottom: "8px",
                                 cursor: isDragging
@@ -465,8 +484,11 @@ const UserBar = ({
                                     : "grab",
                                 overflowX: "scroll",
                                 overflowY: "hidden",
+                                touchAction: "pan-x", // 가로 스크롤만 허용
                             }}
                             onMouseDown={handleMouseDown}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
                         >
                             {processedUsers.map((user) => (
                                 <UserItem
