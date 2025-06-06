@@ -22,15 +22,14 @@ export default function Button({
             disabled={disabled}
             className={`
         ${sizeStyle}
-        ${colorStyle}
+        ${disabled ? "bg-gray-300" : colorStyle}
         text-white
         font-medium
-        transition-opacity
+        transition-all
         flex
         items-center
         justify-center
-        hover:opacity-70
-        ${disabled ? "opacity-50" : ""}
+        ${disabled ? "cursor-not-allowed" : "hover:opacity-70"}
         ${className}
     `}
         >

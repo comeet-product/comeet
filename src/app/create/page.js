@@ -38,8 +38,8 @@ export default function Create() {
         setIsLoading(true);
         try {
             // 1초 딜레이 추가
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             const meetingData = {
                 title,
                 dates: selectedDates,

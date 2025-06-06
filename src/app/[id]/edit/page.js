@@ -2,7 +2,10 @@
 
 import { useState, use, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { submitAvailability, updateUserAvailability } from "@/lib/supabase/submitAvailability";
+import {
+    submitAvailability,
+    updateUserAvailability,
+} from "@/lib/supabase/submitAvailability";
 import { getMeeting } from "@/lib/supabase/getMeeting";
 import { getUser } from "@/lib/supabase/getUsers";
 import { getUserAvailability } from "@/lib/supabase/getUserAvailability";
@@ -13,35 +16,38 @@ import Title from "@/components/Title";
 import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import TutorialPage from "@/components/Tutorial";
 
 export default function EditPage({ params }) {
-    const [name, setName] = useState('');
-    const [password, setPassword] = useState('');
+    const [name, setName] = useState("");
+    const [password, setPassword] = useState("");
     const [selectedSlots, setSelectedSlots] = useState(new Set());
     const [meeting, setMeeting] = useState(null);
     const [user, setUser] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [hasExistingPassword, setHasExistingPassword] = useState(false);
-    const [showPasswordVerification, setShowPasswordVerification] = useState(false);
-    const [verificationPassword, setVerificationPassword] = useState('');
+    const [showPasswordVerification, setShowPasswordVerification] =
+        useState(false);
+    const [verificationPassword, setVerificationPassword] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
+    const [showTutorial, setShowTutorial] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
     const unwrappedParams = use(params);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
 
     // availability를 시간 슬롯으로 변환하는 함수
     const convertAvailabilityToSlots = (availability, meeting) => {
         const slots = new Set();
         const selectedDates = meeting?.dates || [];
 
-        console.log('=== Converting availability to slots ===');
-        console.log('Availability:', availability);
-        console.log('Meeting dates:', selectedDates);
-        console.log('Meeting selectable_time:', meeting?.selectable_time);
+        console.log("=== Converting availability to slots ===");
+        console.log("Availability:", availability);
+        console.log("Meeting dates:", selectedDates);
+        console.log("Meeting selectable_time:", meeting?.selectable_time);
 
         // HHMM 형식(900 = 9:00)을 분 단위로 변환하는 함수
         const convertHHMMToMinutes = (hhmm) => {
@@ -53,17 +59,23 @@ export default function EditPage({ params }) {
         Object.entries(availability).forEach(([date, times]) => {
             const dateIndex = selectedDates.indexOf(date);
             console.log(`Processing date ${date}, index: ${dateIndex}`);
-            
+
             if (dateIndex !== -1 && Array.isArray(times)) {
-                times.forEach(time => {
+                times.forEach((time) => {
                     // 시간을 halfIndex로 변환
-                    const startTimeHHMM = meeting?.selectable_time?.start || 900;
-                    const startTimeMinutes = convertHHMMToMinutes(startTimeHHMM);
+                    const startTimeHHMM =
+                        meeting?.selectable_time?.start || 900;
+                    const startTimeMinutes =
+                        convertHHMMToMinutes(startTimeHHMM);
                     const timeMinutes = convertHHMMToMinutes(time);
-                    const halfIndex = Math.floor((timeMinutes - startTimeMinutes) / 30);
-                    
-                    console.log(`Time ${time} -> ${timeMinutes} minutes -> halfIndex ${halfIndex}`);
-                    
+                    const halfIndex = Math.floor(
+                        (timeMinutes - startTimeMinutes) / 30
+                    );
+
+                    console.log(
+                        `Time ${time} -> ${timeMinutes} minutes -> halfIndex ${halfIndex}`
+                    );
+
                     if (halfIndex >= 0) {
                         const slotId = `${dateIndex}-${halfIndex}`;
                         slots.add(slotId);
@@ -73,7 +85,7 @@ export default function EditPage({ params }) {
             }
         });
 
-        console.log('Final slots:', Array.from(slots));
+        console.log("Final slots:", Array.from(slots));
         return slots;
     };
 
@@ -82,15 +94,21 @@ export default function EditPage({ params }) {
         const fetchMeeting = async () => {
             const meetingResult = await getMeeting(unwrappedParams.id);
             if (meetingResult.success) {
-                console.log('Meeting data loaded in edit page:', meetingResult.data);
+                console.log(
+                    "Meeting data loaded in edit page:",
+                    meetingResult.data
+                );
                 setMeeting(meetingResult.data);
             } else {
-                console.error("Failed to fetch meeting:", meetingResult.message);
+                console.error(
+                    "Failed to fetch meeting:",
+                    meetingResult.message
+                );
                 alert("미팅 정보를 불러올 수 없습니다.");
                 router.push(`/${unwrappedParams.id}`);
             }
         };
-        
+
         fetchMeeting();
     }, [unwrappedParams.id, router]);
 
@@ -99,21 +117,27 @@ export default function EditPage({ params }) {
         const fetchUserData = async () => {
             if (userId && meeting) {
                 setIsEditMode(true);
-                
+
                 try {
                     // 사용자 정보 가져오기
                     const userResult = await getUser(userId);
                     if (userResult.success) {
-                        console.log('User data loaded:', userResult.data);
+                        console.log("User data loaded:", userResult.data);
                         setUser(userResult.data);
                         setName(userResult.data.name);
-                        setPassword(userResult.data.password || '');
-                        
+                        setPassword(userResult.data.password || "");
+
                         // 기존 비밀번호 유무 확인 (향후 플로우 분리용)
-                        const existingPasswordExists = userResult.data.password !== null && userResult.data.password !== undefined && userResult.data.password !== '';
+                        const existingPasswordExists =
+                            userResult.data.password !== null &&
+                            userResult.data.password !== undefined &&
+                            userResult.data.password !== "";
                         setHasExistingPassword(existingPasswordExists);
-                        console.log('User has existing password:', existingPasswordExists);
-                        
+                        console.log(
+                            "User has existing password:",
+                            existingPasswordExists
+                        );
+
                         // 비밀번호가 있는 경우 verification overlay 표시
                         if (existingPasswordExists) {
                             setShowPasswordVerification(true);
@@ -121,20 +145,34 @@ export default function EditPage({ params }) {
                             setIsVerified(true);
                         }
                     } else {
-                        console.error("Failed to fetch user:", userResult.message);
+                        console.error(
+                            "Failed to fetch user:",
+                            userResult.message
+                        );
                         alert("사용자 정보를 불러올 수 없습니다.");
                         router.push(`/${unwrappedParams.id}`);
                         return;
                     }
 
                     // 사용자 availability 가져오기
-                    const availabilityResult = await getUserAvailability(userId);
+                    const availabilityResult = await getUserAvailability(
+                        userId
+                    );
                     if (availabilityResult.success) {
-                        console.log('User availability loaded:', availabilityResult.data.availability);
-                        const slots = convertAvailabilityToSlots(availabilityResult.data.availability, meeting);
+                        console.log(
+                            "User availability loaded:",
+                            availabilityResult.data.availability
+                        );
+                        const slots = convertAvailabilityToSlots(
+                            availabilityResult.data.availability,
+                            meeting
+                        );
                         setSelectedSlots(slots);
                     } else {
-                        console.error("Failed to fetch user availability:", availabilityResult.message);
+                        console.error(
+                            "Failed to fetch user availability:",
+                            availabilityResult.message
+                        );
                     }
                 } catch (error) {
                     console.error("Error fetching user data:", error);
@@ -154,7 +192,7 @@ export default function EditPage({ params }) {
     const convertSlotsToAvailability = (slots) => {
         const availability = {};
         const selectedDates = meeting?.dates || [];
-        
+
         // HHMM 형식(900 = 9:00)을 분 단위로 변환하는 함수
         const convertHHMMToMinutes = (hhmm) => {
             const hours = Math.floor(hhmm / 100);
@@ -168,79 +206,86 @@ export default function EditPage({ params }) {
             const mins = minutes % 60;
             return hours * 100 + mins;
         };
-        
-        console.log('=== Converting slots to availability ===');
-        console.log('Meeting selectable_time:', meeting?.selectable_time);
-        console.log('Selected slots:', Array.from(slots));
-        console.log('Selected dates:', selectedDates);
-        
-        slots.forEach(slotId => {
-            const [dayIndex, halfIndex] = slotId.split('-').map(Number);
-            
-            console.log(`Processing slot: ${slotId} (day: ${dayIndex}, half: ${halfIndex})`);
-            
+
+        console.log("=== Converting slots to availability ===");
+        console.log("Meeting selectable_time:", meeting?.selectable_time);
+        console.log("Selected slots:", Array.from(slots));
+        console.log("Selected dates:", selectedDates);
+
+        slots.forEach((slotId) => {
+            const [dayIndex, halfIndex] = slotId.split("-").map(Number);
+
+            console.log(
+                `Processing slot: ${slotId} (day: ${dayIndex}, half: ${halfIndex})`
+            );
+
             // 선택된 날짜 배열에서 해당 인덱스의 날짜 가져오기
             if (dayIndex < selectedDates.length) {
                 const dateString = selectedDates[dayIndex]; // 이미 YYYY-MM-DD 형식
-                
+
                 // 시간 계산 (HHMM 형식을 분 단위로 변환 후 다시 HHMM으로)
                 const startTimeHHMM = meeting?.selectable_time?.start || 900; // 기본값 9시 (900)
                 const startTimeMinutes = convertHHMMToMinutes(startTimeHHMM);
-                const timeMinutes = startTimeMinutes + (halfIndex * 30);
+                const timeMinutes = startTimeMinutes + halfIndex * 30;
                 const timeHHMM = convertMinutesToHHMM(timeMinutes); // HHMM 형식으로 변환
-                
-                console.log('Time calculation:', {
+
+                console.log("Time calculation:", {
                     startTimeHHMM,
                     startTimeMinutes,
                     halfIndex,
                     calculatedTimeMinutes: timeMinutes,
                     calculatedTimeHHMM: timeHHMM,
-                    timeInHours: `${Math.floor(timeMinutes / 60)}:${String(timeMinutes % 60).padStart(2, '0')}`
+                    timeInHours: `${Math.floor(timeMinutes / 60)}:${String(
+                        timeMinutes % 60
+                    ).padStart(2, "0")}`,
                 });
-                
+
                 if (!availability[dateString]) {
                     availability[dateString] = [];
                 }
                 availability[dateString].push(timeHHMM); // HHMM 형식으로 저장
             }
         });
-        
+
         // 각 날짜의 시간을 정렬
-        Object.keys(availability).forEach(date => {
+        Object.keys(availability).forEach((date) => {
             availability[date].sort((a, b) => a - b);
         });
-        
-        console.log('=== Final converted availability ===');
-        console.log('Availability object:', availability);
+
+        console.log("=== Final converted availability ===");
+        console.log("Availability object:", availability);
         Object.entries(availability).forEach(([date, times]) => {
-            console.log(`Date ${date}:`, times.map(t => {
-                const hours = Math.floor(t / 100);
-                const mins = t % 100;
-                return `${hours}:${String(mins).padStart(2, '0')} (${t})`;
-            }));
+            console.log(
+                `Date ${date}:`,
+                times.map((t) => {
+                    const hours = Math.floor(t / 100);
+                    const mins = t % 100;
+                    return `${hours}:${String(mins).padStart(2, "0")} (${t})`;
+                })
+            );
         });
-        
+
         return availability;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name.trim()) {
-            alert('이름을 입력해주세요.');
+            alert("이름을 입력해주세요.");
             return;
         }
 
         if (selectedSlots.size === 0) {
-            alert('가능한 시간을 선택해주세요.');
+            alert("가능한 시간을 선택해주세요.");
             return;
         }
 
         setIsSubmitting(true);
-        
+
         try {
             // 선택된 슬롯을 availability 형식으로 변환
             const availableSlots = convertSlotsToAvailability(selectedSlots);
-            
+
             // 비밀번호 처리
             let userPassword;
             if (isEditMode && hasExistingPassword && isVerified) {
@@ -250,26 +295,40 @@ export default function EditPage({ params }) {
                 // Case 1: 비밀번호가 없는 사용자의 수정 또는 새 사용자 추가
                 userPassword = password.trim() || null;
             }
-            
-            console.log('Submit - Is edit mode:', isEditMode);
-            console.log('Submit - Has existing password:', hasExistingPassword);
-            console.log('Submit - New password provided:', userPassword !== null);
-            console.log('Submit - Meeting ID:', unwrappedParams.id);
-            console.log('Submit - User name:', name.trim());
-            console.log('Submit - Available slots:', availableSlots);
-            
+
+            console.log("Submit - Is edit mode:", isEditMode);
+            console.log("Submit - Has existing password:", hasExistingPassword);
+            console.log(
+                "Submit - New password provided:",
+                userPassword !== null
+            );
+            console.log("Submit - Meeting ID:", unwrappedParams.id);
+            console.log("Submit - User name:", name.trim());
+            console.log("Submit - Available slots:", availableSlots);
+
             let result;
             if (isEditMode && userId) {
                 // 기존 사용자 수정
-                console.log('Updating existing user:', userId);
-                result = await updateUserAvailability(userId, unwrappedParams.id, name.trim(), availableSlots, userPassword);
+                console.log("Updating existing user:", userId);
+                result = await updateUserAvailability(
+                    userId,
+                    unwrappedParams.id,
+                    name.trim(),
+                    availableSlots,
+                    userPassword
+                );
             } else {
                 // 새 사용자 추가
-                console.log('Creating new user...');
-                result = await submitAvailability(unwrappedParams.id, name.trim(), availableSlots, userPassword);
-                console.log('New user creation result:', result);
+                console.log("Creating new user...");
+                result = await submitAvailability(
+                    unwrappedParams.id,
+                    name.trim(),
+                    availableSlots,
+                    userPassword
+                );
+                console.log("New user creation result:", result);
             }
-            
+
             if (result.success) {
                 console.log('User data saved successfully, now calculating results and recommendations...');
                 
@@ -306,8 +365,8 @@ export default function EditPage({ params }) {
                 alert(result.message);
             }
         } catch (error) {
-            console.error('저장 중 오류:', error);
-            alert('저장 중 오류가 발생했습니다.');
+            console.error("저장 중 오류:", error);
+            alert("저장 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
@@ -325,21 +384,25 @@ export default function EditPage({ params }) {
         }
 
         setIsVerifying(true);
-        
+
         // 입력한 비밀번호와 기존 비밀번호 비교
-        if (verificationPassword.trim() === (user?.password || '')) {
+        if (verificationPassword.trim() === (user?.password || "")) {
             setIsVerified(true);
             setShowPasswordVerification(false);
         } else {
             setShowToast(true);
             setTimeout(() => setShowToast(false), 1500);
         }
-        
+
         setIsVerifying(false);
     };
 
     const handleVerificationBack = () => {
         router.push(`/${unwrappedParams.id}`);
+    };
+
+    const handleTutorialClose = () => {
+        setShowTutorial(false);
     };
 
     if (!meeting) {
@@ -355,11 +418,10 @@ export default function EditPage({ params }) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-80 mx-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg text-black font-medium">비밀번호 확인</h2>
-                        <button 
+                    <div className="flex items-center justify-center mb-6 relative">
+                        <button
                             onClick={handleVerificationBack}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
+                            className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
                             disabled={isVerifying}
                         >
                             <img 
@@ -368,29 +430,34 @@ export default function EditPage({ params }) {
                                 className="w-5 h-5 object-contain"
                             />
                         </button>
+                        <h2 className="text-lg text-black font-medium">
+                            비밀번호 확인
+                        </h2>
                     </div>
                     
                     <div className="mb-2 h-10">
                         <Input
                             type="password"
                             value={verificationPassword}
-                            onChange={(e) => setVerificationPassword(e.target.value)}
+                            onChange={(e) =>
+                                setVerificationPassword(e.target.value)
+                            }
                             placeholder="비밀번호를 입력하세요"
                             disabled={isVerifying}
-                            className="text-lg"
+                            className="text-base"
                         />
                     </div>
-                    
-                    <Button 
+
+                    <Button
                         size="small"
                         onClick={handlePasswordVerification}
                         disabled={!verificationPassword.trim() || isVerifying}
                         className="w-full"
                     >
-                        {isVerifying ? '확인 중...' : '확인'}
+                        {isVerifying ? "확인 중..." : "확인"}
                     </Button>
                 </div>
-                
+
                 {/* 토스트 메시지 */}
                 {showToast && (
                     <div className="fixed bottom-[65px] left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
@@ -403,9 +470,10 @@ export default function EditPage({ params }) {
 
     // 메인 편집 화면
     return (
-        <div className="px-5 py-6 flex flex-col gap-6">
+        <div className="px-8 py-6 flex flex-col gap-6">
+            {showTutorial && <TutorialPage onClose={handleTutorialClose} />}
             <div className="relative flex items-center justify-center">
-                <button 
+                <button
                     onClick={handleBack}
                     className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
                     disabled={isSubmitting}
@@ -477,4 +545,4 @@ export default function EditPage({ params }) {
             </div>
         </div>
     );
-} 
+}
