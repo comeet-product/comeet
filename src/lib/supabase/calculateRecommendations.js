@@ -3,6 +3,23 @@
 import { supabase } from "../supabase.js";
 
 /**
+ * HHMM 형식 시간에 분을 더하는 함수
+ * @param {number} time - HHMM 형식의 시간 (예: 1630)
+ * @param {number} minutes - 더할 분 (예: 30)
+ * @returns {number} 계산된 HHMM 형식 시간
+ */
+function addMinutesToTime(time, minutes) {
+    const hours = Math.floor(time / 100);
+    const mins = time % 100;
+    
+    const totalMinutes = hours * 60 + mins + minutes;
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMins = totalMinutes % 60;
+    
+    return newHours * 100 + newMins;
+}
+
+/**
  * 연속된 시간 블록을 찾아 추천 시간 생성
  * @param {Object} timeMap - 날짜별 시간대별 사용자 맵
  * @returns {Array} 추천 시간 배열
@@ -10,7 +27,7 @@ import { supabase } from "../supabase.js";
 function calculateContinuousBlocks(timeMap) {
     const recommendations = [];
 
-    console.log('=== calculateContinuousBlocks DEBUG ===');
+    console.log('=== calculateContinuousBlocks NEW ALGORITHM ===');
     console.log('timeMap:', timeMap);
 
     Object.entries(timeMap).forEach(([date, timeSlots]) => {
@@ -24,70 +41,72 @@ function calculateContinuousBlocks(timeMap) {
 
         console.log('sortedTimes:', sortedTimes);
 
-        // 각 시간대에서 시작하는 연속 블록 찾기
-        for (let i = 0; i < sortedTimes.length; i++) {
-            const startTime = sortedTimes[i];
-            const startUsers = timeSlots[startTime];
+        // 각 시간 슬롯에 대해 멤버 구성과 함께 저장
+        const timeSlotData = sortedTimes.map(time => ({
+            time: time,
+            members: timeSlots[time].sort(), // 정렬해서 비교하기 쉽게
+            memberKey: timeSlots[time].sort().join(',') // 멤버 구성을 키로 사용
+        }));
 
-            console.log(`\nChecking startTime: ${startTime}, users:`, startUsers);
+        console.log('timeSlotData:', timeSlotData);
 
-            // 해당 시작 시간에서 가능한 최대 연속 시간 찾기
-            let maxDuration = 0; // 초기값을 0으로 설정
-            let bestCommonUsers = [];
+        // 연속되는 같은 멤버 구성의 블록들을 찾기
+        let i = 0;
+        while (i < timeSlotData.length) {
+            const startSlot = timeSlotData[i];
+            let duration = 1;
+            let j = i + 1;
 
-            // 최대 9블록(4시간 반)까지 확인
-            for (let duration = 1; duration <= 9; duration++) {
-                let commonUsers = [...startUsers];
-                let allSlotsAvailable = true;
+            console.log(`\n🔍 Starting from time ${startSlot.time} with members:`, startSlot.members);
+            console.log(`   Member key: "${startSlot.memberKey}"`);
+            console.log(`   Current index i=${i}, checking from j=${j}`);
 
-                console.log(`  Testing duration ${duration}:`);
-
-                // duration 길이만큼 연속으로 가능한지 확인
-                for (let j = 0; j < duration; j++) {
-                    const currentTime = startTime + j * 30;
-                    console.log(`    Checking slot ${j}: time ${currentTime}`);
-                    
-                    if (!timeSlots[currentTime]) {
-                        console.log(`    Slot ${j} (${currentTime}) not available`);
-                        allSlotsAvailable = false;
-                        break;
-                    }
-                    
-                    // 공통 사용자만 남기기
-                    if (j > 0) { // 첫 번째 슬롯은 이미 포함됨
-                        commonUsers = commonUsers.filter((user) =>
-                            timeSlots[currentTime].includes(user)
-                        );
-                        console.log(`    After slot ${j}, common users:`, commonUsers);
-                    }
-                }
-
-                if (allSlotsAvailable && commonUsers.length > 0) {
-                    console.log(`  Duration ${duration} is possible with ${commonUsers.length} users:`, commonUsers);
-                    maxDuration = duration;
-                    bestCommonUsers = commonUsers;
-                } else if (!allSlotsAvailable) {
-                    // 슬롯이 없으면 더 이상 연속될 수 없으므로 중단
-                    console.log(`  Duration ${duration} failed - no more slots available`);
-                    break;
+            // 연속되는 시간 슬롯들 중에서 같은 멤버 구성인 것들 찾기
+            while (j < timeSlotData.length) {
+                const currentSlot = timeSlotData[j];
+                const expectedTime = addMinutesToTime(startSlot.time, duration * 30);
+                
+                console.log(`  📋 Checking slot ${j}: time ${currentSlot.time}, expected ${expectedTime}`);
+                console.log(`     Current members: "${currentSlot.memberKey}"`);
+                console.log(`     Start members: "${startSlot.memberKey}"`);
+                console.log(`     Members match: ${currentSlot.memberKey === startSlot.memberKey}`);
+                console.log(`     Time match: ${currentSlot.time === expectedTime}`);
+                
+                // 시간이 연속이고 멤버 구성이 같은지 확인
+                if (currentSlot.time === expectedTime && currentSlot.memberKey === startSlot.memberKey) {
+                    duration++;
+                    console.log(`  ✅ Continuous block extended to duration ${duration}`);
+                    j++;
                 } else {
-                    // 공통 사용자가 없지만 슬롯은 있는 경우 - 계속 확인
-                    console.log(`  Duration ${duration} failed - no common users, but continuing...`);
+                    if (currentSlot.time !== expectedTime) {
+                        console.log(`  ❌ Time not continuous: ${currentSlot.time} !== ${expectedTime}`);
+                    }
+                    if (currentSlot.memberKey !== startSlot.memberKey) {
+                        console.log(`  ❌ Members different: "${currentSlot.memberKey}" !== "${startSlot.memberKey}"`);
+                    }
+                    console.log(`  ⏹️ Block ended`);
+                    break;
                 }
             }
 
-            // 최소 1블록 이상의 연속 시간이 있으면 추천에 추가
-            if (maxDuration >= 1 && bestCommonUsers.length > 0) {
+            // 추천에 추가 (최소 1명 이상의 멤버가 있어야 함)
+            if (startSlot.members.length > 0) {
                 const recommendation = {
                     date,
-                    start_time: startTime,
-                    duration: maxDuration,
-                    members: bestCommonUsers,
-                    number: bestCommonUsers.length,
+                    start_time: startSlot.time,
+                    duration: duration,
+                    members: startSlot.members,
+                    number: startSlot.members.length,
                 };
-                console.log(`Adding recommendation:`, recommendation);
+                console.log(`🎯 Adding recommendation:`, recommendation);
+                console.log(`   Duration: ${duration}, Members: ${startSlot.members.length} people`);
                 recommendations.push(recommendation);
             }
+
+            // 다음 블록으로 이동 (현재 블록의 끝 다음부터)
+            const nextI = Math.max(i + 1, j);
+            console.log(`🔄 Moving to next block: from i=${i} to i=${nextI}`);
+            i = nextI;
         }
     });
 
