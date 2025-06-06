@@ -56,14 +56,15 @@ export default function Half({
     useEffect(() => {
         const checkIsMobile = () => {
             // 터치 디바이스 여부와 화면 크기로 모바일 판단
-            const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const hasTouch =
+                "ontouchstart" in window || navigator.maxTouchPoints > 0;
             const isSmallScreen = window.innerWidth <= 768;
             setIsMobile(hasTouch && isSmallScreen);
         };
 
         checkIsMobile();
-        window.addEventListener('resize', checkIsMobile);
-        return () => window.removeEventListener('resize', checkIsMobile);
+        window.addEventListener("resize", checkIsMobile);
+        return () => window.removeEventListener("resize", checkIsMobile);
     }, []);
 
     // ===== 모바일 전용 터치 이벤트 핸들러 (현재 방식 유지) =====
@@ -243,23 +244,25 @@ export default function Half({
                     : "transparent",
                 userSelect: "none",
                 WebkitUserSelect: "none",
-                touchAction: isMobile ? "manipulation" : "none"
+                touchAction: isMobile ? "manipulation" : "none",
             }}
             // 조건부 이벤트 핸들러 (디바이스별 분기)
-            {...(isMobile ? {
-                // 모바일: 터치 이벤트 + 클릭 백업
-                onClick: handleMobileClick,
-                onTouchStart: handleMobileTouchStart,
-                onTouchMove: handleMobileTouchMove,
-                onTouchEnd: handleMobileTouchEnd
-            } : {
-                // PC: 마우스 이벤트만
-                onClick: handlePCClick,
-                onMouseDown: handlePCMouseDown,
-                onMouseMove: handlePCMouseMove,
-                onMouseEnter: handlePCMouseEnter,
-                onMouseUp: handlePCMouseUp
-            })}
+            {...(isMobile
+                ? {
+                      // 모바일: 터치 이벤트 + 클릭 백업
+                      onClick: handleMobileClick,
+                      onTouchStart: handleMobileTouchStart,
+                      onTouchMove: handleMobileTouchMove,
+                      onTouchEnd: handleMobileTouchEnd,
+                  }
+                : {
+                      // PC: 마우스 이벤트만
+                      onClick: handlePCClick,
+                      onMouseDown: handlePCMouseDown,
+                      onMouseMove: handlePCMouseMove,
+                      onMouseEnter: handlePCMouseEnter,
+                      onMouseUp: handlePCMouseUp,
+                  })}
             data-day-index={String(dayIndex)}
             data-half-index={String(halfIndex)}
         ></div>
