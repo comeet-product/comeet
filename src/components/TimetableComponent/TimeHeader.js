@@ -34,7 +34,7 @@ export default function TimeHeader({ halfCount, startTime, dateHeaderHeight }) {
       
       {/* Time 컴포넌트들 - Hour의 위아래 border line에 위치 */}
       {timeLabels.map((time, index) => {
-        // 각 Time은 Hour의 경계선(위쪽 border)에 위치
+        // 각 Time은 Hour의 경계선(위쪽 border)에 위치  
         const topPosition = dateHeaderHeight + (index * hourHeight);
         
         return (

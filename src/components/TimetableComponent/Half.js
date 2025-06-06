@@ -32,6 +32,11 @@ export default function Half({
     pendingTouchSlot.dayIndex === dayIndex && 
     pendingTouchSlot.halfIndex === halfIndex;
 
+  // 터치 관련 로컬 상태 추가
+  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+  const [localTouchMoved, setLocalTouchMoved] = useState(false);
+  const [touchStartTimestamp, setTouchStartTimestamp] = useState(0);
+
   // 마우스 이벤트 추적용 로컬 상태
   const [mouseStartTime, setMouseStartTime] = useState(0);
   const [mouseStartPos, setMouseStartPos] = useState({ x: 0, y: 0 });
@@ -40,16 +45,14 @@ export default function Half({
 
   const CLICK_THRESHOLD = 200; // 200ms 이하만 빠른 클릭으로 간주
   const DRAG_TIME_THRESHOLD = 200; // 200ms 이상 누르면 드래그 모드로 전환
+  const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
 
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Half clicked:', { dayIndex, halfIndex, isSelectionEnabled, hasMouseMoved, localDragStarted });
-    
     // 단순화: 드래그가 시작되지 않았으면 개별 선택으로 처리
     if (isSelectionEnabled && onTapSelection && !localDragStarted) {
-      console.log('Executing tap selection from click');
       onTapSelection(dayIndex, halfIndex);
     }
   };
@@ -57,8 +60,6 @@ export default function Half({
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Half mouse down:', { dayIndex, halfIndex, isSelectionEnabled });
     
     // 마우스 다운 정보 기록
     setMouseStartTime(Date.now());
@@ -77,7 +78,6 @@ export default function Half({
         setLocalDragStarted(true);
         
         if (isSelectionEnabled && onDragSelectionStart) {
-          console.log('Starting drag selection:', { dayIndex, halfIndex, timeDiff });
           onDragSelectionStart(dayIndex, halfIndex);
         }
       }
@@ -103,8 +103,6 @@ export default function Half({
     const timeDiff = Date.now() - mouseStartTime;
     const wasQuickClick = timeDiff < CLICK_THRESHOLD && !hasMouseMoved;
     
-    console.log('Half mouse up:', { dayIndex, halfIndex, timeDiff, wasQuickClick, localDragStarted, isDragSelecting });
-    
     // 드래그가 진행 중이었다면 종료
     if (isDragSelecting && onDragSelectionEnd) {
       onDragSelectionEnd();
@@ -128,14 +126,19 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Half touch start:', { dayIndex, halfIndex, isSelectionEnabled, touchesLength: e.touches.length });
+    const touch = e.touches[0];
     
-    // 터치 시작 시간 기록 (상위 컴포넌트에서 관리)
+    // 터치 시작 위치와 시간 기록
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setTouchStartTimestamp(Date.now());
+    setLocalTouchMoved(false);
+    
+    // 상위 컴포넌트 터치 시간 기록
     if (setTouchStartTime) {
       setTouchStartTime(Date.now());
     }
     
-    // 즉시 드래그하지 않고 대기 상태로 전환 (더 자연스러운 터치 경험)
+    // 즉시 선택하지 않고 대기 (드래그 가능성을 위해)
     if (onTouchPending) {
       onTouchPending(dayIndex, halfIndex);
     }
@@ -143,27 +146,36 @@ export default function Half({
 
   const handleTouchMove = (e) => {
     // 터치가 하나일 때만 처리
-    if (e.touches.length === 1) {
-      // 대기 중인 터치가 있고 움직임이 감지되면 드래그 선택 시작
-      if (isPending && onDragSelectionStart) {
-        console.log('Touch move detected, starting drag selection:', { dayIndex, halfIndex });
+    if (e.touches.length !== 1) {
+      return;
+    }
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    
+    // 움직임이 충분히 감지되면 localTouchMoved 설정
+    if ((deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) && !localTouchMoved) {
+      setLocalTouchMoved(true);
+      
+      // 세로 움직임이 가로 움직임보다 크면 드래그 선택 시작
+      if (deltaY >= deltaX && onDragSelectionStart && !isDragSelecting) {
         onDragSelectionStart(dayIndex, halfIndex);
         return;
       }
+    }
+    
+    // 이미 드래그 선택 중이면 드래그 이동 처리
+    if (isDragSelecting && onDragSelectionMove) {
+      // 터치 포인트 아래의 엘리먼트 찾기
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
       
-      // 이미 드래그 선택 중이면 드래그 이동 처리
-      if (isDragSelecting && onDragSelectionMove) {
-        // 터치 포인트 아래의 엘리먼트 찾기
-        const touch = e.touches[0];
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
+        const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
+        const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
         
-        if (elementBelow && elementBelow.dataset.dayIndex && elementBelow.dataset.halfIndex) {
-          const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
-          const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
-          
-          // 드래그 이동 처리 (TimetableSelect에서 같은 day와 아래 방향만 허용)
-          onDragSelectionMove(newDayIndex, newHalfIndex);
-        }
+        // 드래그 이동 처리
+        onDragSelectionMove(newDayIndex, newHalfIndex);
       }
     }
   };
@@ -172,20 +184,17 @@ export default function Half({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Half touch end:', { 
-      dayIndex, 
-      halfIndex, 
-      isPending,
-      isDragSelecting
-    });
-    
     // 드래그 선택이 진행 중이었다면 종료
     if (isDragSelecting && onDragSelectionEnd) {
       onDragSelectionEnd();
     }
     
-    // 대기 중인 터치는 상위 컴포넌트의 타이머에서 처리됨
-    // 여기서는 특별한 처리 불필요
+    // 상태 초기화
+    setTimeout(() => {
+      setTouchStartPos({ x: 0, y: 0 });
+      setLocalTouchMoved(false);
+      setTouchStartTimestamp(0);
+    }, 50);
   };
 
   return (

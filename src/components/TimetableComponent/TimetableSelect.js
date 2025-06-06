@@ -7,34 +7,29 @@ import Timetable from "./Timetable";
 export default function TimetableSelect() {
     // States for gesture and view control
     const [visibleDayCount, setVisibleDayCount] = useState(7);
-    const [scrollPosition, setScrollPosition] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
     const [startTouchX, setStartTouchX] = useState(0);
     const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     const [startTouch2, setStartTouch2] = useState({ x: 0, y: 0 });
     const [initialDistance, setInitialDistance] = useState(0);
-    const [touchCount, setTouchCount] = useState(0);
     const [gestureScale, setGestureScale] = useState(1);
     const [centerColumnIndex, setCenterColumnIndex] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
     
-    // 시간 슬롯 선택 상태 관리 (dayIndex-halfIndex 형태로 저장)
+    // 시간 슬롯 선택 상태 관리
     const [selectedSlots, setSelectedSlots] = useState(new Set());
     const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
     
     // 드래그 선택 상태 관리
     const [isDragSelecting, setIsDragSelecting] = useState(false);
     const [dragStartSlot, setDragStartSlot] = useState(null);
-    const [dragCurrentSlot, setDragCurrentSlot] = useState(null);
     const [dragMode, setDragMode] = useState('select'); // 'select' or 'deselect'
     
-    // 터치 시간 추적 (탭과 드래그 구분)
-    const [touchStartTime, setTouchStartTime] = useState(0);
-    const [touchMoved, setTouchMoved] = useState(false);
-    const [touchStartPosition, setTouchStartPosition] = useState({ x: 0, y: 0 });
-    const [pendingTouchSlot, setPendingTouchSlot] = useState(null); // 대기 중인 터치 슬롯
-    const [touchTimeout, setTouchTimeout] = useState(null); // 터치 타이머
-    const TAP_THRESHOLD = 150; // 150ms 후 탭으로 확정
+    // 터치 처리 상태
+    const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
+    const [touchTimeout, setTouchTimeout] = useState(null);
+    const [dragTimeout, setDragTimeout] = useState(null);
+    const TAP_THRESHOLD = 30; // 30ms 후 탭으로 확정 (더 빠른 탭 인식)
+    const DRAG_THRESHOLD = 150; // 150ms 후 드래그 모드로 전환 (더 긴 터치 요구)
     const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
     
     // Refs for DOM elements
@@ -43,10 +38,10 @@ export default function TimetableSelect() {
     const scrollTimeoutRef = useRef(null);
 
     // Constants
-    const TOTAL_DAYS = 8;
+    const TOTAL_DAYS = 9;
     const MIN_VISIBLE_DAYS = 1;
     const MAX_VISIBLE_DAYS = 7;
-    const DATE_HEADER_HEIGHT = 23;
+    const DATE_HEADER_HEIGHT = 28;
 
     // 터치 지점에서 컬럼 인덱스 계산
     const getColumnIndexFromTouch = (clientX) => {
@@ -81,44 +76,38 @@ export default function TimetableSelect() {
         return visibleWidth / columnWidth;
     };
 
-    // Auto-Align 함수 - 더 명확한 스냅 동작
+    // Auto-Align 함수 - 가장 가까운 컬럼으로 스냅
     const autoAlignToColumn = () => {
         const timetable = timetableRef.current;
         if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
 
         const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
         const viewportStartX = timetable.scrollLeft;
-        const viewportEndX = viewportStartX + timetable.clientWidth;
+        const viewportCenterX = viewportStartX + (timetable.clientWidth / 2);
 
-        // 현재 화면에 보이는 첫 번째와 마지막 컬럼 인덱스
-        const firstVisibleColumn = Math.floor(viewportStartX / columnWidth);
-        const lastVisibleColumn = Math.floor((viewportEndX - 1) / columnWidth);
+        // 뷰포트 중심에 가장 가까운 컬럼 찾기
+        const centerColumnFloat = viewportCenterX / columnWidth;
+        const nearestColumn = Math.round(centerColumnFloat);
 
-        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 계산
+        // 스크롤 가능한 범위 내에서 조정
+        const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
+        let targetColumn = Math.max(0, Math.min(nearestColumn, maxScrollColumns));
+
+        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
         const currentColumnFloat = viewportStartX / columnWidth;
         const currentColumnIndex = Math.floor(currentColumnFloat);
         const columnProgress = currentColumnFloat - currentColumnIndex;
 
-        let targetColumn;
-
-        // 30% 미만이면 현재 컬럼으로, 70% 이상이면 다음 컬럼으로 snap
-        if (columnProgress < 0.3) {
-            targetColumn = currentColumnIndex;
-        } else if (columnProgress > 0.7) {
-            targetColumn = Math.min(currentColumnIndex + 1, TOTAL_DAYS - visibleDayCount);
-        } else {
-            // 30% ~ 70% 사이에서는 가장 가까운 쪽으로 snap
-            targetColumn = columnProgress < 0.5 ? currentColumnIndex : Math.min(currentColumnIndex + 1, TOTAL_DAYS - visibleDayCount);
+        // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
+        if (columnProgress < 0.05 || columnProgress > 0.95) {
+            return;
         }
-
-        // 경계값 체크
-        targetColumn = Math.max(0, Math.min(targetColumn, TOTAL_DAYS - visibleDayCount));
 
         // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
         const targetScrollLeft = targetColumn * columnWidth;
 
-        // 현재 위치와 다를 때만 스크롤
-        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 5) {
+        // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
+        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
             timetable.scrollTo({
                 left: targetScrollLeft,
                 behavior: 'smooth'
@@ -161,12 +150,12 @@ export default function TimetableSelect() {
         
         timetable.scrollLeft = targetScrollLeft;
         
-        // 스크롤 위치 상태 업데이트
-        const maxScroll = timetable.scrollWidth - timetable.clientWidth;
-        if (maxScroll > 0) {
-            const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
-            setScrollPosition(scrollPercentage);
-        }
+        // 스크롤 위치 업데이트 (상태 저장 없이 직접 처리)
+
+        // pinch zoom 후 auto-align 실행 (약간의 지연을 두어 스크롤이 완료된 후 실행)
+        setTimeout(() => {
+            autoAlignToColumn();
+        }, 100);
     };
 
     // 핀치와 스와이프를 구분하는 함수
@@ -206,41 +195,51 @@ export default function TimetableSelect() {
         });
     };
 
-    // 터치 대기 시작 (즉시 선택하지 않고 잠시 대기)
+    // 터치 대기 시작 (드래그 가능성을 고려하여 지연 선택)
     const handleTouchPending = (dayIndex, halfIndex) => {
-        if (isScrolling || !isSelectionEnabled) {
+        if (!isSelectionEnabled) {
             return;
         }
 
-        // 기존 타이머가 있다면 클리어
+        // 기존 타이머들이 있다면 클리어
         if (touchTimeout) {
             clearTimeout(touchTimeout);
+        }
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
         }
 
         // 대기 중인 슬롯 설정
         setPendingTouchSlot({ dayIndex, halfIndex });
 
-        // 일정 시간 후 개별 선택으로 확정
-        const timer = setTimeout(() => {
-            if (!touchMoved && !isDragSelecting) {
-                handleTapSelection(dayIndex, halfIndex);
-            }
-            setPendingTouchSlot(null);
-        }, TAP_THRESHOLD);
+        // 즉시 탭 선택 처리 (더 빠른 반응을 위해)
+        if (!isDragSelecting) {
+            handleTapSelection(dayIndex, halfIndex);
+        }
 
-        setTouchTimeout(timer);
+        // 드래그 준비 모드로 전환하기 위한 타이머만 설정
+        const dragTimer = setTimeout(() => {
+            setPendingTouchSlot(null);
+        }, DRAG_THRESHOLD);
+
+        setDragTimeout(dragTimer);
     };
 
     // 드래그 선택 시작 (움직임이 감지되었을 때)
     const handleDragSelectionStart = (dayIndex, halfIndex) => {
-        if (isScrolling || !isSelectionEnabled) {
+        // 드래그 시작 시에는 빠른 응답을 위해 최소한의 체크만
+        if (!isSelectionEnabled) {
             return;
         }
 
-        // 대기 중인 터치 취소
+        // 대기 중인 터치 및 드래그 타이머 취소 (즉시)
         if (touchTimeout) {
             clearTimeout(touchTimeout);
             setTouchTimeout(null);
+        }
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
+            setDragTimeout(null);
         }
         setPendingTouchSlot(null);
 
@@ -252,13 +251,11 @@ export default function TimetableSelect() {
         
         setIsDragSelecting(true);
         setDragStartSlot({ dayIndex, halfIndex });
-        setDragCurrentSlot({ dayIndex, halfIndex });
         setDragMode(mode);
         
-        // 시작 슬롯 선택/해제
-        if (mode === 'select') {
-            setSelectedSlots(prev => new Set([...prev, slotId]));
-        } else {
+        // 시작 슬롯은 이미 handleTouchPending에서 처리되었으므로
+        // 드래그 모드에 따라 추가 처리만 수행
+        if (mode === 'deselect' && isCurrentlySelected) {
             setSelectedSlots(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(slotId);
@@ -283,38 +280,32 @@ export default function TimetableSelect() {
             return;
         }
 
-        const newCurrentSlot = { dayIndex, halfIndex };
-        
-        // 현재 슬롯이 변경된 경우에만 처리
-        if (!dragCurrentSlot || 
-            dragCurrentSlot.dayIndex !== newCurrentSlot.dayIndex || 
-            dragCurrentSlot.halfIndex !== newCurrentSlot.halfIndex) {
-            
-            setDragCurrentSlot(newCurrentSlot);
-            
-            // 드래그 범위의 모든 슬롯 선택
-            selectSlotsInRange(dragStartSlot, newCurrentSlot);
-        }
+        // 드래그 범위의 모든 슬롯 선택
+        selectSlotsInRange(dragStartSlot, { dayIndex, halfIndex });
     };
 
     // 드래그 선택 종료
     const handleDragSelectionEnd = () => {
-        // 대기 중인 터치 타이머도 정리
+        // 대기 중인 터치 및 드래그 타이머도 정리
         if (touchTimeout) {
             clearTimeout(touchTimeout);
             setTouchTimeout(null);
         }
-        setPendingTouchSlot(null);
+        if (dragTimeout) {
+            clearTimeout(dragTimeout);
+            setDragTimeout(null);
+        }
         
+        setPendingTouchSlot(null);
         setIsDragSelecting(false);
         setDragStartSlot(null);
-        setDragCurrentSlot(null);
         setDragMode('select');
     };
 
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
     const handleTapSelection = (dayIndex, halfIndex) => {
-        if (isScrolling || !isSelectionEnabled) {
+        // 빠른 응답을 위해 필수 체크만 수행
+        if (!isSelectionEnabled || isDragSelecting) {
             return;
         }
 
@@ -429,6 +420,11 @@ export default function TimetableSelect() {
         const handleGestureEnd = (e) => {
             e.preventDefault();
             setGestureScale(1);
+            
+            // gesture 종료 후 auto-align 실행
+            setTimeout(() => {
+                autoAlignToColumn();
+            }, 100);
         };
 
         // 휠 이벤트로 기본 확대/축소 차단
@@ -461,16 +457,11 @@ export default function TimetableSelect() {
         };
 
         const handleTouchStart = (e) => {
-            setTouchCount(e.touches.length);
-            
             if (e.touches.length === 1) {
                 // 단일 터치 - 스크롤 및 선택 준비
                 const touch = e.touches[0];
                 setStartTouchX(touch.clientX);
-                setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-                setTouchMoved(false);
-                setTouchStartTime(Date.now());
-                setIsDragging(false);
+                setStartTouch1({ x: touch.clientX, y: touch.clientY }); // 방향 감지를 위한 시작 위치 저장
                 setIsScrolling(false);
                 // 터치 시작 시에는 선택 기능을 활성화 상태로 유지
             } else if (e.touches.length === 2) {
@@ -496,7 +487,6 @@ export default function TimetableSelect() {
                 const columnIndex = getColumnIndexFromTouch(centerX);
                 setCenterColumnIndex(columnIndex);
                 
-                setIsDragging(false);
                 setIsScrolling(false); // 터치 시작 시점에서는 스크롤 상태가 아님
                 setIsSelectionEnabled(false); // 두 손가락 터치 시에만 선택 기능 비활성화
             }
@@ -505,39 +495,29 @@ export default function TimetableSelect() {
         const handleTouchMove = (e) => {
             if (e.touches.length === 1) {
                 const touch = e.touches[0];
-                const deltaX = Math.abs(touch.clientX - touchStartPosition.x);
-                const deltaY = Math.abs(touch.clientY - touchStartPosition.y);
                 
-                // 움직임이 감지되면 touchMoved 설정
-                if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
-                    setTouchMoved(true);
-                }
-                
-                // 수평 움직임이 더 크면 스크롤로 간주
-                if (deltaX > deltaY && deltaX > MOVE_THRESHOLD && visibleDayCount < TOTAL_DAYS) {
-                    e.preventDefault();
-                    setIsScrolling(true);
-                    setIsSelectionEnabled(false);
+                // 수평 스크롤 처리 (수직 드래그는 Half 컴포넌트에서 처리)
+                if (visibleDayCount < TOTAL_DAYS) {
+                    // 움직임의 방향을 확인하여 수평 스크롤인지 판단
+                    const deltaX = Math.abs(touch.clientX - startTouch1.x);
+                    const deltaY = Math.abs(touch.clientY - startTouch1.y);
                     
-                    const currentX = touch.clientX;
-                    const scrollDeltaX = startTouchX - currentX;
-                    
-                    if (timetable.scrollLeft !== undefined) {
-                        timetable.scrollLeft += scrollDeltaX;
-                        setStartTouchX(currentX);
+                    // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
+                    if (deltaX > 10 && deltaX > deltaY) { // 수평 우선 움직임 감지
+                        e.preventDefault();
+                        setIsScrolling(true);
+                        setIsSelectionEnabled(false);
                         
-                        // 스크롤 위치 업데이트
-                        const maxScroll = timetable.scrollWidth - timetable.clientWidth;
-                        if (maxScroll > 0) {
-                            const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
-                            setScrollPosition(scrollPercentage);
+                        const currentX = touch.clientX;
+                        const scrollDeltaX = startTouchX - currentX;
+                        
+                        if (timetable.scrollLeft !== undefined) {
+                            timetable.scrollLeft += scrollDeltaX;
+                            setStartTouchX(currentX);
                         }
                     }
                 }
-                // 수직 움직임이 더 크거나 움직임이 작으면 드래그 선택 가능성
-                else if (deltaY >= deltaX || deltaX <= MOVE_THRESHOLD) {
-                    // 여기서는 preventDefault를 하지 않아 터치 이벤트가 Timetable 컴포넌트로 전달됨
-                }
+                // 수직 움직임은 Half 컴포넌트에서 처리
             } else if (e.touches.length === 2) {
                 e.preventDefault();
                 setIsScrolling(true); // 두 손가락 제스처 시작
@@ -563,13 +543,6 @@ export default function TimetableSelect() {
                     if (timetable.scrollLeft !== undefined) {
                         timetable.scrollLeft += deltaX;
                         setStartTouchX(currentCenterX);
-                        
-                        // 스크롤 위치 업데이트
-                        const maxScroll = timetable.scrollWidth - timetable.clientWidth;
-                        if (maxScroll > 0) {
-                            const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
-                            setScrollPosition(scrollPercentage);
-                        }
                     }
                 } else {
                     // 확대/축소 모드: 두 손가락이 반대 방향으로 움직이거나 거리가 변함
@@ -599,28 +572,26 @@ export default function TimetableSelect() {
         };
 
         const handleTouchEnd = (e) => {
-            setIsDragging(false);
-            setTouchCount(e.touches.length);
-            
             // 드래그 선택 종료
             if (isDragSelecting) {
                 handleDragSelectionEnd();
             }
             
-            // 대기 중인 터치 타이머 정리
+            // 대기 중인 터치 및 드래그 타이머 정리
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
                 setTouchTimeout(null);
             }
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                setDragTimeout(null);
+            }
             
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
-                // 짧은 지연 후 상태 초기화
-                setTimeout(() => {
-                    setIsSelectionEnabled(true);
-                    setTouchMoved(false);
-                    setPendingTouchSlot(null);
-                }, 50);
+                // 즉시 상태 초기화 (지연 없이)
+                setIsSelectionEnabled(true);
+                setPendingTouchSlot(null);
                 
                 handleScrollEnd();
             }
@@ -630,12 +601,6 @@ export default function TimetableSelect() {
         const handleTableScroll = () => {
             if (timetable && visibleDayCount < TOTAL_DAYS) {
                 setIsScrolling(true);
-                
-                const maxScroll = timetable.scrollWidth - timetable.clientWidth;
-                if (maxScroll > 0) {
-                    const scrollPercentage = (timetable.scrollLeft / maxScroll) * 100;
-                    setScrollPosition(scrollPercentage);
-                }
                 
                 // 스크롤 종료 감지
                 handleScrollEnd();
@@ -654,8 +619,8 @@ export default function TimetableSelect() {
         container.addEventListener('gesturechange', handleGestureChange, true);
         container.addEventListener('gestureend', handleGestureEnd, true);
         container.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-        container.addEventListener('touchstart', handleTouchStart, { passive: false });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false }); // 스크롤 제어를 위해 preventDefault 필요
         container.addEventListener('touchend', handleTouchEnd);
         timetable.addEventListener('scroll', handleTableScroll);
 
@@ -672,9 +637,12 @@ export default function TimetableSelect() {
                 clearTimeout(scrollTimeoutRef.current);
             }
             
-            // 터치 타이머 정리
+            // 터치 및 드래그 타이머 정리
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
+            }
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
             }
             
             container.removeEventListener('gesturestart', handleGestureStart, true);
@@ -695,7 +663,7 @@ export default function TimetableSelect() {
             document.removeEventListener('gesturechange', preventDefaults, true);
             document.removeEventListener('gestureend', preventDefaults, true);
         };
-    }, [visibleDayCount, isDragging, startTouchX, touchCount, initialDistance, startTouch1, startTouch2, gestureScale, centerColumnIndex]);
+    }, [visibleDayCount, isDragSelecting, touchTimeout, dragTimeout, isSelectionEnabled]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -720,7 +688,7 @@ export default function TimetableSelect() {
                 className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'none'  // 모든 기본 터치 동작 차단
+                    touchAction: 'manipulation'  // 더블탭 줌만 차단하고 다른 제스처는 허용
                 }}
             >
                 <div 
@@ -728,7 +696,7 @@ export default function TimetableSelect() {
                     className="overflow-x-auto overflow-y-hidden"
                     style={{ 
                         overflowX: visibleDayCount < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'pan-x',  // 수평 스크롤만 허용
+                        touchAction: 'manipulation',  // 더블탭 줌만 차단하고 다른 제스처는 허용
                         scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
                         paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
                     }}
@@ -749,10 +717,8 @@ export default function TimetableSelect() {
                             isSelectionEnabled={isSelectionEnabled}
                             isDragSelecting={isDragSelecting}
                             pendingTouchSlot={pendingTouchSlot}
-                            touchStartTime={touchStartTime}
-                            setTouchStartTime={setTouchStartTime}
                             tapThreshold={TAP_THRESHOLD}
-                            touchMoved={touchMoved}
+                            dragThreshold={DRAG_THRESHOLD}
                             moveThreshold={MOVE_THRESHOLD}
                         />
                     </div>
