@@ -336,17 +336,17 @@ export default function EditPage({ params }) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-80 mx-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg text-black font-medium">비밀번호 확인</h2>
+                    <div className="flex items-center justify-center mb-6 relative">
                         <button 
                             onClick={handleVerificationBack}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
+                            className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
                             disabled={isVerifying}
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 6L6 18M6 6l12 12"/>
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M15 18l-6-6 6-6"/>
                             </svg>
                         </button>
+                        <h2 className="text-lg text-black font-medium">비밀번호 확인</h2>
                     </div>
                     
                     <div className="mb-4">
@@ -356,7 +356,7 @@ export default function EditPage({ params }) {
                             onChange={(e) => setVerificationPassword(e.target.value)}
                             placeholder="비밀번호를 입력하세요"
                             disabled={isVerifying}
-                            className="text-sm"
+                            className="text-base h-12"
                         />
                     </div>
                     
