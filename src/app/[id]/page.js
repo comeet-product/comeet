@@ -8,6 +8,7 @@ import Title from "@/components/Title";
 import TimetableResult from "@/components/TimetableComponent/TimetableResult";
 import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
 import UserBar from "@/components/UserBar";
+import Loading from "@/components/Loading";
 
 export default function MeetingPage({ params }) {
     const [meeting, setMeeting] = useState(null);
@@ -38,7 +39,7 @@ export default function MeetingPage({ params }) {
         router.push(`/${unwrappedParams.id}/edit`);
     };
 
-    if (!meeting) return <div>Loading...</div>;
+    if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
         <div className="flex flex-col h-full">
