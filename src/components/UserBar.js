@@ -61,7 +61,7 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     isSelected 
                         ? 'bg-main/20 border-main' 
                         : isHighlighted
-                        ? 'bg-green-100 border-green-300'
+                        ? 'bg-main/10 border-main/30'
                         : 'border-transparent'
                 }`}
                 style={{
@@ -69,39 +69,39 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     WebkitUserSelect: 'none',
                     userSelect: 'none',
                     backgroundColor: isSelected 
-                        ? 'rgba(25, 118, 210, 0.2)' 
+                        ? 'rgba(54, 116, 181, 0.2)' 
                         : isHighlighted 
-                        ? 'rgba(34, 197, 94, 0.1)'
+                        ? 'rgba(54, 116, 181, 0.1)'
                         : 'transparent',
                     opacity: isAvailable === false ? 0.4 : 1 // 불가능한 사용자는 반투명
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(34, 197, 94, 0.15)' : 'rgba(25, 118, 210, 0.1)';
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(34, 197, 94, 0.1)' : 'transparent';
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchStart={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(34, 197, 94, 0.15)' : 'rgba(25, 118, 210, 0.1)';
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchEnd={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(34, 197, 94, 0.1)' : 'transparent';
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchCancel={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(34, 197, 94, 0.1)' : 'transparent';
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
@@ -120,7 +120,7 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     />
                 </div>
                 <span className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate ${
-                    isHighlighted ? 'text-green-700 font-medium' : 'text-gray-800'
+                    isHighlighted ? 'text-main font-medium' : 'text-gray-800'
                 }`}>
                     {name}
                 </span>

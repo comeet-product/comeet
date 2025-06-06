@@ -26,12 +26,15 @@ export default function Half({
     isDragSelecting,
     pendingTouchSlot,
     verticalDragThreshold,
+    onCellClick,
+    pageStartDay,
 }) {
     const slotId = `${dayIndex}-${halfIndex}`;
 
     // selectedSlots가 Map인지 Set인지 확인하여 처리
     let isSelected = false;
     let slotOpacity = 100; // 기본 투명도 100%
+    let isUserSelected = false; // 사용자가 클릭해서 선택된 셀인지 구분
 
     if (selectedSlots instanceof Map) {
         // Map인 경우 (결과 데이터)
@@ -39,11 +42,43 @@ export default function Half({
         if (slotData) {
             isSelected = true;
             slotOpacity = slotData.opacity;
+            isUserSelected = slotData.isSelected || false; // 사용자 선택 여부 확인
         }
     } else if (selectedSlots instanceof Set || selectedSlots?.has) {
         // Set인 경우 (사용자 availability)
         isSelected = selectedSlots.has(slotId);
     }
+
+    // 연결된 선택 셀들의 경계 계산 (외곽선 표시를 위해)
+    const getSmartBorder = () => {
+        if (!isUserSelected || !(selectedSlots instanceof Map)) {
+            return {};
+        }
+
+        // 인접한 셀들이 선택되어 있는지 확인
+        const checkAdjacent = (dIndex, hIndex) => {
+            const adjacentSlotId = `${dIndex}-${hIndex}`;
+            const adjacentData = selectedSlots.get(adjacentSlotId);
+            return adjacentData?.isSelected || false;
+        };
+
+        // 상하좌우 인접 셀 확인
+        const hasTop = checkAdjacent(dayIndex, halfIndex - 1);
+        const hasBottom = checkAdjacent(dayIndex, halfIndex + 1);
+        const hasLeft = checkAdjacent(dayIndex - 1, halfIndex);
+        const hasRight = checkAdjacent(dayIndex + 1, halfIndex);
+
+        // box-shadow로 기존 테두리 위에 핑크 테두리 덮어씌우기
+        const shadows = [];
+        if (!hasTop) shadows.push("inset 0 2px 0 0 #FF69B4");
+        if (!hasBottom) shadows.push("inset 0 -2px 0 0 #FF69B4");
+        if (!hasLeft) shadows.push("inset 2px 0 0 0 #FF69B4");
+        if (!hasRight) shadows.push("inset -2px 0 0 0 #FF69B4");
+
+        return shadows.length > 0 ? {
+            boxShadow: shadows.join(", ")
+        } : {};
+    };
 
     const isPending =
         pendingTouchSlot &&
@@ -198,11 +233,18 @@ export default function Half({
         }
     };
 
-    // PC에서는 onClick 이벤트 사용하지 않음 (mouseDown에서 즉시 처리)
+    // PC에서는 onClick 이벤트도 처리 (Result에서 사용)
     const handlePCClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        // PC에서는 마우스 다운에서 이미 처리되므로 여기서는 아무것도 하지 않음
+        
+        console.log('PC Click:', { dayIndex, halfIndex, onCellClick: !!onCellClick, isSelectionEnabled, pageStartDay });
+        
+        // TimetableResult에서 셀 클릭 처리
+        if (onCellClick && !isSelectionEnabled) {
+            onCellClick(dayIndex, halfIndex, pageStartDay || 0);
+        }
+        // PC에서 선택 기능이 활성화된 경우는 마우스 다운에서 이미 처리됨
     };
 
     // ===== 모바일 전용 클릭 핸들러 =====
@@ -211,8 +253,14 @@ export default function Half({
         e.preventDefault();
         e.stopPropagation();
 
-        // 모바일에서는 클릭 이벤트로 탭 선택 처리 (백업용)
-        if (isSelectionEnabled && onTapSelection && !localTouchMoved) {
+        console.log('Mobile Click:', { dayIndex, halfIndex, onCellClick: !!onCellClick, isSelectionEnabled, localTouchMoved, pageStartDay });
+
+        // TimetableResult에서 셀 클릭 처리
+        if (onCellClick && !isSelectionEnabled && !localTouchMoved) {
+            onCellClick(dayIndex, halfIndex, pageStartDay || 0);
+        }
+        // 모바일에서 선택 기능이 활성화된 경우 탭 선택 처리 (백업용)
+        else if (isSelectionEnabled && onTapSelection && !localTouchMoved) {
             onTapSelection(dayIndex, halfIndex);
         }
     };
@@ -238,13 +286,15 @@ export default function Half({
                 backgroundColor: isSelected
                     ? `#3674B5${Math.round(slotOpacity * 2.55)
                           .toString(16)
-                          .padStart(2, "0")}` // main color with dynamic opacity
+                          .padStart(2, "0")}` // 선택 여부와 관계없이 opacity에 따른 배경색
                     : isPending
                     ? "#3674B526" // main color with 10% opacity (26 in hex = ~15% opacity)
                     : "transparent",
                 userSelect: "none",
                 WebkitUserSelect: "none",
                 touchAction: isMobile ? "manipulation" : "none",
+                // 스마트 border 적용 (연결된 셀들의 외곽선만 표시)
+                ...getSmartBorder(),
             }}
             // 조건부 이벤트 핸들러 (디바이스별 분기)
             {...(isMobile

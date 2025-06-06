@@ -79,19 +79,23 @@ export default function TimetableResult({
         }
     };
 
-    // 결과 데이터를 시간 슬롯 정보로 변환
-    const getResultSlots = () => {
+    // 결과 데이터를 시간 슬롯 정보로 변환 (페이지별)
+    const getResultSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
         const resultSlots = new Map(); // Set 대신 Map을 사용하여 투명도 정보도 저장
         
         results.forEach(result => {
-            const dateIndex = meeting?.dates?.indexOf(result.date);
-            if (dateIndex !== -1) {
-                const halfIndex = timeToHalfIndex(result.start_time);
-                if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
-                    const slotId = `${dateIndex}-${halfIndex}`;
-                    // 사람 수에 따른 투명도 계산 (선택사람수/전체사람수*100)
-                    const opacity = users.length > 0 ? (result.number / users.length) * 100 : 0;
-                    resultSlots.set(slotId, { opacity, count: result.number });
+            const absoluteDateIndex = meeting?.dates?.indexOf(result.date);
+            if (absoluteDateIndex !== -1) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (absoluteDateIndex >= pageStartDay && absoluteDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = absoluteDateIndex - pageStartDay; // 페이지 내 상대적 인덱스
+                    const halfIndex = timeToHalfIndex(result.start_time);
+                    if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                        const slotId = `${relativeDayIndex}-${halfIndex}`;
+                        // 사람 수에 따른 투명도 계산 (선택사람수/전체사람수*100)
+                        const opacity = users.length > 0 ? (result.number / users.length) * 100 : 0;
+                        resultSlots.set(slotId, { opacity, count: result.number });
+                    }
                 }
             }
         });
@@ -99,8 +103,8 @@ export default function TimetableResult({
         return resultSlots;
     };
 
-    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환  
-    const getUserAvailabilitySlots = () => {
+    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환 (페이지별)
+    const getUserAvailabilitySlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
         if (!selectedUser || !selectedUserAvailability) {
             return new Set();
         }
@@ -108,18 +112,83 @@ export default function TimetableResult({
         const availabilitySlots = new Set();
         
         Object.entries(selectedUserAvailability).forEach(([date, times]) => {
-            const dateIndex = meeting?.dates?.indexOf(date);
-            if (dateIndex !== -1 && Array.isArray(times)) {
-                times.forEach(time => {
-                    const halfIndex = timeToHalfIndex(time);
-                    if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
-                        availabilitySlots.add(`${dateIndex}-${halfIndex}`);
-                    }
-                });
+            const absoluteDateIndex = meeting?.dates?.indexOf(date);
+            if (absoluteDateIndex !== -1 && Array.isArray(times)) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (absoluteDateIndex >= pageStartDay && absoluteDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = absoluteDateIndex - pageStartDay; // 페이지 내 상대적 인덱스
+                    times.forEach(time => {
+                        const halfIndex = timeToHalfIndex(time);
+                        if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                            availabilitySlots.add(`${relativeDayIndex}-${halfIndex}`);
+                        }
+                    });
+                }
             }
         });
 
         return availabilitySlots;
+    };
+
+    // 선택된 셀들을 시간 슬롯 정보로 변환 (페이지별)
+    const getSelectedCellSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
+        const selectedCellSlots = new Map();
+        
+        // 단일 선택된 셀 처리
+        if (selectedCell && !selectedUser) {
+            const cellDateIndex = meeting?.dates?.indexOf(selectedCell.date);
+            if (cellDateIndex !== -1) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (cellDateIndex >= pageStartDay && cellDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = cellDateIndex - pageStartDay;
+                    const halfIndex = getHalfIndexFromTime(selectedCell.start_time);
+                    if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                        const slotId = `${relativeDayIndex}-${halfIndex}`;
+                        // 기존 결과 데이터의 opacity 유지 (selectedCell에 저장된 실제 참여자 수 기반)
+                        const opacity = users.length > 0 ? (selectedCell.number / users.length) * 100 : 0;
+                        selectedCellSlots.set(slotId, { opacity, count: selectedCell.number, isSelected: true });
+                    }
+                }
+            }
+        }
+        
+        // 연속 선택된 셀들 처리
+        if (selectedCells && selectedCells.length > 0 && !selectedUser) {
+            selectedCells.forEach(cell => {
+                const cellDateIndex = meeting?.dates?.indexOf(cell.date);
+                if (cellDateIndex !== -1) {
+                    // 현재 페이지 범위 내에 있는지 확인
+                    if (cellDateIndex >= pageStartDay && cellDateIndex < pageStartDay + pageDayCount) {
+                        const relativeDayIndex = cellDateIndex - pageStartDay;
+                        const halfIndex = getHalfIndexFromTime(cell.start_time);
+                        if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                            const slotId = `${relativeDayIndex}-${halfIndex}`;
+                            // 기존 결과 데이터의 opacity 유지 (cell에 저장된 실제 참여자 수 기반)
+                            const opacity = users.length > 0 ? (cell.number / users.length) * 100 : 0;
+                            selectedCellSlots.set(slotId, { opacity, count: cell.number, isSelected: true });
+                        }
+                    }
+                }
+            });
+        }
+        
+        return selectedCellSlots;
+    };
+
+    // 모든 슬롯 데이터를 합치는 함수 (페이지별)
+    const getCombinedSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
+        if (selectedUser) {
+            // 사용자가 선택된 경우 availability만 표시
+            return getUserAvailabilitySlots(pageStartDay, pageDayCount);
+        } else {
+            // 결과 데이터와 선택된 셀들을 합쳐서 반환
+            const resultSlots = getResultSlots(pageStartDay, pageDayCount);
+            const selectedCellSlots = getSelectedCellSlots(pageStartDay, pageDayCount);
+            
+            // Map을 합치기 (선택된 셀이 우선순위를 가짐)
+            const combinedSlots = new Map([...resultSlots, ...selectedCellSlots]);
+            return combinedSlots;
+        }
     };
 
     // 페이지 계산 로직
@@ -338,9 +407,6 @@ export default function TimetableResult({
         }
     };
 
-    // 현재 표시할 슬롯들 결정
-    const currentSelectedSlots = selectedUser ? getUserAvailabilitySlots() : getResultSlots();
-
     // 셀 클릭 핸들러
     const handleCellClick = (dayIndex, halfIndex, pageStartDay) => {
         // 사용자가 선택된 상태가 아닐 때만 작동
@@ -415,7 +481,7 @@ export default function TimetableResult({
                                         dayCount={pageInfo.dayCount}
                                         halfCount={dynamicHalfCount}
                                         hasDateHeaderAbove={false}
-                                        selectedSlots={currentSelectedSlots}  // 결과 또는 사용자 availability 표시
+                                        selectedSlots={getCombinedSlots(pageInfo.startDay, pageInfo.dayCount)}  // 페이지별 데이터 전달
                                         onSlotSelection={() => {}}  // 터치 선택 비활성화
                                         onTapSelection={() => {}}   // 터치 선택 비활성화
                                         onTouchPending={() => {}}   // 터치 선택 비활성화

@@ -14,7 +14,7 @@ export default function TimetableSelect({
     const VERTICAL_DRAG_THRESHOLD = 8; // 모바일 전용: 8px 이상 수직 이동하면 드래그로 인식
 
     // States for gesture and view control
-    const [visibleDayCount, setVisibleDayCount] = useState(7);
+    const [visibleDayCount, setVisibleDayCount] = useState(meeting?.dates?.length || 7);
     const [startTouchX, setStartTouchX] = useState(0);
     const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     const [startTouch2, setStartTouch2] = useState({ x: 0, y: 0 });

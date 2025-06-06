@@ -142,7 +142,8 @@ export async function calculateResults(meetingId) {
 
         console.log('Calculated results:', results);
 
-        // 5. 기존 result 데이터 삭제
+        // 5. 기존 result 데이터 삭제 (더 안전한 방식)
+        console.log('Deleting existing results...');
         const { error: deleteError } = await supabase
             .from("result")
             .delete()
@@ -153,19 +154,53 @@ export async function calculateResults(meetingId) {
             throw deleteError;
         }
 
-        // 6. result 테이블에 저장
+        console.log('Existing results deleted successfully');
+
+        // 6. result 테이블에 저장 (트랜잭션 방식으로 안전하게)
         if (results.length > 0) {
-            const { error: resultError } = await supabase
-                .from("result")
-                .insert(results);
+            // PostgreSQL 배열 형식으로 데이터 준비
+            const resultsToInsert = results.map(result => ({
+                ...result,
+                members: result.members // PostgreSQL이 자동으로 배열 형식 변환
+            }));
 
-            if (resultError) {
-                console.error("Error saving results:", resultError);
-                throw resultError;
+            console.log('Inserting results:', resultsToInsert.length, 'records');
+            console.log('Sample result:', resultsToInsert[0]);
+
+            // 작은 배치로 나누어 삽입하여 충돌 방지
+            const batchSize = 50;
+            const batches = [];
+            for (let i = 0; i < resultsToInsert.length; i += batchSize) {
+                batches.push(resultsToInsert.slice(i, i + batchSize));
             }
-        }
 
-        console.log('Results saved successfully');
+            console.log(`Inserting ${batches.length} batches`);
+
+            for (let i = 0; i < batches.length; i++) {
+                const batch = batches[i];
+                console.log(`Inserting batch ${i + 1}/${batches.length} with ${batch.length} records`);
+                
+                const { data: insertedData, error: resultError } = await supabase
+                    .from("result")
+                    .insert(batch)
+                    .select(); // 삽입된 데이터 반환
+
+                if (resultError) {
+                    console.error(`Error saving results batch ${i + 1} - Full error object:`, JSON.stringify(resultError, null, 2));
+                    console.error("Error saving results - Error code:", resultError.code);
+                    console.error("Error saving results - Error message:", resultError.message);
+                    console.error("Error saving results - Error details:", resultError.details);
+                    console.error("Error saving results - Error hint:", resultError.hint);
+                    throw resultError;
+                }
+
+                console.log(`Batch ${i + 1} saved successfully:`, insertedData?.length, 'records');
+            }
+
+            console.log('All results saved successfully');
+        } else {
+            console.log('No results to save');
+        }
 
         return {
             success: true,
