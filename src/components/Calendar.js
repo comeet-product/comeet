@@ -264,11 +264,11 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, dayIndex);
-        const isCurrentlySelected = selectedDates.includes(dateStr);
 
-        // 현재 날짜의 선택 상태에 따라 드래그 모드 결정
-        // 터치 시작 시 이미 선택 처리되었으므로, 현재 선택 상태로 드래그 모드 결정
-        const mode = isCurrentlySelected ? "select" : "deselect";
+        // 터치 시작 시 이미 선택이 토글되었으므로, 현재 상태는 이미 변경된 상태
+        // 따라서 원래 상태를 확인하려면 현재 상태의 반대를 확인해야 함
+        const wasSelected = !selectedDates.includes(dateStr);
+        const mode = wasSelected ? "deselect" : "select";
 
         setIsDragSelecting(true);
         setDragStartDay(dayIndex);
@@ -339,7 +339,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - TimetableSelect와 동일
     const handleTapSelection = (day) => {
         // 빠른 응답을 위해 필수 체크만 수행
-        if (!isSelectionEnabled || isDragSelecting || day === null) {
+        if (!isSelectionEnabled || day === null) {
             return;
         }
 
@@ -563,7 +563,9 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                         const isSelected =
                             day !== null && selectedDates?.includes(dateStr);
                         const isDragStartDay =
-                            isDragSelecting && dragStartDay === day;
+                            isDragSelecting &&
+                            dragStartDay === day &&
+                            dragMode === "select";
 
                         return (
                             <div
