@@ -2,41 +2,26 @@
 
 import React, { useState } from "react";
 
-const Input = ({ meetingId, onCheckDuplicate }) => {
-    const [name, setName] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+const Input = ({ value, onChange, placeholder, className = "", onCheckDuplicate }) => {
+    const [isDuplicate, setIsDuplicate] = useState(false);
 
-    const handleInputChange = (e) => {
-        setName(e.target.value);
-        setErrorMessage("");
-    };
-
-    const handleBlur = async () => {
-        if (name.trim() === "") {
-            setErrorMessage("");
-            return;
-        }
-        const isDuplicate = await onCheckDuplicate(meetingId, name);
-        if (isDuplicate) {
-            setErrorMessage("중복된 이름입니다.");
-        } else {
-            setErrorMessage("");
+    const handleChange = (e) => {
+        const newValue = e.target.value;
+        onChange(e);
+        if (onCheckDuplicate) {
+            setIsDuplicate(onCheckDuplicate(newValue));
         }
     };
 
     return (
-        <div className="flex flex-col">
+        <div className={`h-full ${className}`}>
             <input
                 type="text"
-                placeholder="이름을 입력해주세요"
-                className="w-[170px] h-[44px] px-2 py-3.5 bg-gray rounded-[5px] inline-flex justify-center items-center gap-2.5 text-[15px] text-black"
-                value={name}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
+                value={value}
+                onChange={handleChange}
+                placeholder={placeholder}
+                className="w-full h-full px-3 border border-main/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-main focus:border-main"
             />
-            {errorMessage && (
-                <p className="text-red-500 text-sm mt-1">{errorMessage}</p>
-            )}
         </div>
     );
 };
