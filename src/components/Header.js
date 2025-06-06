@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { getMeeting } from "@/lib/supabase/getMeeting";
 
 export default function Header() {
     const router = useRouter();
@@ -26,7 +27,21 @@ export default function Header() {
 
     const handleShareClick = async () => {
         try {
-            const textToCopy = `[COMEET]\n${currentUrl}`;
+            // URL에서 미팅 ID 추출
+            const pathSegments = pathname.split('/');
+            const meetingId = pathSegments[1]; // /[id] 형태에서 id 추출
+            
+            let shareUrl = currentUrl;
+            
+            if (meetingId && meetingId !== '') {
+                // getMeeting을 사용해서 미팅 정보 확인
+                const meetingResult = await getMeeting(meetingId);
+                if (meetingResult.success) {
+                    shareUrl = `www.comeet.team/${meetingId}`;
+                }
+            }
+            
+            const textToCopy = `[COMEET]\n지금 바로 모두가 되는 일정을 확인해보세요!\n${shareUrl}`;
             await navigator.clipboard.writeText(textToCopy);
             setToastMessage("링크가 복사되었습니다.");
             setShowToast(true);
