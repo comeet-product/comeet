@@ -468,10 +468,29 @@ export default function TimetableSelect({
         // 임계값을 넘으면 드래그 시작
         if (distance > MOVE_THRESHOLD && !isDragSelecting) {
             setHasMoved(true);
-            handlePCDragSelectionStart({ dayIndex, halfIndex });
+            
+            // 가로방향 움직임이 더 큰 경우 스크롤 처리
+            if (deltaX > deltaY && visibleDayCount < TOTAL_DAYS) {
+                setIsScrolling(true);
+                setIsSelectionEnabled(false);
+                
+                const timetable = timetableRef.current;
+                if (timetable) {
+                    const scrollDelta = touchStartPosition.x - clientX;
+                    timetable.scrollLeft += scrollDelta;
+                    // 터치 시작 위치 업데이트 (연속 스크롤을 위해)
+                    setTouchStartPosition({ x: clientX, y: clientY });
+                }
+                return;
+            }
+            
+            // 세로방향 움직임이 더 큰 경우에만 드래그 선택 시작
+            if (deltaY >= deltaX) {
+                handlePCDragSelectionStart({ dayIndex, halfIndex });
+            }
         }
 
-        // 드래그 중이면 계속 드래그 처리
+        // 드래그 중이면 계속 드래그 처리 (세로방향만)
         if (isDragSelecting) {
             handlePCDragSelectionMove({ dayIndex, halfIndex });
         }
@@ -481,6 +500,12 @@ export default function TimetableSelect({
     const handlePCMouseEnd = () => {
         if (isDragSelecting) {
             handleDragSelectionEnd();
+        }
+
+        // 스크롤 상태 초기화
+        if (isScrolling) {
+            setIsScrolling(false);
+            setIsSelectionEnabled(true);
         }
 
         // 상태 초기화
@@ -497,11 +522,11 @@ export default function TimetableSelect({
         setDragStartSlot(slot);
     };
 
-    // PC 전용 드래그 선택 이동 (직사각형 범위)
+    // PC 전용 드래그 선택 이동 (세로방향만)
     const handlePCDragSelectionMove = (currentSlot) => {
         if (!dragStartSlot || !isDragSelecting) return;
 
-        // PC에서도 모바일처럼 수직으로만 드래그 선택
+        // PC에서도 모바일처럼 세로방향으로만 드래그 선택 (가로방향 선택 막기)
         if (dragStartSlot.dayIndex !== currentSlot.dayIndex) {
             return;
         }
@@ -558,63 +583,40 @@ export default function TimetableSelect({
     const selectSlotsInRange = (startSlot, endSlot) => {
         if (!startSlot || !endSlot) return;
 
-        if (isMobile) {
-            // 모바일: 수직으로만 (같은 day에서 아래쪽 방향으로만)
-            if (startSlot.dayIndex !== endSlot.dayIndex) {
-                return;
-            }
-
-            // 시작점보다 아래쪽(halfIndex가 더 큰)이 아니면 무시
-            if (endSlot.halfIndex < startSlot.halfIndex) {
-                return;
-            }
-
-            const dayIndex = startSlot.dayIndex;
-            const startHalfIndex = startSlot.halfIndex;
-            const endHalfIndex = endSlot.halfIndex;
-
-            setSelectedSlots((prev) => {
-                const newSelectedSlots = new Set(prev);
-
-                // 시작점부터 끝점까지 세로로 선택
-                for (
-                    let halfIndex = startHalfIndex;
-                    halfIndex <= endHalfIndex;
-                    halfIndex++
-                ) {
-                    const slotId = `${dayIndex}-${halfIndex}`;
-
-                    if (dragMode === "select") {
-                        newSelectedSlots.add(slotId);
-                    } else {
-                        newSelectedSlots.delete(slotId);
-                    }
-                }
-
-                return newSelectedSlots;
-            });
-        } else {
-            // PC: 직사각형 범위
-            const minDay = Math.min(startSlot.dayIndex, endSlot.dayIndex);
-            const maxDay = Math.max(startSlot.dayIndex, endSlot.dayIndex);
-            const minHalf = Math.min(startSlot.halfIndex, endSlot.halfIndex);
-            const maxHalf = Math.max(startSlot.halfIndex, endSlot.halfIndex);
-
-            const newSlots = new Set(selectedSlots);
-
-            for (let day = minDay; day <= maxDay; day++) {
-                for (let half = minHalf; half <= maxHalf; half++) {
-                    const slotKey = getSlotKey(day, half);
-                    if (dragMode === "select") {
-                        newSlots.add(slotKey);
-                    } else {
-                        newSlots.delete(slotKey);
-                    }
-                }
-            }
-
-            setSelectedSlots(newSlots);
+        // PC와 모바일 모두 세로방향으로만 드래그 선택 허용
+        if (startSlot.dayIndex !== endSlot.dayIndex) {
+            return;
         }
+
+        // 시작점보다 아래쪽(halfIndex가 더 큰)이 아니면 무시
+        if (endSlot.halfIndex < startSlot.halfIndex) {
+            return;
+        }
+
+        const dayIndex = startSlot.dayIndex;
+        const startHalfIndex = startSlot.halfIndex;
+        const endHalfIndex = endSlot.halfIndex;
+
+        setSelectedSlots((prev) => {
+            const newSelectedSlots = new Set(prev);
+
+            // 시작점부터 끝점까지 세로로 선택
+            for (
+                let halfIndex = startHalfIndex;
+                halfIndex <= endHalfIndex;
+                halfIndex++
+            ) {
+                const slotId = `${dayIndex}-${halfIndex}`;
+
+                if (dragMode === "select") {
+                    newSelectedSlots.add(slotId);
+                } else {
+                    newSelectedSlots.delete(slotId);
+                }
+            }
+
+            return newSelectedSlots;
+        });
     };
 
     // ===== 통합 핸들러 (디바이스별 분기) =====
