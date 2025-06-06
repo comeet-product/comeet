@@ -144,8 +144,28 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         setPendingTouchDay(day);
         setHasMoved(false);
 
-        // 터치 시작 시 즉시 선택 처리 (자연스러운 UX)
-        handleTapSelection(day);
+        // 터치 시작 시 무조건 즉시 선택 (조건 없이, 단순하게)
+        const { year, month } = getCalendarData();
+        const dateStr = formatDate(year, month, day);
+
+        console.log("Touch started on day:", day, "dateStr:", dateStr);
+
+        const newLocalDates = new Set(localSelectedDates);
+        if (newLocalDates.has(dateStr)) {
+            newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
+            console.log("Date removed on touch start:", dateStr);
+        } else {
+            if (newLocalDates.size >= MAX_SELECTED_DATES) {
+                showToast("날짜 선택은 최대 31일까지 가능합니다.");
+                return;
+            }
+            newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
+            console.log("Date added on touch start:", dateStr);
+        }
+
+        // 즉시 상태 업데이트
+        setLocalSelectedDates(newLocalDates);
+        onChange([...newLocalDates]);
     };
 
     // 터치 이동 처리 (드래그 감지) - TimetableSelect 그대로
@@ -204,26 +224,27 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         setPendingTouchDay(day);
         setHasMoved(false);
 
-        // 마우스 시작 시 무조건 즉시 선택 처리 (조건 체크 없이)
+        // 마우스 시작 시 무조건 즉시 선택 (조건 없이, 단순하게)
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
 
-        // 즉시 시각적 피드백을 위해 로컬 상태 먼저 업데이트
+        console.log("Mouse started on day:", day, "dateStr:", dateStr);
+
         const newLocalDates = new Set(localSelectedDates);
         if (newLocalDates.has(dateStr)) {
             newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
+            console.log("Date removed on mouse start:", dateStr);
         } else {
             if (newLocalDates.size >= MAX_SELECTED_DATES) {
                 showToast("날짜 선택은 최대 31일까지 가능합니다.");
                 return;
             }
             newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
+            console.log("Date added on mouse start:", dateStr);
         }
 
-        // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
+        // 즉시 상태 업데이트
         setLocalSelectedDates(newLocalDates);
-
-        // 부모 컴포넌트에 변경사항 전달
         onChange([...newLocalDates]);
     };
 
@@ -309,51 +330,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         setDragMode("select");
     };
 
-    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - TimetableSelect 그대로
+    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - 단순화
     const handleTapSelection = (day) => {
-        // 빠른 응답을 위해 필수 체크만 수행
-        if (!isSelectionEnabled || isDragSelecting) {
-            console.log("handleTapSelection blocked:", {
-                isSelectionEnabled,
-                isDragSelecting,
-            });
-            return;
-        }
-
-        if (day === null) {
-            return;
-        }
-
-        const { year, month } = getCalendarData();
-        const dateStr = formatDate(year, month, day);
-
-        console.log("handleTapSelection called:", {
-            day,
-            dateStr,
-            currentSize: localSelectedDates.size,
-        });
-
-        // 즉시 시각적 피드백을 위해 로컬 상태 먼저 업데이트
-        const newLocalDates = new Set(localSelectedDates);
-        if (newLocalDates.has(dateStr)) {
-            newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
-            console.log("Date removed:", dateStr);
-        } else {
-            if (newLocalDates.size >= MAX_SELECTED_DATES) {
-                showToast("날짜 선택은 최대 31일까지 가능합니다.");
-                return;
-            }
-            newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
-            console.log("Date added:", dateStr);
-        }
-
-        console.log("New local dates size:", newLocalDates.size);
-
-        // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
-        setLocalSelectedDates(newLocalDates);
-
-        // 부모 컴포넌트에 변경사항 전달
-        onChange([...newLocalDates]);
+        // 터치 시작에서 이미 처리되므로 여기서는 추가 작업 없음
+        console.log(
+            "handleTapSelection called but already handled in touch start"
+        );
     };
 
     // 범위 내 날짜들 선택/해제 - Calendar.js 전용 (직사각형 선택)
