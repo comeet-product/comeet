@@ -57,7 +57,8 @@ export async function runTestFlow() {
             const result = await submitAvailability(
                 meetingId,
                 response.name,
-                response.availableSlots
+                response.availableSlots,
+                response.password || null // 테스트용 비밀번호 (선택사항)
             );
 
             if (!result.success) {
