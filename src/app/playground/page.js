@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Title from "@/components/Title";
 import Half from "@/components/TimetableComponent/Half";
 import Hour from "@/components/TimetableComponent/Hour";
@@ -19,6 +22,8 @@ import Input from "@/components/Input";
 import Loading from "@/components/Loading";
 
 export default function Playground() {
+    const [selectedDates, setSelectedDates] = useState([]);
+
     return (
         <div className="p-4 md:p-6">
             <h1 className="text-2xl text-black font-bold mb-8 text-center">
@@ -185,7 +190,19 @@ export default function Playground() {
                     <h3 className="text-lg text-gray-500 font-semibold mb-4">
                         캘린더
                     </h3>
-                    <Calendar />
+                    <Calendar
+                        selectedDates={selectedDates}
+                        onChange={setSelectedDates}
+                    />
+                    <div className="mt-2 text-sm text-gray-600">
+                        선택된 날짜: {selectedDates.length}개
+                        {selectedDates.length > 0 && (
+                            <div className="mt-1">
+                                {selectedDates.slice(0, 5).join(", ")}
+                                {selectedDates.length > 5 && "..."}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div>

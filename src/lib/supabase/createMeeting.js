@@ -50,6 +50,7 @@ export async function createMeeting(meetingData) {
             },
         };
     } catch (error) {
+        console.error("Error in createMeeting:", error);
         return {
             success: false,
             message: "미팅 생성 중 오류가 발생했습니다: " + error.message,

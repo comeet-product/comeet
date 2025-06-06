@@ -41,3 +41,4 @@ export const extractTimeHeaderData = (meetingData) => {
 
     return convertSelectableTimeToTimeHeader(meetingData.selectable_time);
 };
+ 
