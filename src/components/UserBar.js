@@ -3,7 +3,7 @@
 import React from "react";
 import Avatar from "boring-avatars";
 
-const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick, isScrolling, isAvailable, isHighlighted }) => {
+const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick, isScrolling, isAvailable, isHighlighted, animationOrder }) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
 
@@ -55,11 +55,17 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
     }
 
     return (
-        <div className="flex-shrink-0">
+        <div 
+            className="flex-shrink-0 transition-all duration-500 ease-out"
+            style={{
+                order: animationOrder,
+                transform: 'translateX(0)',
+            }}
+        >
             <button 
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-all duration-200 border touch-none select-none ${
+                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer border touch-none select-none ${
                     isSelected 
-                        ? 'bg-main/20 border-main' 
+                        ? 'bg-main/30 border-main' 
                         : isHighlighted
                         ? 'bg-main/10 border-main/30'
                         : 'border-transparent'
@@ -69,11 +75,17 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     WebkitUserSelect: 'none',
                     userSelect: 'none',
                     backgroundColor: isSelected 
-                        ? 'rgba(54, 116, 181, 0.2)' 
+                        ? 'rgba(54, 116, 181, 0.3)' 
                         : isHighlighted 
                         ? 'rgba(54, 116, 181, 0.1)'
                         : 'transparent',
-                    opacity: isAvailable === false ? 0.4 : 1 // 불가능한 사용자는 반투명
+                    opacity: isAvailable === false ? 0.4 : 1, // 불가능한 사용자는 반투명
+                    transition: 'all 0.3s ease-out', // 모든 속성에 대해 부드러운 전환 적용
+                    borderColor: isSelected 
+                        ? '#3674B5' 
+                        : isHighlighted 
+                        ? 'rgba(54, 116, 181, 0.3)'
+                        : 'transparent'
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget) {
@@ -111,7 +123,7 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                     onClick();
                 }}
             >
-                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden">
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden transition-all duration-300 ease-out">
                     <Avatar
                         name={id.toString()}
                         variant="beam"
@@ -119,8 +131,8 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
                         colors={["#3674B5", "#86ACD3", "#B6C9DC", "#D7E3F0", "#F5F5F5"]}
                     />
                 </div>
-                <span className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate ${
-                    isHighlighted ? 'text-main font-medium' : 'text-gray-800'
+                <span className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate transition-all duration-300 ease-out text-black ${
+                    isSelected ? 'font-medium' : isHighlighted ? 'font-medium' : ''
                 }`}>
                     {name}
                 </span>
@@ -391,6 +403,7 @@ const UserBar = ({
                                     onClick={() => handleUserClick(user.userid)}
                                     isAvailable={user.available}
                                     isHighlighted={user.highlighted}
+                                    animationOrder={user.animationOrder}
                                 />
                             ))}
                         </div>

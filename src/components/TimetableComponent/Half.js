@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 
+// 선택된 셀 테두리 색상 설정
+const SELECTED_CELL_BORDER_COLOR = "rgb(14, 58, 205)"; // 진한 파란색
+
 export default function Half({
     dayIndex,
     halfIndex,
@@ -68,16 +71,13 @@ export default function Half({
         const hasLeft = checkAdjacent(dayIndex - 1, halfIndex);
         const hasRight = checkAdjacent(dayIndex + 1, halfIndex);
 
-        // box-shadow로 기존 테두리 위에 핑크 테두리 덮어씌우기
-        const shadows = [];
-        if (!hasTop) shadows.push("inset 0 2px 0 0 #FF69B4");
-        if (!hasBottom) shadows.push("inset 0 -2px 0 0 #FF69B4");
-        if (!hasLeft) shadows.push("inset 2px 0 0 0 #FF69B4");
-        if (!hasRight) shadows.push("inset -2px 0 0 0 #FF69B4");
-
-        return shadows.length > 0 ? {
-            boxShadow: shadows.join(", ")
-        } : {};
+        // 가장 겉 테두리만 표시 (인접하지 않은 방향에만)
+        return {
+            borderTop: !hasTop ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
+            borderBottom: !hasBottom ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
+            borderLeft: !hasLeft ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
+            borderRight: !hasRight ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
+        };
     };
 
     const isPending =

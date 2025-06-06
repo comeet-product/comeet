@@ -20,6 +20,17 @@ export default function TimetableResult({
     selectedCells = [],
     onCellSelect = () => {}
 }) {
+    // Props 전달 상태 확인을 위한 로그
+    useEffect(() => {
+        console.log('📊 TimetableResult props updated:', {
+            selectedUser,
+            hasSelectedUserAvailability: !!selectedUserAvailability,
+            selectedUserAvailability: selectedUserAvailability,
+            meetingDatesLength: meeting?.dates?.length,
+            meetingId
+        });
+    }, [selectedUser, selectedUserAvailability, meetingId]);
+
     // 페이지네이션 상태 관리
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -227,16 +238,185 @@ export default function TimetableResult({
         const maxPage = getMaxPageIndex();
         const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
         
+        console.log('🔄 goToPage called:', {
+            requestedPage: pageIndex,
+            maxPage,
+            targetPage,
+            currentPageIndex,
+            isAnimating
+        });
+        
         if (targetPage !== currentPageIndex && !isAnimating) {
+            console.log('✅ Moving to page:', targetPage);
             setIsAnimating(true);
             setCurrentPageIndex(targetPage);
             
             // 애니메이션 완료 후 상태 초기화
             setTimeout(() => {
+                console.log('✅ Animation completed, page is now:', targetPage);
                 setIsAnimating(false);
             }, 300);
+        } else {
+            console.log('❌ Page change blocked:', {
+                samePageRequest: targetPage === currentPageIndex,
+                isAnimating
+            });
         }
     };
+
+    // 특정 날짜가 포함된 페이지를 찾는 함수
+    const findPageWithDate = (date) => {
+        const dateIndex = meeting?.dates?.indexOf(date);
+        console.log('Finding page with date:', { date, dateIndex, meetingDates: meeting?.dates });
+        
+        if (dateIndex === -1) {
+            console.log('Date not found in meeting dates');
+            return -1;
+        }
+        
+        const pageIndex = Math.floor(dateIndex / VISIBLE_DAY_COUNT);
+        console.log('Calculated page index:', pageIndex, 'for date index:', dateIndex);
+        return pageIndex;
+    };
+
+    // 사용자 availability에서 첫 번째 가능한 날짜를 찾는 함수
+    const findFirstAvailableDate = (availability) => {
+        console.log('Finding first available date in:', availability);
+        
+        if (!availability || typeof availability !== 'object') {
+            console.log('Invalid availability object');
+            return null;
+        }
+        
+        // 가능한 날짜들을 정렬하여 첫 번째를 반환
+        const availableDates = Object.keys(availability).filter(date => {
+            const hasAvailability = Array.isArray(availability[date]) && availability[date].length > 0;
+            console.log(`Date ${date} has availability:`, hasAvailability, availability[date]);
+            return hasAvailability;
+        });
+        
+        console.log('Available dates found:', availableDates);
+        
+        if (availableDates.length === 0) {
+            console.log('No available dates');
+            return null;
+        }
+        
+        // 미팅 날짜 순서에 따라 정렬
+        const meetingDates = meeting?.dates || [];
+        console.log('Meeting dates for sorting:', meetingDates);
+        
+        availableDates.sort((a, b) => {
+            const indexA = meetingDates.indexOf(a);
+            const indexB = meetingDates.indexOf(b);
+            console.log(`Sorting: ${a} (index ${indexA}) vs ${b} (index ${indexB})`);
+            return indexA - indexB;
+        });
+        
+        console.log('Sorted available dates:', availableDates);
+        const firstDate = availableDates[0];
+        console.log('First available date:', firstDate);
+        return firstDate;
+    };
+
+    // 현재 페이지에 사용자의 availability가 있는지 확인하는 함수
+    const isUserAvailabilityInCurrentPage = (availability) => {
+        if (!availability || typeof availability !== 'object') return false;
+        
+        const currentStartDay = getCurrentStartDay();
+        const currentEndDay = Math.min(currentStartDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
+        const currentPageDates = meeting?.dates?.slice(currentStartDay, currentEndDay) || [];
+        
+        console.log('Checking availability in current page:', {
+            currentStartDay,
+            currentEndDay,
+            currentPageDates,
+            availability: Object.keys(availability)
+        });
+        
+        // 현재 페이지의 날짜 중에 사용자 availability가 있는지 확인
+        const hasAvailability = currentPageDates.some(date => {
+            const hasDate = availability[date] && Array.isArray(availability[date]) && availability[date].length > 0;
+            console.log(`Date ${date}: has availability = ${hasDate}`, availability[date]);
+            return hasDate;
+        });
+        
+        console.log('User availability in current page:', hasAvailability);
+        return hasAvailability;
+    };
+
+    // 선택된 사용자가 변경될 때 자동 페이지 이동
+    useEffect(() => {
+        if (selectedUser && selectedUserAvailability) {
+            console.log('=== Auto page navigation check ===');
+            console.log('Selected user:', selectedUser);
+            console.log('Current page index:', currentPageIndex);
+            console.log('User availability:', selectedUserAvailability);
+            console.log('Meeting dates:', meeting?.dates);
+            console.log('Total days:', TOTAL_DAYS);
+            
+            // 현재 페이지에 사용자의 availability가 있는지 확인
+            const hasAvailabilityInCurrentPage = isUserAvailabilityInCurrentPage(selectedUserAvailability);
+            console.log('Has availability in current page:', hasAvailabilityInCurrentPage);
+            
+            if (!hasAvailabilityInCurrentPage) {
+                console.log('User availability not in current page, finding appropriate page...');
+                
+                // 사용자의 첫 번째 가능한 날짜 찾기
+                const firstAvailableDate = findFirstAvailableDate(selectedUserAvailability);
+                console.log('First available date:', firstAvailableDate);
+                
+                if (firstAvailableDate) {
+                    // 해당 날짜가 있는 페이지로 이동
+                    const targetPage = findPageWithDate(firstAvailableDate);
+                    console.log('Target page for date', firstAvailableDate, ':', targetPage);
+                    console.log('Current page:', currentPageIndex);
+                    
+                    if (targetPage !== -1 && targetPage !== currentPageIndex) {
+                        console.log(`🚀 Moving to page ${targetPage} for date ${firstAvailableDate}`);
+                        goToPage(targetPage);
+                    } else {
+                        console.log('Target page is same as current page or invalid');
+                    }
+                } else {
+                    console.log('No available date found');
+                }
+            } else {
+                console.log('User availability already visible in current page');
+            }
+            console.log('=== End auto page navigation check ===');
+        }
+    }, [selectedUser, selectedUserAvailability, currentPageIndex]); // meeting?.dates 제거하여 불필요한 재실행 방지
+
+    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동
+    useEffect(() => {
+        if (selectedCells && selectedCells.length > 0 && !selectedUser) {
+            console.log('=== Recommendation auto page navigation check ===');
+            console.log('Selected cells:', selectedCells);
+            console.log('Current page index:', currentPageIndex);
+            console.log('Meeting dates:', meeting?.dates);
+            
+            // 첫 번째 선택된 셀의 날짜 찾기
+            const firstSelectedCell = selectedCells[0];
+            const selectedDate = firstSelectedCell.date;
+            console.log('First selected date:', selectedDate);
+            
+            if (selectedDate) {
+                // 해당 날짜가 있는 페이지 찾기
+                const targetPage = findPageWithDate(selectedDate);
+                console.log('Target page for recommendation date', selectedDate, ':', targetPage);
+                console.log('Current page:', currentPageIndex);
+                
+                if (targetPage !== -1 && targetPage !== currentPageIndex) {
+                    console.log(`🎯 Moving to page ${targetPage} for recommendation date ${selectedDate}`);
+                    goToPage(targetPage);
+                } else {
+                    console.log('Target page is same as current page or invalid');
+                }
+            }
+            console.log('=== End recommendation auto page navigation check ===');
+        }
+    }, [selectedCells, currentPageIndex]);
 
     // 스와이프 방향 감지 및 페이지 변경
     const handleSwipeEnd = () => {

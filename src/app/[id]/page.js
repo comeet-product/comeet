@@ -248,6 +248,18 @@ export default function MeetingPage({ params }) {
         setSelectedUser(null);
         setSelectedCell(null);
         
+        // 현재 선택된 추천과 같은지 확인 (토글 기능)
+        const isCurrentlySelected = selectedCells && selectedCells.length > 0 && 
+            selectedCells[0].date === recommendation.date && 
+            selectedCells[0].start_time === recommendation.start_time;
+        
+        if (isCurrentlySelected) {
+            // 이미 선택된 추천을 다시 클릭하면 선택 해제
+            console.log('Deselecting current recommendation');
+            setSelectedCells([]);
+            return;
+        }
+        
         // 연속된 시간대 계산
         const { date, start_time, duration } = recommendation;
         const selectedCellsArray = [];
