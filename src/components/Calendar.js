@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     // ===== 상수 정의 =====
-    const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그
+    const MOVE_THRESHOLD = 15; // 8px 이상 움직이면 드래그
     const MAX_SELECTED_DATES = 31;
 
     const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
