@@ -28,7 +28,7 @@ Comeet은 여러 사람의 일정을 효율적으로 조율할 수 있는 웹 �
 1. 저장소 클론
 
 ```bash
-git clone https://github.com/your-username/comeet.git
+git clone https://github.com/comeet-product/comeet.git
 cd comeet
 ```
 
