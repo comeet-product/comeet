@@ -2,7 +2,6 @@
 
 import React from "react";
 import Avatar from "boring-avatars";
-import Select from "./select";
 
 const USERS = [
     { id: 1, name: "서윤" },
