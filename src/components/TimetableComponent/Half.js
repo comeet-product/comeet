@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-// 선택된 셀 테두리 색상 설정
-const SELECTED_CELL_BORDER_COLOR = "rgb(14, 58, 205)"; // 진한 파란색
-
 export default function Half({
     dayIndex,
     halfIndex,
@@ -52,32 +49,22 @@ export default function Half({
         isSelected = selectedSlots.has(slotId);
     }
 
-    // 연결된 선택 셀들의 경계 계산 (외곽선 표시를 위해)
-    const getSmartBorder = () => {
-        if (!isUserSelected || !(selectedSlots instanceof Map)) {
-            return {};
+    // 선택된 셀의 배경색 결정
+    const getBackgroundColor = () => {
+        if (isUserSelected) {
+            // 사용자가 직접 선택한 셀은 주황색으로 표시
+            return "rgb(44, 102, 239)";
+        } else if (isSelected) {
+            // 다른 사용자들의 선택은 기존 opacity 기반 색상
+            return `#3674B5${Math.round(slotOpacity * 2.55)
+                .toString(16)
+                .padStart(2, "0")}`;
+        } else if (isPending) {
+            // 선택 대기 중인 셀
+            return "#3674B526";
+        } else {
+            return "transparent";
         }
-
-        // 인접한 셀들이 선택되어 있는지 확인
-        const checkAdjacent = (dIndex, hIndex) => {
-            const adjacentSlotId = `${dIndex}-${hIndex}`;
-            const adjacentData = selectedSlots.get(adjacentSlotId);
-            return adjacentData?.isSelected || false;
-        };
-
-        // 상하좌우 인접 셀 확인
-        const hasTop = checkAdjacent(dayIndex, halfIndex - 1);
-        const hasBottom = checkAdjacent(dayIndex, halfIndex + 1);
-        const hasLeft = checkAdjacent(dayIndex - 1, halfIndex);
-        const hasRight = checkAdjacent(dayIndex + 1, halfIndex);
-
-        // 가장 겉 테두리만 표시 (인접하지 않은 방향에만)
-        return {
-            borderTop: !hasTop ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
-            borderBottom: !hasBottom ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
-            borderLeft: !hasLeft ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
-            borderRight: !hasRight ? `2px solid ${SELECTED_CELL_BORDER_COLOR}` : undefined,
-        };
     };
 
     const isPending =
@@ -283,18 +270,10 @@ export default function Half({
                       }`
             }`}
             style={{
-                backgroundColor: isSelected
-                    ? `#3674B5${Math.round(slotOpacity * 2.55)
-                          .toString(16)
-                          .padStart(2, "0")}` // 선택 여부와 관계없이 opacity에 따른 배경색
-                    : isPending
-                    ? "#3674B526" // main color with 10% opacity (26 in hex = ~15% opacity)
-                    : "transparent",
+                backgroundColor: getBackgroundColor(),
                 userSelect: "none",
                 WebkitUserSelect: "none",
                 touchAction: isMobile ? "manipulation" : "none",
-                // 스마트 border 적용 (연결된 셀들의 외곽선만 표시)
-                ...getSmartBorder(),
             }}
             // 조건부 이벤트 핸들러 (디바이스별 분기)
             {...(isMobile
