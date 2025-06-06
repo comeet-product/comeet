@@ -28,7 +28,7 @@ export default function TimetableSelect() {
     const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
     const [touchStartPosition, setTouchStartPosition] = useState(null);
     const [hasMoved, setHasMoved] = useState(false);
-    const VERTICAL_DRAG_THRESHOLD = 15; // 15px 이상 수직 이동하면 드래그로 인식 (Half 칸 높이 고려)
+    const VERTICAL_DRAG_THRESHOLD = 8; // 8px 이상 수직 이동하면 드래그로 인식
     
     // Refs for DOM elements
     const containerRef = useRef(null);
@@ -244,6 +244,62 @@ export default function TimetableSelect() {
         }
 
         // 드래그가 아니었다면 이미 터치 시작 시점에 선택 처리되었으므로 추가 처리 없음
+
+        // 상태 초기화
+        setTouchStartPosition(null);
+        setPendingTouchSlot(null);
+        setHasMoved(false);
+    };
+
+    // 마우스 시작 처리 (터치와 동일한 로직)
+    const handleMouseStart = (dayIndex, halfIndex, clientY) => {
+        if (!isSelectionEnabled) {
+            return;
+        }
+
+        // 마우스 시작 위치와 대기 슬롯 설정
+        setTouchStartPosition({ y: clientY });
+        setPendingTouchSlot({ dayIndex, halfIndex });
+        setHasMoved(false);
+
+        // 마우스 시작 시 즉시 선택 처리
+        handleTapSelection(dayIndex, halfIndex);
+    };
+
+    // 마우스 이동 처리 (터치와 동일한 로직)
+    const handleMouseMove = (dayIndex, halfIndex, clientY) => {
+        if (!touchStartPosition || !pendingTouchSlot || !isSelectionEnabled) {
+            return;
+        }
+
+        const verticalDistance = clientY - touchStartPosition.y;
+        
+        // 수직 아래 방향으로 임계값 이상 이동했을 때 드래그 시작
+        if (!hasMoved && verticalDistance >= VERTICAL_DRAG_THRESHOLD) {
+            setHasMoved(true);
+            
+            // 드래그 선택 시작
+            if (!isDragSelecting) {
+                handleDragSelectionStart(pendingTouchSlot.dayIndex, pendingTouchSlot.halfIndex);
+            }
+        }
+
+        // 드래그 중이면 현재 위치까지 선택 확장
+        if (isDragSelecting && hasMoved) {
+            handleDragSelectionMove(dayIndex, halfIndex);
+        }
+    };
+
+    // 마우스 종료 처리 (터치와 동일한 로직)
+    const handleMouseEnd = () => {
+        if (!isSelectionEnabled) {
+            return;
+        }
+
+        // 드래그 선택 중이었다면 종료
+        if (isDragSelecting) {
+            handleDragSelectionEnd();
+        }
 
         // 상태 초기화
         setTouchStartPosition(null);
@@ -686,6 +742,9 @@ export default function TimetableSelect() {
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
+                            onMouseStart={handleMouseStart}
+                            onMouseMove={handleMouseMove}
+                            onMouseEnd={handleMouseEnd}
                             onDragSelectionStart={handleDragSelectionStart}
                             onDragSelectionMove={handleDragSelectionMove}
                             onDragSelectionEnd={handleDragSelectionEnd}
