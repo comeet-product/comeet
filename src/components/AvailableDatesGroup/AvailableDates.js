@@ -9,11 +9,12 @@ export default function AvailableDates({
         { date: "5월 21일", time: "1시간", opacity: 0.7 },
         { date: "5월 19일", time: "30분", opacity: 0.6 },
     ],
+    onRecommendationClick
 }) {
     return (
         <div className="w-full">
             <h2 className="text-base font-medium text-gray-900">
-                {memberCount}명이 모두 가능한 날짜
+                {memberCount}명이 가능해요
             </h2>
             <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                 {availableDates.map((item, index) => (
@@ -22,6 +23,7 @@ export default function AvailableDates({
                         date={item.date}
                         timeText={item.time}
                         backgroundColor={`rgba(54, 116, 181, ${item.opacity})`}
+                        onClick={() => onRecommendationClick && onRecommendationClick(item)}
                     />
                 ))}
             </div>

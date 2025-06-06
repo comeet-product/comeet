@@ -22,7 +22,13 @@ export default function Timetable({
   pendingTouchSlot,
   verticalDragThreshold,
   selectedDates,
-  pageStartDay = 0
+  pageStartDay = 0,
+  onCellClick,
+  selectedCell,
+  selectedCells = [],
+  results,
+  meeting,
+  dynamicStartTime
 }) {
   return (
     <div className="flex flex-col">
@@ -52,6 +58,13 @@ export default function Timetable({
         isDragSelecting={isDragSelecting}
         pendingTouchSlot={pendingTouchSlot}
         verticalDragThreshold={verticalDragThreshold}
+        onCellClick={onCellClick}
+        selectedCell={selectedCell}
+        selectedCells={selectedCells}
+        results={results}
+        pageStartDay={pageStartDay}
+        meeting={meeting}
+        dynamicStartTime={dynamicStartTime}
       />
     </div>
   );

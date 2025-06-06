@@ -21,7 +21,14 @@ export default function Hour({
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  verticalDragThreshold
+  verticalDragThreshold,
+  onCellClick,
+  selectedCell,
+  selectedCells = [],
+  results,
+  pageStartDay = 0,
+  meeting,
+  dynamicStartTime
 }) {
   const topHalfIndex = hourIndex * 2;
   const bottomHalfIndex = hourIndex * 2 + 1;
@@ -51,6 +58,13 @@ export default function Hour({
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
           verticalDragThreshold={verticalDragThreshold}
+          onCellClick={onCellClick}
+          selectedCell={selectedCell}
+          selectedCells={selectedCells}
+          results={results}
+          pageStartDay={pageStartDay}
+          meeting={meeting}
+          dynamicStartTime={dynamicStartTime}
         />
         <Half 
           dayIndex={dayIndex}
@@ -73,6 +87,13 @@ export default function Hour({
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
           verticalDragThreshold={verticalDragThreshold}
+          onCellClick={onCellClick}
+          selectedCell={selectedCell}
+          selectedCells={selectedCells}
+          results={results}
+          pageStartDay={pageStartDay}
+          meeting={meeting}
+          dynamicStartTime={dynamicStartTime}
         />
     </div>
   );
