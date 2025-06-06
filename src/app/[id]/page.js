@@ -23,6 +23,7 @@ export default function MeetingPage({ params }) {
     const [selectedUserAvailability, setSelectedUserAvailability] =
         useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [recommendationsRefreshKey, setRecommendationsRefreshKey] =
         useState(0);
     const [selectedCell, setSelectedCell] = useState(null);
@@ -40,229 +41,117 @@ export default function MeetingPage({ params }) {
 
     useEffect(() => {
         const fetchData = async () => {
-            // 미팅 정보 가져오기
-            const meetingResult = await getMeeting(unwrappedParams.id);
-            if (meetingResult.success) {
-                console.log("Meeting data loaded:", meetingResult.data); // 디버깅용
-                console.log("=== Meeting selectable_time debug ===");
-                const selectableTime = meetingResult.data.selectable_time;
-                if (selectableTime) {
-                    console.log("Raw selectable_time:", selectableTime);
-                    console.log("Start time (minutes):", selectableTime.start);
-                    console.log("End time (minutes):", selectableTime.end);
-                    console.log(
-                        "Start time (hours):",
-                        selectableTime.start
-                            ? `${Math.floor(
-                                  selectableTime.start / 60
-                              )}:${String(selectableTime.start % 60).padStart(
-                                  2,
-                                  "0"
-                              )}`
-                            : "undefined"
-                    );
-                    console.log(
-                        "End time (hours):",
-                        selectableTime.end
-                            ? `${Math.floor(selectableTime.end / 60)}:${String(
-                                  selectableTime.end % 60
-                              ).padStart(2, "0")}`
-                            : "undefined"
-                    );
+            console.log('=== 페이지 데이터 로딩 시작 ===');
+            setIsLoading(true); // 초기 로딩 시작
+            
+            try {
+                // 미팅 정보 가져오기
+                const meetingResult = await getMeeting(unwrappedParams.id);
+                if (meetingResult.success) {
+                    console.log('Meeting data loaded:', meetingResult.data);
+                    console.log('=== Meeting selectable_time debug ===');
+                    const selectableTime = meetingResult.data.selectable_time;
+                    if (selectableTime) {
+                        console.log("Raw selectable_time:", selectableTime);
+                        console.log("Start time (minutes):", selectableTime.start);
+                        console.log("End time (minutes):", selectableTime.end);
+                        console.log(
+                            "Start time (hours):",
+                            selectableTime.start
+                                ? `${Math.floor(
+                                      selectableTime.start / 60
+                                  )}:${String(selectableTime.start % 60).padStart(
+                                      2,
+                                      "0"
+                                  )}`
+                                : "undefined"
+                        );
+                        console.log(
+                            "End time (hours):",
+                            selectableTime.end
+                                ? `${Math.floor(selectableTime.end / 60)}:${String(
+                                      selectableTime.end % 60
+                                  ).padStart(2, "0")}`
+                                : "undefined"
+                        );
+                    }
+                    console.log("===============================");
+                    setMeeting(meetingResult.data);
+                } else {
+                    console.error("Failed to fetch meeting:", meetingResult.message);
+                    return; // 미팅 정보가 없으면 더 이상 진행하지 않음
                 }
-                console.log("===============================");
-                setMeeting(meetingResult.data);
-            } else {
-                console.error(
-                    "Failed to fetch meeting:",
-                    meetingResult.message
-                );
-            }
 
-            // 사용자 목록 가져오기
-            const usersResult = await getUsers(unwrappedParams.id);
-            if (usersResult.success) {
-                setUsers(usersResult.data.users);
-                console.log("Users loaded:", usersResult.data.users); // 디버깅용
-
-                // URL에서 autoSelectUserId가 있으면 해당 사용자 자동 선택
-                if (
-                    autoSelectUserId &&
-                    usersResult.data.users.some(
-                        (user) => user.userid === autoSelectUserId
-                    )
-                ) {
-                    setSelectedUser(autoSelectUserId);
-                    console.log("Auto-selected user:", autoSelectUserId);
+                // 사용자 목록 가져오기
+                const usersResult = await getUsers(unwrappedParams.id);
+                if (usersResult.success) {
+                    setUsers(usersResult.data.users);
+                    console.log('Users loaded:', usersResult.data.users.length, 'users');
+                    
+                    // URL에서 autoSelectUserId가 있으면 해당 사용자 자동 선택
+                    if (
+                        autoSelectUserId &&
+                        usersResult.data.users.some(
+                            (user) => user.userid === autoSelectUserId
+                        )
+                    ) {
+                        setSelectedUser(autoSelectUserId);
+                        console.log("Auto-selected user:", autoSelectUserId);
+                    }
+                } else {
+                    console.error("Failed to fetch users:", usersResult.message);
                 }
-            } else {
-                console.error("Failed to fetch users:", usersResult.message);
-            }
 
-            // 결과 데이터 가져오기
-            const resultsResult = await getResults(unwrappedParams.id);
-            if (resultsResult.success) {
-                console.log(
-                    "Results loaded from database:",
-                    resultsResult.data.results
-                ); // 디버깅용
-                console.log(
-                    "Sample result data:",
-                    resultsResult.data.results[0]
-                ); // 첫 번째 결과 상세
-                console.log(
-                    "All result dates:",
-                    resultsResult.data.results.map((r) => r.date)
-                ); // 모든 날짜
-                console.log(
-                    "All result times:",
-                    resultsResult.data.results.map((r) => r.start_time)
-                ); // 모든 시간
-                setResults(resultsResult.data.results);
+                // 사용자가 있는 경우에만 결과 및 추천 계산
+                if (usersResult.success && usersResult.data.users.length > 0) {
+                    console.log('=== 사용자가 있으므로 결과 및 추천 계산 시작 ===');
+                    
+                    // 결과 데이터 다시 계산 및 가져오기
+                    console.log('Calculating fresh results...');
+                    const calculateResult = await calculateResults(unwrappedParams.id);
+                    if (calculateResult.success) {
+                        console.log('Results calculated successfully');
+                        
+                        // 계산 후 최신 결과 가져오기
+                        const resultsResult = await getResults(unwrappedParams.id);
+                        if (resultsResult.success) {
+                            console.log('Fresh results loaded:', resultsResult.data.results.length, 'results');
+                            setResults(resultsResult.data.results);
+                        }
+                    } else {
+                        console.error("Failed to calculate results:", calculateResult.message);
+                    }
 
-                // 결과가 없고 사용자가 있으면 자동으로 결과 계산 실행
-                if (
-                    resultsResult.data.results.length === 0 &&
-                    usersResult.success &&
-                    usersResult.data.users.length > 0
-                ) {
-                    console.log("No results found, calculating results...");
-                    await handleCalculateResults();
+                    // 추천 데이터 다시 계산
+                    console.log('Calculating fresh recommendations...');
+                    const recResult = await calculateRecommendations(unwrappedParams.id);
+                    if (recResult.success) {
+                        console.log('Recommendations calculated successfully:', recResult.data?.recommendations?.length || 0, 'recommendations');
+                        setRecommendationsRefreshKey(prev => prev + 1);
+                    } else {
+                        console.error("Failed to calculate recommendations:", recResult.message);
+                    }
+                } else {
+                    console.log('=== 사용자가 없으므로 결과만 가져오기 ===');
+                    // 사용자가 없어도 기존 결과는 가져오기
+                    const resultsResult = await getResults(unwrappedParams.id);
+                    if (resultsResult.success) {
+                        console.log('Results loaded from database:', resultsResult.data.results.length, 'results');
+                        setResults(resultsResult.data.results);
+                    } else {
+                        console.error("Failed to fetch results:", resultsResult.message);
+                    }
                 }
-            } else {
-                console.error(
-                    "Failed to fetch results:",
-                    resultsResult.message
-                );
-            }
-
-            // 사용자가 있으면 recommendations 다시 계산 (기존 잘못된 데이터 수정)
-            if (usersResult.success && usersResult.data.users.length > 0) {
-                console.log("Recalculating recommendations to fix duration...");
-                const recResult = await calculateRecommendations(
-                    unwrappedParams.id
-                );
-                if (recResult.success) {
-                    console.log(
-                        "Recommendations recalculated:",
-                        recResult.data
-                    );
-                    setRecommendationsRefreshKey((prev) => prev + 1);
-                }
+                
+                console.log('=== 페이지 데이터 로딩 완료 ===');
+            } catch (error) {
+                console.error("페이지 데이터 로딩 오류:", error);
+            } finally {
+                setIsLoading(false); // 초기 로딩 종료
             }
         };
 
         fetchData();
-
-        // 실시간 구독 설정
-        const { supabase } = require("@/lib/supabase");
-
-        // recommendation 테이블 구독
-        const recommendationSubscription = supabase
-            .channel("recommendation-changes")
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "recommendation",
-                    filter: `meeting_id=eq.${unwrappedParams.id}`,
-                },
-                (payload) => {
-                    console.log("Recommendation data changed:", payload);
-                    // 추천 데이터 새로고침
-                    setRecommendationsRefreshKey((prev) => prev + 1);
-                }
-            )
-            .subscribe();
-
-        // result 테이블 구독
-        const resultSubscription = supabase
-            .channel("result-changes")
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "result",
-                    filter: `meeting_id=eq.${unwrappedParams.id}`,
-                },
-                async (payload) => {
-                    console.log("Result data changed:", payload);
-                    // 결과 데이터 다시 가져오기
-                    const resultsResult = await getResults(unwrappedParams.id);
-                    if (resultsResult.success) {
-                        setResults(resultsResult.data.results);
-                    }
-                }
-            )
-            .subscribe();
-
-        // availability 테이블 구독
-        const availabilitySubscription = supabase
-            .channel("availability-changes")
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "availability",
-                },
-                async (payload) => {
-                    console.log("Availability data changed:", payload);
-                    // 선택된 사용자의 availability 새로고침
-                    if (selectedUser) {
-                        const availabilityResult = await getUserAvailability(
-                            selectedUser
-                        );
-                        if (availabilityResult.success) {
-                            setSelectedUserAvailability(
-                                availabilityResult.data.availability
-                            );
-                        }
-                    }
-                    // 추천 데이터도 새로고침
-                    setRecommendationsRefreshKey((prev) => prev + 1);
-                }
-            )
-            .subscribe();
-
-        // user 테이블 구독 (새 사용자 추가/수정 감지)
-        const userSubscription = supabase
-            .channel('user-changes')
-            .on('postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'user',
-                    filter: `meetingid=eq.${unwrappedParams.id}`
-                },
-                async (payload) => {
-                    console.log('User data changed:', payload);
-                    // 사용자 목록 새로고침
-                    const usersResult = await getUsers(unwrappedParams.id);
-                    if (usersResult.success) {
-                        setUsers(usersResult.data.users);
-                        console.log('Users list updated:', usersResult.data.users);
-                        
-                        // 새로 추가된 사용자인 경우 자동 선택
-                        if (payload.eventType === 'INSERT' && payload.new) {
-                            const newUserId = payload.new.userid;
-                            setSelectedUser(newUserId);
-                            console.log('New user auto-selected:', newUserId);
-                        }
-                    }
-                }
-            )
-            .subscribe();
-
-        // 정리 함수
-        return () => {
-            recommendationSubscription.unsubscribe();
-            resultSubscription.unsubscribe();
-            availabilitySubscription.unsubscribe();
-            userSubscription.unsubscribe();
-        };
     }, [unwrappedParams.id, autoSelectUserId]);
 
     // 자동 스크롤 처리
@@ -325,6 +214,7 @@ export default function MeetingPage({ params }) {
 
     const handleCalculateResults = async () => {
         setIsCalculating(true);
+        setIsLoading(true); // 전체 로딩 시작
         try {
             const calcResult = await calculateResults(unwrappedParams.id);
             if (calcResult.success) {
@@ -346,11 +236,13 @@ export default function MeetingPage({ params }) {
             console.error("Error calculating results:", error);
         } finally {
             setIsCalculating(false);
+            setIsLoading(false); // 전체 로딩 종료
         }
     };
 
     // Recommendations 다시 계산하는 함수
     const handleRecalculateRecommendations = async () => {
+        setIsLoading(true); // 전체 로딩 시작
         try {
             console.log("Recalculating recommendations...");
             const result = await calculateRecommendations(unwrappedParams.id);
@@ -369,6 +261,8 @@ export default function MeetingPage({ params }) {
             }
         } catch (error) {
             console.error("Error recalculating recommendations:", error);
+        } finally {
+            setIsLoading(false); // 전체 로딩 종료
         }
     };
 
@@ -421,7 +315,19 @@ export default function MeetingPage({ params }) {
         // 사용자 선택 해제
         setSelectedUser(null);
         setSelectedCell(null);
-
+        
+        // 현재 선택된 추천과 같은지 확인 (토글 기능)
+        const isCurrentlySelected = selectedCells && selectedCells.length > 0 && 
+            selectedCells[0].date === recommendation.date && 
+            selectedCells[0].start_time === recommendation.start_time;
+        
+        if (isCurrentlySelected) {
+            // 이미 선택된 추천을 다시 클릭하면 선택 해제
+            console.log('Deselecting current recommendation');
+            setSelectedCells([]);
+            return;
+        }
+        
         // 연속된 시간대 계산
         const { date, start_time, duration } = recommendation;
         const selectedCellsArray = [];
@@ -462,22 +368,31 @@ export default function MeetingPage({ params }) {
 
     // 새 사용자가 추가되었을 때 목록 업데이트
     const handleUserAdded = async () => {
-        const usersResult = await getUsers(unwrappedParams.id);
-        if (usersResult.success) {
-            setUsers(usersResult.data.users);
-        }
+        setIsLoading(true); // 로딩 시작
+        try {
+            const usersResult = await getUsers(unwrappedParams.id);
+            if (usersResult.success) {
+                setUsers(usersResult.data.users);
+            }
 
-        // 결과 데이터도 다시 가져오기 (submitAvailability에서 이미 계산됨)
-        const resultsResult = await getResults(unwrappedParams.id);
-        if (resultsResult.success) {
-            setResults(resultsResult.data.results);
-        }
+            // 결과 데이터도 다시 가져오기 (submitAvailability에서 이미 계산됨)
+            const resultsResult = await getResults(unwrappedParams.id);
+            if (resultsResult.success) {
+                setResults(resultsResult.data.results);
+            }
 
-        // 추천 데이터 새로고침을 위해 refreshKey 업데이트
-        setRecommendationsRefreshKey((prev) => prev + 1);
+            // 추천 데이터 새로고침을 위해 refreshKey 업데이트
+            setRecommendationsRefreshKey((prev) => prev + 1);
+        } catch (error) {
+            console.error("사용자 추가 후 데이터 업데이트 오류:", error);
+        } finally {
+            setIsLoading(false); // 로딩 종료
+        }
     };
 
     if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
+    
+    if (isLoading) return <Loading message="데이터를 처리하고 있습니다..." />;
 
     return (
 

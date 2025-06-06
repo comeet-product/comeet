@@ -12,9 +12,10 @@ export default function TimetableSelect({
     // ===== 상수 정의 =====
     const MOVE_THRESHOLD = 15; // PC 전용: 15px 이상 움직이면 드래그
     const VERTICAL_DRAG_THRESHOLD = 8; // 모바일 전용: 8px 이상 수직 이동하면 드래그로 인식
+    const MOBILE_SCROLL_SENSITIVITY = 0.2; // 모바일 x축 스크롤 민감도 (0.4 = 40% 속도)
 
     // States for gesture and view control
-    const [visibleDayCount, setVisibleDayCount] = useState(7);
+    const [visibleDayCount, setVisibleDayCount] = useState(7); // 기본값을 7로 고정
     const [startTouchX, setStartTouchX] = useState(0);
     const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     const [startTouch2, setStartTouch2] = useState({ x: 0, y: 0 });
@@ -165,44 +166,47 @@ export default function TimetableSelect({
 
     // Auto-Align 함수 - 가장 가까운 컬럼으로 스냅
     const autoAlignToColumn = () => {
-        const timetable = timetableRef.current;
-        if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
+        // auto-align 기능 제거 - 자유로운 스크롤을 위해 비활성화
+        return;
+        
+        // const timetable = timetableRef.current;
+        // if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
 
-        const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
-        const viewportStartX = timetable.scrollLeft;
-        const viewportCenterX = viewportStartX + timetable.clientWidth / 2;
+        // const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
+        // const viewportStartX = timetable.scrollLeft;
+        // const viewportCenterX = viewportStartX + timetable.clientWidth / 2;
 
-        // 뷰포트 중심에 가장 가까운 컬럼 찾기
-        const centerColumnFloat = viewportCenterX / columnWidth;
-        const nearestColumn = Math.round(centerColumnFloat);
+        // // 뷰포트 중심에 가장 가까운 컬럼 찾기
+        // const centerColumnFloat = viewportCenterX / columnWidth;
+        // const nearestColumn = Math.round(centerColumnFloat);
 
-        // 스크롤 가능한 범위 내에서 조정
-        const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
-        let targetColumn = Math.max(
-            0,
-            Math.min(nearestColumn, maxScrollColumns)
-        );
+        // // 스크롤 가능한 범위 내에서 조정
+        // const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
+        // let targetColumn = Math.max(
+        //     0,
+        //     Math.min(nearestColumn, maxScrollColumns)
+        // );
 
-        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
-        const currentColumnFloat = viewportStartX / columnWidth;
-        const currentColumnIndex = Math.floor(currentColumnFloat);
-        const columnProgress = currentColumnFloat - currentColumnIndex;
+        // // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
+        // const currentColumnFloat = viewportStartX / columnWidth;
+        // const currentColumnIndex = Math.floor(currentColumnFloat);
+        // const columnProgress = currentColumnFloat - currentColumnIndex;
 
-        // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
-        if (columnProgress < 0.05 || columnProgress > 0.95) {
-            return;
-        }
+        // // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
+        // if (columnProgress < 0.05 || columnProgress > 0.95) {
+        //     return;
+        // }
 
-        // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
-        const targetScrollLeft = targetColumn * columnWidth;
+        // // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
+        // const targetScrollLeft = targetColumn * columnWidth;
 
-        // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
-        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
-            timetable.scrollTo({
-                left: targetScrollLeft,
-                behavior: "smooth",
-            });
-        }
+        // // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
+        // if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
+        //     timetable.scrollTo({
+        //         left: targetScrollLeft,
+        //         behavior: "smooth",
+        //     });
+        // }
     };
 
     // 스크롤 종료 감지 (debounce)
@@ -217,8 +221,8 @@ export default function TimetableSelect({
             if (!isDragSelecting) {
                 setIsSelectionEnabled(true);
             }
-            // Auto-align을 더 빠르게 실행
-            autoAlignToColumn();
+            // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+            // autoAlignToColumn();
         }, 100); // 100ms 후 스크롤이 끝난 것으로 간주 (더 빠르게)
     };
 
@@ -246,10 +250,10 @@ export default function TimetableSelect({
 
         // 스크롤 위치 업데이트 (상태 저장 없이 직접 처리)
 
-        // pinch zoom 후 auto-align 실행 (약간의 지연을 두어 스크롤이 완료된 후 실행)
-        setTimeout(() => {
-            autoAlignToColumn();
-        }, 100);
+        // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+        // setTimeout(() => {
+        //     autoAlignToColumn();
+        // }, 100);
     };
 
     // 핀치와 스와이프를 구분하는 함수
@@ -465,10 +469,29 @@ export default function TimetableSelect({
         // 임계값을 넘으면 드래그 시작
         if (distance > MOVE_THRESHOLD && !isDragSelecting) {
             setHasMoved(true);
-            handlePCDragSelectionStart({ dayIndex, halfIndex });
+            
+            // 가로방향 움직임이 더 큰 경우 스크롤 처리
+            if (deltaX > deltaY && visibleDayCount < TOTAL_DAYS) {
+                setIsScrolling(true);
+                setIsSelectionEnabled(false);
+                
+                const timetable = timetableRef.current;
+                if (timetable) {
+                    const scrollDelta = touchStartPosition.x - clientX;
+                    timetable.scrollLeft += scrollDelta;
+                    // 터치 시작 위치 업데이트 (연속 스크롤을 위해)
+                    setTouchStartPosition({ x: clientX, y: clientY });
+                }
+                return;
+            }
+            
+            // 세로방향 움직임이 더 큰 경우에만 드래그 선택 시작
+            if (deltaY >= deltaX) {
+                handlePCDragSelectionStart({ dayIndex, halfIndex });
+            }
         }
 
-        // 드래그 중이면 계속 드래그 처리
+        // 드래그 중이면 계속 드래그 처리 (세로방향만)
         if (isDragSelecting) {
             handlePCDragSelectionMove({ dayIndex, halfIndex });
         }
@@ -478,6 +501,12 @@ export default function TimetableSelect({
     const handlePCMouseEnd = () => {
         if (isDragSelecting) {
             handleDragSelectionEnd();
+        }
+
+        // 스크롤 상태 초기화
+        if (isScrolling) {
+            setIsScrolling(false);
+            setIsSelectionEnabled(true);
         }
 
         // 상태 초기화
@@ -494,11 +523,11 @@ export default function TimetableSelect({
         setDragStartSlot(slot);
     };
 
-    // PC 전용 드래그 선택 이동 (직사각형 범위)
+    // PC 전용 드래그 선택 이동 (세로방향만)
     const handlePCDragSelectionMove = (currentSlot) => {
         if (!dragStartSlot || !isDragSelecting) return;
 
-        // PC에서도 모바일처럼 수직으로만 드래그 선택
+        // PC에서도 모바일처럼 세로방향으로만 드래그 선택 (가로방향 선택 막기)
         if (dragStartSlot.dayIndex !== currentSlot.dayIndex) {
             return;
         }
@@ -555,63 +584,40 @@ export default function TimetableSelect({
     const selectSlotsInRange = (startSlot, endSlot) => {
         if (!startSlot || !endSlot) return;
 
-        if (isMobile) {
-            // 모바일: 수직으로만 (같은 day에서 아래쪽 방향으로만)
-            if (startSlot.dayIndex !== endSlot.dayIndex) {
-                return;
-            }
-
-            // 시작점보다 아래쪽(halfIndex가 더 큰)이 아니면 무시
-            if (endSlot.halfIndex < startSlot.halfIndex) {
-                return;
-            }
-
-            const dayIndex = startSlot.dayIndex;
-            const startHalfIndex = startSlot.halfIndex;
-            const endHalfIndex = endSlot.halfIndex;
-
-            setSelectedSlots((prev) => {
-                const newSelectedSlots = new Set(prev);
-
-                // 시작점부터 끝점까지 세로로 선택
-                for (
-                    let halfIndex = startHalfIndex;
-                    halfIndex <= endHalfIndex;
-                    halfIndex++
-                ) {
-                    const slotId = `${dayIndex}-${halfIndex}`;
-
-                    if (dragMode === "select") {
-                        newSelectedSlots.add(slotId);
-                    } else {
-                        newSelectedSlots.delete(slotId);
-                    }
-                }
-
-                return newSelectedSlots;
-            });
-        } else {
-            // PC: 직사각형 범위
-            const minDay = Math.min(startSlot.dayIndex, endSlot.dayIndex);
-            const maxDay = Math.max(startSlot.dayIndex, endSlot.dayIndex);
-            const minHalf = Math.min(startSlot.halfIndex, endSlot.halfIndex);
-            const maxHalf = Math.max(startSlot.halfIndex, endSlot.halfIndex);
-
-            const newSlots = new Set(selectedSlots);
-
-            for (let day = minDay; day <= maxDay; day++) {
-                for (let half = minHalf; half <= maxHalf; half++) {
-                    const slotKey = getSlotKey(day, half);
-                    if (dragMode === "select") {
-                        newSlots.add(slotKey);
-                    } else {
-                        newSlots.delete(slotKey);
-                    }
-                }
-            }
-
-            setSelectedSlots(newSlots);
+        // PC와 모바일 모두 세로방향으로만 드래그 선택 허용
+        if (startSlot.dayIndex !== endSlot.dayIndex) {
+            return;
         }
+
+        // 시작점보다 아래쪽(halfIndex가 더 큰)이 아니면 무시
+        if (endSlot.halfIndex < startSlot.halfIndex) {
+            return;
+        }
+
+        const dayIndex = startSlot.dayIndex;
+        const startHalfIndex = startSlot.halfIndex;
+        const endHalfIndex = endSlot.halfIndex;
+
+        setSelectedSlots((prev) => {
+            const newSelectedSlots = new Set(prev);
+
+            // 시작점부터 끝점까지 세로로 선택
+            for (
+                let halfIndex = startHalfIndex;
+                halfIndex <= endHalfIndex;
+                halfIndex++
+            ) {
+                const slotId = `${dayIndex}-${halfIndex}`;
+
+                if (dragMode === "select") {
+                    newSelectedSlots.add(slotId);
+                } else {
+                    newSelectedSlots.delete(slotId);
+                }
+            }
+
+            return newSelectedSlots;
+        });
     };
 
     // ===== 통합 핸들러 (디바이스별 분기) =====
@@ -767,10 +773,10 @@ export default function TimetableSelect({
             e.preventDefault();
             setGestureScale(1);
 
-            // gesture 종료 후 auto-align 실행
-            setTimeout(() => {
-                autoAlignToColumn();
-            }, 100);
+            // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+            // setTimeout(() => {
+            //     autoAlignToColumn();
+            // }, 100);
         };
 
         // 휠 이벤트로 기본 확대/축소 차단
@@ -868,7 +874,7 @@ export default function TimetableSelect({
                         setIsSelectionEnabled(false);
 
                         const currentX = touch.clientX;
-                        const scrollDeltaX = startTouchX - currentX;
+                        const scrollDeltaX = (startTouchX - currentX) * MOBILE_SCROLL_SENSITIVITY;
 
                         if (timetable.scrollLeft !== undefined) {
                             timetable.scrollLeft += scrollDeltaX;
@@ -903,7 +909,7 @@ export default function TimetableSelect({
                     // 드래그 모드: 두 손가락이 같은 방향으로 이동
                     const currentCenterX =
                         (touch1.clientX + touch2.clientX) / 2;
-                    const deltaX = startTouchX - currentCenterX;
+                    const deltaX = (startTouchX - currentCenterX) * MOBILE_SCROLL_SENSITIVITY;
 
                     if (timetable.scrollLeft !== undefined) {
                         timetable.scrollLeft += deltaX;

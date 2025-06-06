@@ -47,14 +47,32 @@ export async function getRecommendations(meetingId) {
             throw error;
         }
 
-        // Duration을 시간으로 변환하여 추가
-        const enrichedData = data.map((rec) => ({
-            ...rec,
-            durationInHours: convertDurationToHours(rec.duration),
-            durationFormatted: formatDurationHours(
-                convertDurationToHours(rec.duration)
-            ),
-        }));
+        // Duration을 시간으로 변환하고 members를 배열로 파싱
+        const enrichedData = data.map((rec) => {
+            let parsedMembers = [];
+            
+            // members가 JSON 문자열인 경우 파싱
+            if (typeof rec.members === 'string') {
+                try {
+                    parsedMembers = JSON.parse(rec.members);
+                } catch (parseError) {
+                    console.error('Error parsing members JSON:', parseError, 'for record:', rec);
+                    parsedMembers = [];
+                }
+            } else if (Array.isArray(rec.members)) {
+                // 이미 배열인 경우 그대로 사용
+                parsedMembers = rec.members;
+            }
+
+            return {
+                ...rec,
+                members: parsedMembers, // 파싱된 배열로 교체
+                durationInHours: convertDurationToHours(rec.duration),
+                durationFormatted: formatDurationHours(
+                    convertDurationToHours(rec.duration)
+                ),
+            };
+        });
 
         // 인원수별로 그룹화
         const recommendationsByNumber = {};
@@ -111,13 +129,36 @@ export async function getRecommendationsByMinParticipants(
             throw error;
         }
 
+        // members를 배열로 파싱
+        const enrichedData = data.map((rec) => {
+            let parsedMembers = [];
+            
+            // members가 JSON 문자열인 경우 파싱
+            if (typeof rec.members === 'string') {
+                try {
+                    parsedMembers = JSON.parse(rec.members);
+                } catch (parseError) {
+                    console.error('Error parsing members JSON:', parseError, 'for record:', rec);
+                    parsedMembers = [];
+                }
+            } else if (Array.isArray(rec.members)) {
+                // 이미 배열인 경우 그대로 사용
+                parsedMembers = rec.members;
+            }
+
+            return {
+                ...rec,
+                members: parsedMembers, // 파싱된 배열로 교체
+            };
+        });
+
         return {
             success: true,
             message: `${minParticipants}명 이상 참여 가능한 추천 시간을 조회했습니다.`,
             data: {
-                recommendations: data,
+                recommendations: enrichedData,
                 minParticipants,
-                totalRecommendations: data.length,
+                totalRecommendations: enrichedData.length,
             },
         };
     } catch (error) {
