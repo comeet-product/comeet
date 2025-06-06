@@ -1,6 +1,7 @@
 'use client';
 
 import React from "react";
+import Select from "./select";
 
 const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }) => {
     if (isAddButton) {
@@ -95,6 +96,7 @@ const USERS = [
 const UserBar = () => {
     const [selectedUser, setSelectedUser] = React.useState(null);
     const [isAddMode, setIsAddMode] = React.useState(false);
+    const [users, setUsers] = React.useState(USERS);
     const containerRef = React.useRef(null);
 
     const handleUserClick = (id) => {
@@ -103,13 +105,26 @@ const UserBar = () => {
 
     const handleAddClick = () => {
         setIsAddMode(true);
-        // 로직 추가 예정
     };
+
+    const handleBack = (newName) => {
+        if (newName) {
+            const newUser = {
+                id: users.length + 1,
+                name: newName
+            };
+            setUsers(prev => [...prev, newUser]);
+        }
+        setIsAddMode(false);
+    };
+
+    if (isAddMode) {
+        return <Select onBack={handleBack} />;
+    }
 
     return (
         <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
             <div className="relative flex items-center" ref={containerRef}>
-                {/* UserItem들 영역 */}
                 <div className="relative flex-1 overflow-hidden">
                     <div 
                         className="flex items-center overflow-x-auto px-2 gap-2"
@@ -120,7 +135,7 @@ const UserBar = () => {
                             paddingBottom: '4px'
                         }}
                     >
-                        {USERS.map((user) => (
+                        {users.map((user) => (
                             <UserItem 
                                 key={user.id} 
                                 name={user.name} 
@@ -129,11 +144,9 @@ const UserBar = () => {
                             />
                         ))}
                     </div>
-                    {/* UserItem들이 서서히 사라지는 그라데이션 */}
                     <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-200 to-transparent pointer-events-none" />
                 </div>
                 
-                {/* 추가하기 버튼 영역 */}
                 <div className="flex-shrink-0">
                     <UserItem 
                         isAddButton 
