@@ -97,8 +97,8 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
 };
 
 const UserBar = () => {
+
     const [selectedUser, setSelectedUser] = React.useState(null);
-    const [isAddMode, setIsAddMode] = React.useState(false);
     const [users, setUsers] = React.useState(USERS);
     const containerRef = React.useRef(null);
 
@@ -122,12 +122,7 @@ const UserBar = () => {
             };
             setUsers(prev => [...prev, newUser]);
         }
-        setIsAddMode(false);
     };
-
-    if (isAddMode) {
-        return <Select onBack={handleBack} />;
-    }
 
     return (
         <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">

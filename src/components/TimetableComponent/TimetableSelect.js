@@ -703,7 +703,7 @@ export default function TimetableSelect() {
     };
 
     return (
-        <div className="flex w-full">
+        <div className="flex w-full h-full">
             <div className="flex-shrink-0 min-w-max">
                 <TimeHeader 
                     halfCount={16}
@@ -714,23 +714,23 @@ export default function TimetableSelect() {
 
             <div 
                 ref={containerRef}
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 h-full"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'manipulation'  // 더블탭 줌만 차단하고 다른 제스처는 허용
+                    touchAction: 'manipulation'
                 }}
             >
                 <div 
                     ref={timetableRef}
-                    className="overflow-x-auto overflow-y-hidden"
+                    className="h-full overflow-x-auto overflow-y-hidden"
                     style={{ 
                         overflowX: visibleDayCount < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'manipulation',  // 더블탭 줌만 차단하고 다른 제스처는 허용
-                        scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
-                        paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
+                        touchAction: 'manipulation',
+                        scrollSnapType: 'none',
+                        paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'
                     }}
                 >
-                    <div style={getTableStyle()}>
+                    <div style={getTableStyle()} className="h-full">
                         <Timetable 
                             dayCount={TOTAL_DAYS}
                             halfCount={16}

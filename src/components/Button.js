@@ -9,7 +9,7 @@ export default function Button({
     const sizeStyle =
         size === "large"
             ? "w-full py-3 rounded-md text-lg"
-            : "py-2 px-4 rounded-3xl text-base";
+            : "py-2 px-4 rounded-lg text-base";
 
     const colorStyle =
         color === "primary"
