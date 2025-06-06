@@ -1,5 +1,6 @@
 import "./globals.css";
 import Header from "@/components/Header";
+import { Suspense } from "react";
 
 export const metadata = {
     title: "Comeet",
@@ -30,7 +31,9 @@ export default function RootLayout({ children }) {
         <div className="h-full flex justify-center lg:py-4">
           <div className="w-screen lg:w-[25%] lg:mx-auto bg-white lg:border lg:border-gray-300 lg:rounded-lg flex flex-col relative">
             <div className="flex-1 flex flex-col mt-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <Header />
+              <Suspense fallback={<div className="h-16"></div>}>
+                <Header />
+              </Suspense>
               {children}
             </div>
           </div>
