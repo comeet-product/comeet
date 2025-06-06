@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     // ===== 상수 정의 =====
     const MAX_SELECTED_DATES = 31;
+    const DRAG_THRESHOLD = 15; // 드래그 인식 임계값
 
     const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
     const MONTH_NAMES = [
@@ -29,6 +30,14 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const [localSelectedDates, setLocalSelectedDates] = useState(
         new Set(selectedDates)
     );
+
+    // 드래그 관련 상태
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStartDay, setDragStartDay] = useState(null);
+    const [dragCurrentDay, setDragCurrentDay] = useState(null);
+    const [dragMode, setDragMode] = useState("select"); // 'select' or 'deselect'
+    const [touchStartPosition, setTouchStartPosition] = useState(null);
+    const [originalSelection, setOriginalSelection] = useState(new Set());
 
     // 토스트 관련 상태
     const [toastState, setToastState] = useState({
@@ -89,7 +98,46 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
     // ===== 새로운 터치 처리 로직 (reference.js 방식) =====
 
-    // 날짜 선택/해제 함수
+    // 드래그 범위 계산 함수
+    const getDragRange = (startDay, endDay) => {
+        if (!startDay || !endDay) return [];
+        const minDay = Math.min(startDay, endDay);
+        const maxDay = Math.max(startDay, endDay);
+        const range = [];
+        for (let day = minDay; day <= maxDay; day++) {
+            range.push(day);
+        }
+        return range;
+    };
+
+    // 드래그 선택 업데이트
+    const updateDragSelection = (currentDay) => {
+        const { year, month } = getCalendarData();
+        const dragRange = getDragRange(dragStartDay, currentDay);
+
+        // 원본 선택에서 시작하여 드래그 영역에 모드 적용
+        const newSelection = new Set(originalSelection);
+
+        dragRange.forEach((day) => {
+            const dateStr = formatDate(year, month, day);
+            if (dragMode === "select") {
+                newSelection.add(dateStr);
+            } else {
+                newSelection.delete(dateStr);
+            }
+        });
+
+        // 최대 선택 제한 확인
+        if (newSelection.size > MAX_SELECTED_DATES) {
+            showToast("날짜 선택은 최대 31일까지 가능합니다.");
+            return;
+        }
+
+        setLocalSelectedDates(newSelection);
+        onChange([...newSelection]);
+    };
+
+    // 날짜 선택/해제 함수 (단일 터치용)
     const toggleDateSelection = (day) => {
         if (day === null) return;
 
@@ -113,7 +161,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         onChange(datesArray);
     };
 
-    // 전역 터치 이벤트 핸들러 (reference.js 방식)
+    // 전역 터치 이벤트 핸들러 (reference.js 방식 + 드래그)
     const handleGlobalTouch = (e) => {
         // Calendar 영역 내에서만 처리
         if (!calendarRef.current?.contains(e.target)) {
@@ -131,10 +179,49 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
             return;
         }
 
-        // 터치 시작 시에만 선택 처리
         if (e.type === "touchstart") {
-            e.preventDefault(); // 기본 동작 방지
+            // 터치 시작: 즉시 선택/해제 + 드래그 준비
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
+            setDragStartDay(day);
+            setOriginalSelection(new Set(localSelectedDates));
+
+            // 드래그 모드 결정 (시작점의 현재 상태 기반)
+            const { year, month } = getCalendarData();
+            const dateStr = formatDate(year, month, day);
+            const isCurrentlySelected = localSelectedDates.has(dateStr);
+            setDragMode(isCurrentlySelected ? "deselect" : "select");
+
+            // 즉시 선택/해제 (기존 방식 유지)
             toggleDateSelection(day);
+        } else if (e.type === "touchmove") {
+            // 터치 이동: 드래그 감지 및 범위 선택
+            if (!touchStartPosition || !dragStartDay) return;
+
+            const touch = e.touches[0];
+            const dx = Math.abs(touch.clientX - touchStartPosition.x);
+            const dy = Math.abs(touch.clientY - touchStartPosition.y);
+
+            if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+                if (!isDragging) {
+                    setIsDragging(true);
+                    // 드래그 시작 시 원본 선택 상태로 복원 (즉시 선택 취소)
+                    setLocalSelectedDates(originalSelection);
+                    onChange([...originalSelection]);
+                }
+
+                setDragCurrentDay(day);
+                updateDragSelection(day);
+            }
+        } else if (e.type === "touchend") {
+            // 터치 종료: 드래그 상태 초기화
+            setTouchStartPosition(null);
+            setDragStartDay(null);
+            setDragCurrentDay(null);
+            setIsDragging(false);
+            setOriginalSelection(new Set());
         }
     };
 
@@ -183,15 +270,25 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         window.addEventListener("touchstart", handleGlobalTouch, {
             passive: false,
         });
+        window.addEventListener("touchmove", handleGlobalTouch, {
+            passive: false,
+        });
         window.addEventListener("touchend", handleGlobalTouch, {
             passive: false,
         });
 
         return () => {
             window.removeEventListener("touchstart", handleGlobalTouch);
+            window.removeEventListener("touchmove", handleGlobalTouch);
             window.removeEventListener("touchend", handleGlobalTouch);
         };
-    }, [localSelectedDates]); // localSelectedDates 의존성 추가
+    }, [
+        localSelectedDates,
+        touchStartPosition,
+        dragStartDay,
+        isDragging,
+        originalSelection,
+    ]);
 
     // selectedDates prop 변경 시 localSelectedDates 동기화
     useEffect(() => {
@@ -325,6 +422,19 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                         const isSelected =
                             day !== null && localSelectedDates.has(dateStr);
 
+                        // 드래그 시각적 피드백
+                        const isDragStart =
+                            isDragging &&
+                            dragStartDay === day &&
+                            dragMode === "select";
+                        const isDragRange =
+                            isDragging &&
+                            dragStartDay &&
+                            dragCurrentDay &&
+                            getDragRange(dragStartDay, dragCurrentDay).includes(
+                                day
+                            );
+
                         return (
                             <div
                                 key={index}
@@ -353,8 +463,20 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                             : ""
                                     }
                                     ${
+                                        isDragStart
+                                            ? "bg-blue-200 rounded-full ring-2 ring-blue-300"
+                                            : ""
+                                    }
+                                    ${
+                                        isDragRange && !isSelected
+                                            ? "bg-blue-50 rounded-full"
+                                            : ""
+                                    }
+                                    ${
                                         day !== null &&
                                         !isSelected &&
+                                        !isDragStart &&
+                                        !isDragRange &&
                                         (!isCurrentMonth || day !== today)
                                             ? "md:hover:bg-gray-200 rounded-full"
                                             : ""
