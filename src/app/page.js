@@ -66,7 +66,7 @@ export default function Home() {
     };
 
     return (
-        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 py-4">
+        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 pt-4 pb-10">
             <div className="mt-8">
                 <Title onChange={setTitle} link={false}>
                     {title}
@@ -87,7 +87,7 @@ export default function Home() {
                     onValidityChange={setIsTimeValid}
                 />
             </div>
-            <div className="mb-10 w-full">
+            <div className="w-full">
                 <Button
                     onClick={handleCreateMeeting}
                     disabled={isLoading || !isTimeValid}

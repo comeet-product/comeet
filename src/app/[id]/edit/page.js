@@ -407,7 +407,7 @@ export default function EditPage({ params }) {
             </div>
             
             <div>
-                <form onSubmit={handleSubmit} className="flex gap-3 w-full">
+                <form onSubmit={handleSubmit} className="flex gap-3 w-full items-stretch">
                     <div className="flex-1 flex flex-col gap-2">
                         <div className="h-10">
                             <Input
@@ -439,12 +439,12 @@ export default function EditPage({ params }) {
                         )}
                     </div>
                     
-                    <div className={`flex items-center ${(!isEditMode || (hasExistingPassword && isVerified)) ? 'h-24' : 'h-10'}`}>
+                    <div className="flex items-center">
                         <Button 
                             size="small"
                             onClick={handleSubmit}
                             disabled={!name.trim() || selectedSlots.size === 0 || isSubmitting}
-                            className={`whitespace-nowrap px-4 text-sm ${(!isEditMode || (hasExistingPassword && isVerified)) ? 'h-24' : 'h-10'}`}
+                            className="whitespace-nowrap px-4 text-sm h-full"
                         >
                             {isSubmitting ? (isEditMode ? '수정 중...' : '저장 중...') : (isEditMode ? '완료' : '저장')}
                         </Button>

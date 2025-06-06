@@ -401,78 +401,111 @@ export default function TimetableResult({
         return hasAvailability;
     };
 
-    // 선택된 사용자가 변경될 때 자동 페이지 이동
+    // 자동 네비게이션을 위한 debounce ref
+    const autoNavigationTimeoutRef = useRef(null);
+    const [isAutoNavigating, setIsAutoNavigating] = useState(false);
+
+    // 선택된 사용자가 변경될 때 자동 페이지 이동 (debounced)
     useEffect(() => {
+        // 이전 timeout 취소
+        if (autoNavigationTimeoutRef.current) {
+            clearTimeout(autoNavigationTimeoutRef.current);
+        }
+
+        // 자동 네비게이션 중이면 스킵
+        if (isAutoNavigating) {
+            return;
+        }
+
         if (selectedUser && selectedUserAvailability) {
-            console.log('=== Auto page navigation check ===');
-            console.log('Selected user:', selectedUser);
-            console.log('Current page index:', currentPageIndex);
-            console.log('User availability:', selectedUserAvailability);
-            console.log('Meeting dates:', meeting?.dates);
-            console.log('Total days:', TOTAL_DAYS);
-            
-            // 현재 페이지에 사용자의 availability가 있는지 확인
-            const hasAvailabilityInCurrentPage = isUserAvailabilityInCurrentPage(selectedUserAvailability);
-            console.log('Has availability in current page:', hasAvailabilityInCurrentPage);
-            
-            if (!hasAvailabilityInCurrentPage) {
-                console.log('User availability not in current page, finding appropriate page...');
+            autoNavigationTimeoutRef.current = setTimeout(() => {
+                console.log('=== Auto page navigation check ===');
+                console.log('Selected user:', selectedUser);
+                console.log('Current page index:', currentPageIndex);
                 
-                // 사용자의 첫 번째 가능한 날짜 찾기
-                const firstAvailableDate = findFirstAvailableDate(selectedUserAvailability);
-                console.log('First available date:', firstAvailableDate);
+                // 현재 페이지에 사용자의 availability가 있는지 확인
+                const hasAvailabilityInCurrentPage = isUserAvailabilityInCurrentPage(selectedUserAvailability);
+                console.log('Has availability in current page:', hasAvailabilityInCurrentPage);
                 
-                if (firstAvailableDate) {
-                    // 해당 날짜가 있는 페이지로 이동
-                    const targetPage = findPageWithDate(firstAvailableDate);
-                    console.log('Target page for date', firstAvailableDate, ':', targetPage);
+                if (!hasAvailabilityInCurrentPage) {
+                    console.log('User availability not in current page, finding appropriate page...');
+                    
+                    // 사용자의 첫 번째 가능한 날짜 찾기
+                    const firstAvailableDate = findFirstAvailableDate(selectedUserAvailability);
+                    console.log('First available date:', firstAvailableDate);
+                    
+                    if (firstAvailableDate) {
+                        // 해당 날짜가 있는 페이지로 이동
+                        const targetPage = findPageWithDate(firstAvailableDate);
+                        console.log('Target page for date', firstAvailableDate, ':', targetPage);
+                        console.log('Current page:', currentPageIndex);
+                        
+                        if (targetPage !== -1 && targetPage !== currentPageIndex) {
+                            console.log(`🚀 Moving to page ${targetPage} for date ${firstAvailableDate}`);
+                            setIsAutoNavigating(true);
+                            goToPage(targetPage);
+                            // 네비게이션 완료 후 플래그 해제
+                            setTimeout(() => setIsAutoNavigating(false), 500);
+                        } else {
+                            console.log('Target page is same as current page or invalid');
+                        }
+                    } else {
+                        console.log('No available date found');
+                    }
+                } else {
+                    console.log('User availability already visible in current page');
+                }
+                console.log('=== End auto page navigation check ===');
+            }, 150); // 150ms debounce
+        }
+
+        return () => {
+            if (autoNavigationTimeoutRef.current) {
+                clearTimeout(autoNavigationTimeoutRef.current);
+            }
+        };
+    }, [selectedUser, selectedUserAvailability, currentPageIndex, isAutoNavigating]);
+
+    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동 (debounced)
+    useEffect(() => {
+        // 자동 네비게이션 중이거나 사용자가 선택된 경우 스킵
+        if (isAutoNavigating || selectedUser) {
+            return;
+        }
+
+        if (selectedCells && selectedCells.length > 0) {
+            const timeoutId = setTimeout(() => {
+                console.log('=== Recommendation auto page navigation check ===');
+                console.log('Selected cells:', selectedCells);
+                console.log('Current page index:', currentPageIndex);
+                
+                // 첫 번째 선택된 셀의 날짜 찾기
+                const firstSelectedCell = selectedCells[0];
+                const selectedDate = firstSelectedCell.date;
+                console.log('First selected date:', selectedDate);
+                
+                if (selectedDate) {
+                    // 해당 날짜가 있는 페이지 찾기
+                    const targetPage = findPageWithDate(selectedDate);
+                    console.log('Target page for recommendation date', selectedDate, ':', targetPage);
                     console.log('Current page:', currentPageIndex);
                     
                     if (targetPage !== -1 && targetPage !== currentPageIndex) {
-                        console.log(`🚀 Moving to page ${targetPage} for date ${firstAvailableDate}`);
+                        console.log(`🎯 Moving to page ${targetPage} for recommendation date ${selectedDate}`);
+                        setIsAutoNavigating(true);
                         goToPage(targetPage);
+                        // 네비게이션 완료 후 플래그 해제
+                        setTimeout(() => setIsAutoNavigating(false), 500);
                     } else {
                         console.log('Target page is same as current page or invalid');
                     }
-                } else {
-                    console.log('No available date found');
                 }
-            } else {
-                console.log('User availability already visible in current page');
-            }
-            console.log('=== End auto page navigation check ===');
-        }
-    }, [selectedUser, selectedUserAvailability, currentPageIndex]); // meeting?.dates 제거하여 불필요한 재실행 방지
+                console.log('=== End recommendation auto page navigation check ===');
+            }, 150); // 150ms debounce
 
-    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동
-    useEffect(() => {
-        if (selectedCells && selectedCells.length > 0 && !selectedUser) {
-            console.log('=== Recommendation auto page navigation check ===');
-            console.log('Selected cells:', selectedCells);
-            console.log('Current page index:', currentPageIndex);
-            console.log('Meeting dates:', meeting?.dates);
-            
-            // 첫 번째 선택된 셀의 날짜 찾기
-            const firstSelectedCell = selectedCells[0];
-            const selectedDate = firstSelectedCell.date;
-            console.log('First selected date:', selectedDate);
-            
-            if (selectedDate) {
-                // 해당 날짜가 있는 페이지 찾기
-                const targetPage = findPageWithDate(selectedDate);
-                console.log('Target page for recommendation date', selectedDate, ':', targetPage);
-                console.log('Current page:', currentPageIndex);
-                
-                if (targetPage !== -1 && targetPage !== currentPageIndex) {
-                    console.log(`🎯 Moving to page ${targetPage} for recommendation date ${selectedDate}`);
-                    goToPage(targetPage);
-                } else {
-                    console.log('Target page is same as current page or invalid');
-                }
-            }
-            console.log('=== End recommendation auto page navigation check ===');
+            return () => clearTimeout(timeoutId);
         }
-    }, [selectedCells, currentPageIndex]);
+    }, [selectedCells, currentPageIndex, isAutoNavigating, selectedUser]);
 
     // 스와이프 방향 감지 및 페이지 변경
     const handleSwipeEnd = () => {

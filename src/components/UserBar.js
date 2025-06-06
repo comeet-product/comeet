@@ -49,21 +49,27 @@ const UserItem = ({
   
     if (isAddButton) {
         return (
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0" style={{ width: '60px' }}>
                 <button 
                     onClick={isEditMode ? onEditClick : onAddClick}
-                    className="flex flex-col items-center group py-1 px-2"
+                    className="w-full flex flex-col items-center group py-1 px-2"
                 >
                     <img
                         src={
                             isEditMode ? "/editProfile.svg" : "/addprofile.png"
                         }
                         alt={isEditMode ? "사용자 수정" : "사용자 추가"}
-                        className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity"
+                        className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity flex-shrink-0"
                     />
-                    <span className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity whitespace-nowrap">
-                        {isEditMode ? "수정하기" : "추가하기"}
-                    </span>
+                    <div className="w-full min-w-0 flex justify-center">
+                        <span className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity truncate text-center"
+                        style={{
+                            maxWidth: '44px',
+                            minWidth: 0,
+                        }}>
+                            {isEditMode ? "수정하기" : "추가하기"}
+                        </span>
+                    </div>
                 </button>
             </div>
         );
@@ -75,10 +81,11 @@ const UserItem = ({
             style={{
                 order: animationOrder,
                 transform: 'translateX(0)',
+                width: '60px',
             }}
         >
             <button 
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer border touch-none select-none ${
+                className={`w-full flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer border touch-none select-none ${
                     isSelected 
                         ? 'bg-main/30 border-main' 
                         : isHighlighted
@@ -138,7 +145,7 @@ const UserItem = ({
                     onClick();
                 }}
             >
-                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden transition-all duration-300 ease-out">
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden transition-all duration-300 ease-out flex-shrink-0">
                     <Avatar
                         name={id.toString()}
                         variant="beam"
@@ -152,11 +159,17 @@ const UserItem = ({
                         ]}
                     />
                 </div>
-                <span className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate transition-all duration-300 ease-out text-black ${
-                    isSelected ? 'font-medium' : isHighlighted ? 'font-medium' : ''
-                }`}>
-                    {name}
-                </span>
+                <div className="w-full min-w-0 flex justify-center">
+                    <span className={`text-xs font-normal tracking-[0.06px] transition-all duration-300 ease-out text-black truncate text-center ${
+                        isSelected ? 'font-medium' : isHighlighted ? 'font-medium' : ''
+                    }`}
+                    style={{
+                        maxWidth: '44px',
+                        minWidth: 0,
+                    }}>
+                        {name}
+                    </span>
+                </div>
             </button>
         </div>
     );
