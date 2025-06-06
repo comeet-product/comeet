@@ -15,35 +15,51 @@ const UserItem = ({
     isScrolling,
     isAvailable,
     isHighlighted,
-    animationOrder
+    animationOrder,
+    scrollContainerRef
 }) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
+    const [isDraggingScroll, setIsDraggingScroll] = React.useState(false);
 
     const handleTouchStart = (e) => {
         touchStartRef.current = {
             x: e.touches[0].clientX,
             y: e.touches[0].clientY,
             time: Date.now(),
+            scrollLeft: scrollContainerRef?.current?.scrollLeft || 0,
         };
         setIsPressed(true);
+        setIsDraggingScroll(false);
     };
 
     const handleTouchMove = (e) => {
-        if (!touchStartRef.current) return;
+        if (!touchStartRef.current || !scrollContainerRef?.current) return;
         
         const touch = e.touches[0];
-        const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+        const deltaX = touch.clientX - touchStartRef.current.x;
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+        const absDeltaX = Math.abs(deltaX);
         
-        // 가로 스크롤이 세로 스크롤보다 크면 스크롤로 인식
-        if (deltaX > deltaY && deltaX > 3) {
-            setIsPressed(false);
+        // 가로 이동이 세로 이동보다 크고 임계값을 넘으면 스크롤 모드로 전환
+        if (absDeltaX > deltaY && absDeltaX > 10) {
+            if (!isDraggingScroll) {
+                setIsDraggingScroll(true);
+                setIsPressed(false); // 스크롤 중일 때는 선택 상태 해제
+            }
+            
+            // 스크롤 컨테이너를 직접 조작
+            const newScrollLeft = touchStartRef.current.scrollLeft - deltaX;
+            scrollContainerRef.current.scrollLeft = newScrollLeft;
+            
+            // 기본 터치 동작 방지
+            e.preventDefault();
         }
     };
 
     const handleTouchEnd = () => {
         setIsPressed(false);
+        setIsDraggingScroll(false);
         touchStartRef.current = null;
     };
   
@@ -140,6 +156,12 @@ const UserItem = ({
                     }
                 }}
                 onClick={(e) => {
+                    // 스크롤 중이었다면 클릭 이벤트 무시
+                    if (isDraggingScroll) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
                     e.preventDefault();
                     e.stopPropagation();
                     onClick();
@@ -456,6 +478,7 @@ const UserBar = ({
                                     isAvailable={user.available}
                                     isHighlighted={user.highlighted}
                                     animationOrder={user.animationOrder}
+                                    scrollContainerRef={scrollContainerRef}
                                 />
                             ))}
                         </div>
