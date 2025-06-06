@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import { getMeeting } from "@/lib/supabase/getMeeting";
 import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import Title from "@/components/Title";
-import TimetableComponent from "@/components/TimetableComponent/TimetableComponent";
+import TimetableResult from "@/components/TimetableComponent/TimetableResult";
 import AvailableDatesGroup from "@/components/AvailableDatesGroup/AvailableDatesGroup";
 import UserBar from "@/components/UserBar";
 
@@ -45,7 +45,7 @@ export default function MeetingPage({ params }) {
                     <h5 className="text-md text-gray-500 text-center font-semibold mb-1">
                         Schedule Overview
                     </h5>
-                    <TimetableComponent
+                    <TimetableResult 
                         dayCount={7}
                         halfCount={8}
                         startDate="05/19"
