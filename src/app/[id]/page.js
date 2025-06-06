@@ -360,8 +360,8 @@ export default function MeetingPage({ params }) {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto">
-                <div className="px-10 py-8 flex flex-col gap-4">
+            <div className="flex-1">
+                <div className="px-10 py-8 pb-24 flex flex-col gap-4">
                     <Title onChange={handleTitleChange}>{meeting.title}</Title>
                     <div className="mb-10">
                         <AvailableDatesGroup 
