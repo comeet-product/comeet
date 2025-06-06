@@ -21,46 +21,55 @@ const UserItem = ({
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
     const [isDraggingScroll, setIsDraggingScroll] = React.useState(false);
+    const touchTimeoutRef = React.useRef(null);
 
     const handleTouchStart = (e) => {
         touchStartRef.current = {
             x: e.touches[0].clientX,
             y: e.touches[0].clientY,
             time: Date.now(),
-            scrollLeft: scrollContainerRef?.current?.scrollLeft || 0,
         };
         setIsPressed(true);
         setIsDraggingScroll(false);
+        
+        // 100ms 후에 아직 움직이지 않았으면 누름 상태 유지
+        touchTimeoutRef.current = setTimeout(() => {
+            if (!isDraggingScroll && touchStartRef.current) {
+                setIsPressed(true);
+            }
+        }, 100);
     };
 
     const handleTouchMove = (e) => {
-        if (!touchStartRef.current || !scrollContainerRef?.current) return;
+        if (!touchStartRef.current) return;
         
         const touch = e.touches[0];
-        const deltaX = touch.clientX - touchStartRef.current.x;
+        const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-        const absDeltaX = Math.abs(deltaX);
         
-        // 가로 이동이 세로 이동보다 크고 임계값을 넘으면 스크롤 모드로 전환
-        if (absDeltaX > deltaY && absDeltaX > 10) {
-            if (!isDraggingScroll) {
-                setIsDraggingScroll(true);
-                setIsPressed(false); // 스크롤 중일 때는 선택 상태 해제
+        // 움직임이 감지되면 스크롤로 간주
+        if (deltaX > 5 || deltaY > 5) {
+            setIsDraggingScroll(true);
+            setIsPressed(false);
+            if (touchTimeoutRef.current) {
+                clearTimeout(touchTimeoutRef.current);
+                touchTimeoutRef.current = null;
             }
-            
-            // 스크롤 컨테이너를 직접 조작
-            const newScrollLeft = touchStartRef.current.scrollLeft - deltaX;
-            scrollContainerRef.current.scrollLeft = newScrollLeft;
-            
-            // 기본 터치 동작 방지
-            e.preventDefault();
         }
     };
 
     const handleTouchEnd = () => {
-        setIsPressed(false);
-        setIsDraggingScroll(false);
-        touchStartRef.current = null;
+        if (touchTimeoutRef.current) {
+            clearTimeout(touchTimeoutRef.current);
+            touchTimeoutRef.current = null;
+        }
+        
+        // 짧은 지연 후 상태 리셋 (클릭 이벤트 처리를 위해)
+        setTimeout(() => {
+            setIsPressed(false);
+            setIsDraggingScroll(false);
+            touchStartRef.current = null;
+        }, 50);
     };
   
     if (isAddButton) {
@@ -114,16 +123,19 @@ const UserItem = ({
                     userSelect: 'none',
                     backgroundColor: isSelected 
                         ? 'rgba(54, 116, 181, 0.3)' 
+                        : isPressed
+                        ? 'rgba(54, 116, 181, 0.15)'
                         : isHighlighted 
                         ? 'rgba(54, 116, 181, 0.1)'
                         : 'transparent',
-                    opacity: isAvailable === false ? 0.4 : 1, // 불가능한 사용자는 반투명
-                    transition: 'all 0.3s ease-out', // 모든 속성에 대해 부드러운 전환 적용
+                    opacity: isAvailable === false ? 0.4 : 1,
+                    transition: 'all 0.2s ease-out',
                     borderColor: isSelected 
                         ? '#3674B5' 
                         : isHighlighted 
                         ? 'rgba(54, 116, 181, 0.3)'
-                        : 'transparent'
+                        : 'transparent',
+                    touchAction: 'manipulation', // iOS에서 더 나은 터치 반응
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget) {
@@ -137,24 +149,9 @@ const UserItem = ({
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
-                onTouchStart={(e) => {
-                    if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
-                        e.currentTarget.style.backgroundColor = color;
-                    }
-                }}
-                onTouchEnd={(e) => {
-                    if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
-                        e.currentTarget.style.backgroundColor = color;
-                    }
-                }}
-                onTouchCancel={(e) => {
-                    if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
-                        e.currentTarget.style.backgroundColor = color;
-                    }
-                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 onClick={(e) => {
                     // 스크롤 중이었다면 클릭 이벤트 무시
                     if (isDraggingScroll) {
@@ -381,24 +378,7 @@ const UserBar = ({
         }
     };
 
-    // 터치 스크롤 개선을 위한 터치 이벤트 핸들러
-    const handleTouchStart = (e) => {
-        const scrollContainer = scrollContainerRef.current;
-        if (scrollContainer) {
-            setDragStart({
-                x: e.touches[0].clientX,
-                scrollLeft: scrollContainer.scrollLeft,
-            });
-        }
-    };
 
-    const handleTouchMove = (e) => {
-        const scrollContainer = scrollContainerRef.current;
-        if (scrollContainer && dragStart) {
-            const deltaX = e.touches[0].clientX - dragStart.x;
-            scrollContainer.scrollLeft = dragStart.scrollLeft - deltaX;
-        }
-    };
 
     // 전역 마우스 이벤트 리스너
     React.useEffect(() => {
@@ -417,51 +397,59 @@ const UserBar = ({
             <style jsx>{`
                 .custom-scrollbar {
                     scrollbar-width: thin !important;
-                    scrollbar-color: rgba(0,0,0,0.2) transparent !important;
+                    scrollbar-color: rgba(54, 116, 181, 0.3) rgba(0,0,0,0.05) !important;
                     -ms-overflow-style: auto !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar {
-                    height: 12px !important;
+                    height: 14px !important;
                     -webkit-appearance: none !important;
                     display: block !important;
-                    width: 12px !important;
+                    width: 14px !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-track {
                     background: rgba(0,0,0,0.05) !important;
-                    border-radius: 6px !important;
+                    border-radius: 7px !important;
+                    margin: 2px !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(0,0,0,0.2) !important;
-                    border-radius: 6px !important;
+                    background: rgba(54, 116, 181, 0.4) !important;
+                    border-radius: 7px !important;
                     transition: all 0.2s ease !important;
-                    min-width: 30px !important;
-                    border: 2px solid transparent !important;
-                    background-clip: content-box !important;
+                    min-width: 40px !important;
+                    border: 1px solid rgba(255,255,255,0.2) !important;
+                    background-clip: padding-box !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(0,0,0,0.3) !important;
+                    background: rgba(54, 116, 181, 0.6) !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                    background: rgba(0,0,0,0.4) !important;
+                    background: rgba(54, 116, 181, 0.8) !important;
                 }
 
+                /* 모바일 터치 디바이스용 개선 */
                 @media (pointer: coarse) {
                     .custom-scrollbar::-webkit-scrollbar {
-                        height: 16px !important;
+                        height: 18px !important;
+                    }
+                    
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                        background: rgba(54, 116, 181, 0.1) !important;
+                        margin: 1px !important;
                     }
                     
                     .custom-scrollbar::-webkit-scrollbar-thumb {
-                        background: rgba(0,0,0,0.3) !important;
-                        min-width: 40px !important;
+                        background: rgba(54, 116, 181, 0.5) !important;
+                        min-width: 50px !important;
+                        border: 2px solid rgba(255,255,255,0.3) !important;
                     }
 
                     .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                        background: rgba(0,0,0,0.5) !important;
+                        background: rgba(54, 116, 181, 0.9) !important;
                     }
                 }
             `}</style>
@@ -473,7 +461,7 @@ const UserBar = ({
                             className="flex items-center px-2 gap-2 custom-scrollbar"
                             style={{
                                 WebkitOverflowScrolling: "touch",
-                                scrollSnapType: "none", // 모바일에서 자연스러운 스크롤을 위해 변경
+                                scrollSnapType: "none",
                                 width: "100%",
                                 paddingBottom: "8px",
                                 cursor: isDragging
@@ -484,11 +472,12 @@ const UserBar = ({
                                     : "grab",
                                 overflowX: "scroll",
                                 overflowY: "hidden",
-                                touchAction: "pan-x", // 가로 스크롤만 허용
+                                touchAction: "pan-x",
+                                // iPhone Safari 스크롤 개선
+                                scrollBehavior: "smooth",
+                                position: "relative",
                             }}
                             onMouseDown={handleMouseDown}
-                            onTouchStart={handleTouchStart}
-                            onTouchMove={handleTouchMove}
                         >
                             {processedUsers.map((user) => (
                                 <UserItem
