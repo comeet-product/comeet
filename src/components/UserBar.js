@@ -214,30 +214,25 @@ const UserBar = ({
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background-color: #f5f5f5 !important;
                     border-radius: 4px !important;
                     transition: all 0.2s ease !important;
                     min-height: 20px !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background-color: #f5f5f5 !important;
                     transform: scaleY(1.3) !important;
                 }
 
                 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                    background-color: #f5f5f5 !important;
                     transform: scaleY(1.5) !important;
                 }
 
                 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-                    background-color: #f5f5f5 !important;
                     transform: scaleY(1.3) !important;
                 }
 
                 .custom-scrollbar:active::-webkit-scrollbar-thumb,
                 .custom-scrollbar.dragging::-webkit-scrollbar-thumb {
-                    background-color: #f5f5f5 !important;
                     transform: scaleY(1.5) !important;
                 }
 
@@ -247,7 +242,6 @@ const UserBar = ({
                     }
                     
                     .custom-scrollbar::-webkit-scrollbar-thumb:active {
-                        background-color: #f5f5f5 !important;
                         transform: scaleY(1.8) !important;
                     }
                 }
