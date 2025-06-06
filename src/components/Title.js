@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-export default function Title({ children, link = true, onChange = () => {} }) {
+export default function Title({ children, link = true, editable = true, onChange = () => {} }) {
     const [isEditing, setIsEditing] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -24,6 +24,8 @@ export default function Title({ children, link = true, onChange = () => {} }) {
     };
 
     const handleClick = () => {
+        if (!editable) return; // 편집 불가능하면 아무것도 하지 않음
+        
         setIsEditing(true);
         if (children === "새로운 회의" || children === "제목을 입력하세요") {
             setInputValue("");
@@ -108,7 +110,7 @@ export default function Title({ children, link = true, onChange = () => {} }) {
                 </div>
             ) : (
                 <h1
-                    className={`${titleStyle} cursor-text`}
+                    className={`${titleStyle} ${editable ? 'cursor-text' : 'cursor-default'}`}
                     onClick={handleClick}
                 >
                     {children || "제목을 입력하세요"}
