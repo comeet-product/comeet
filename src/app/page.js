@@ -6,6 +6,7 @@ import Title from "@/components/Title";
 import Button from "@/components/Button";
 import Calendar from "@/components/Calendar";
 import SelectableTime from "@/components/SelectableTime/SelectableTime";
+import Loading from "@/components/Loading";
 import { createMeeting } from "@/lib/supabase/createMeeting";
 
 export default function Home() {
@@ -36,6 +37,9 @@ export default function Home() {
 
         setIsLoading(true);
         try {
+            // 1초 딜레이 추가
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
             const meetingData = {
                 title,
                 dates: selectedDates,
@@ -62,7 +66,7 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col justify-center items-center min-h-full w-full px-10 py-4 gap-12 overflow-y-auto">
+        <div className="relative flex flex-col justify-center items-center min-h-full w-full px-10 py-4 gap-12 overflow-y-auto">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
@@ -87,6 +91,13 @@ export default function Home() {
             >
                 미팅 생성
             </Button>
+            
+            {/* 로딩 오버레이 */}
+            {isLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+                    <Loading message="미팅을 생성하고 있습니다..." />
+                </div>
+            )}
         </div>
     );
 }
