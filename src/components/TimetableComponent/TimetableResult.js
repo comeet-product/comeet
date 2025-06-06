@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableResult({ 
-    dayCount = 7, 
-    halfCount = 8, 
-    startDate = "05/19", 
-    startTime = 10, 
+export default function TimetableResult({
+    dayCount = 7,
+    halfCount = 8,
+    startDate = "05/19",
+    startTime = 10,
     dateHeaderHeight = 23,
     meetingId,
     meeting,
@@ -18,26 +18,61 @@ export default function TimetableResult({
     selectedUserAvailability = null,
     selectedCell = null,
     selectedCells = [],
-    onCellSelect = () => {}
+    onCellSelect = () => {},
 }) {
     // 페이지네이션 상태 관리
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
-    
+
     // 스와이프 감지를 위한 터치 상태
     const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
     const [touchEnd, setTouchEnd] = useState({ x: 0, y: 0 });
     const [isSwiping, setIsSwiping] = useState(false);
-    
+
     // Refs for DOM elements
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
 
-    // meeting 데이터를 기반으로 동적으로 계산된 값들
-    const dynamicStartTime = meeting?.selectable_time?.start ? Math.floor(meeting.selectable_time.start / 100) : startTime;
-    const dynamicEndTime = meeting?.selectable_time?.end ? Math.floor(meeting.selectable_time.end / 100) : (startTime + Math.floor(halfCount / 2));
-    const dynamicHalfCount = meeting?.selectable_time ? 
-        (dynamicEndTime - dynamicStartTime) * 2 : halfCount;
+    // meeting 기반 시간 설정 (TimetableSelect와 동일한 로직)
+    const getMeetingTimeInfo = () => {
+        if (!meeting?.selectable_time) {
+            return {
+                startTime: startTime,
+                halfCount: halfCount,
+            };
+        }
+
+        const startHHMM = meeting.selectable_time.start || 900; // 기본값 9:00 (900)
+        const endHHMM = meeting.selectable_time.end || 1700; // 기본값 17:00 (1700)
+
+        // 시작 시간 분석 (HHMM 형식)
+        const startHour = Math.floor(startHHMM / 100);
+        const startMinute = startHHMM % 100;
+
+        // 종료 시간 분석 (HHMM 형식)
+        const endHour = Math.floor(endHHMM / 100);
+        const endMinute = endHHMM % 100;
+
+        // 30분 단위로 정확한 시간 계산
+        // 9시 30분 = 9.5, 10시 = 10.0
+        const startTimeInHalfHours =
+            startHour * 2 + (startMinute >= 30 ? 1 : 0);
+        const endTimeInHalfHours = endHour * 2 + (endMinute >= 30 ? 1 : 0);
+
+        // 실제 표시할 시작 시간 (30분 단위 고려)
+        const displayStartTime = startTimeInHalfHours / 2;
+
+        // 총 30분 단위 슬롯 개수
+        const totalHalfHours = endTimeInHalfHours - startTimeInHalfHours;
+
+        return {
+            startTime: displayStartTime, // 9.5 (9시 30분), 10.0 (10시)
+            halfCount: totalHalfHours,
+        };
+    };
+
+    const { startTime: dynamicStartTime, halfCount: dynamicHalfCount } =
+        getMeetingTimeInfo();
 
     // 실제 데이터를 기반으로 계산된 Constants
     const TOTAL_DAYS = meeting?.dates?.length || dayCount;
@@ -47,50 +82,74 @@ export default function TimetableResult({
 
     // 시간 슬롯 ID 생성 헬퍼 함수 (HHMM 형식을 30분 단위 인덱스로 변환)
     const timeToHalfIndex = (time) => {
-        if (typeof time === 'string') {
+        if (typeof time === "string") {
             // "10:30" 형태 처리
-            const [hour, minute] = time.split(':').map(Number);
-            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+            const [hour, minute] = time.split(":").map(Number);
+            // dynamicStartTime을 30분 단위로 변환하여 계산
+            const startHour = Math.floor(dynamicStartTime);
+            const startMinute = dynamicStartTime % 1 >= 0.5 ? 30 : 0;
+            const startTimeInMinutes = startHour * 60 + startMinute;
+            const currentTimeInMinutes = hour * 60 + minute;
+            return Math.floor((currentTimeInMinutes - startTimeInMinutes) / 30);
         } else {
             // HHMM 숫자 형태 처리 (예: 1030)
             const hour = Math.floor(time / 100);
             const minute = time % 100;
-            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+            const startHour = Math.floor(dynamicStartTime);
+            const startMinute = dynamicStartTime % 1 >= 0.5 ? 30 : 0;
+            const startTimeInMinutes = startHour * 60 + startMinute;
+            const currentTimeInMinutes = hour * 60 + minute;
+            return Math.floor((currentTimeInMinutes - startTimeInMinutes) / 30);
         }
     };
 
     const halfIndexToTime = (halfIndex) => {
-        const hour = dynamicStartTime + Math.floor(halfIndex / 2);
-        const minute = (halfIndex % 2) * 30;
+        // dynamicStartTime을 30분 단위로 계산
+        const startHour = Math.floor(dynamicStartTime);
+        const startMinute = dynamicStartTime % 1 >= 0.5 ? 30 : 0;
+        const totalMinutes = startHour * 60 + startMinute + halfIndex * 30;
+        const hour = Math.floor(totalMinutes / 60);
+        const minute = totalMinutes % 60;
         return hour * 100 + minute; // HHMM 형식으로 반환
     };
 
     // 시간(HHMM)을 halfIndex로 변환하는 함수
     const getHalfIndexFromTime = (time) => {
-        if (typeof time === 'string') {
+        if (typeof time === "string") {
             // "10:30" 형태 처리
-            const [hour, minute] = time.split(':').map(Number);
-            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+            const [hour, minute] = time.split(":").map(Number);
+            const startHour = Math.floor(dynamicStartTime);
+            const startMinute = dynamicStartTime % 1 >= 0.5 ? 30 : 0;
+            const startTimeInMinutes = startHour * 60 + startMinute;
+            const currentTimeInMinutes = hour * 60 + minute;
+            return Math.floor((currentTimeInMinutes - startTimeInMinutes) / 30);
         } else {
             // HHMM 숫자 형태 처리 (예: 1030)
             const hour = Math.floor(time / 100);
             const minute = time % 100;
-            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+            const startHour = Math.floor(dynamicStartTime);
+            const startMinute = dynamicStartTime % 1 >= 0.5 ? 30 : 0;
+            const startTimeInMinutes = startHour * 60 + startMinute;
+            const currentTimeInMinutes = hour * 60 + minute;
+            return Math.floor((currentTimeInMinutes - startTimeInMinutes) / 30);
         }
     };
 
     // 결과 데이터를 시간 슬롯 정보로 변환
     const getResultSlots = () => {
         const resultSlots = new Map(); // Set 대신 Map을 사용하여 투명도 정보도 저장
-        
-        results.forEach(result => {
+
+        results.forEach((result) => {
             const dateIndex = meeting?.dates?.indexOf(result.date);
             if (dateIndex !== -1) {
                 const halfIndex = timeToHalfIndex(result.start_time);
                 if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
                     const slotId = `${dateIndex}-${halfIndex}`;
                     // 사람 수에 따른 투명도 계산 (선택사람수/전체사람수*100)
-                    const opacity = users.length > 0 ? (result.number / users.length) * 100 : 0;
+                    const opacity =
+                        users.length > 0
+                            ? (result.number / users.length) * 100
+                            : 0;
                     resultSlots.set(slotId, { opacity, count: result.number });
                 }
             }
@@ -99,18 +158,18 @@ export default function TimetableResult({
         return resultSlots;
     };
 
-    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환  
+    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환
     const getUserAvailabilitySlots = () => {
         if (!selectedUser || !selectedUserAvailability) {
             return new Set();
         }
 
         const availabilitySlots = new Set();
-        
+
         Object.entries(selectedUserAvailability).forEach(([date, times]) => {
             const dateIndex = meeting?.dates?.indexOf(date);
             if (dateIndex !== -1 && Array.isArray(times)) {
-                times.forEach(time => {
+                times.forEach((time) => {
                     const halfIndex = timeToHalfIndex(time);
                     if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
                         availabilitySlots.add(`${dateIndex}-${halfIndex}`);
@@ -143,13 +202,13 @@ export default function TimetableResult({
         const startDay = pageIndex * VISIBLE_DAY_COUNT;
         const endDay = Math.min(startDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
         const dayCount = endDay - startDay;
-        
+
         return {
             startDay,
             endDay,
             dayCount,
             // 7개 미만이면 컨테이너 너비를 채우도록 조정
-            shouldStretch: dayCount < VISIBLE_DAY_COUNT
+            shouldStretch: dayCount < VISIBLE_DAY_COUNT,
         };
     };
 
@@ -157,11 +216,11 @@ export default function TimetableResult({
     const goToPage = (pageIndex) => {
         const maxPage = getMaxPageIndex();
         const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
-        
+
         if (targetPage !== currentPageIndex && !isAnimating) {
             setIsAnimating(true);
             setCurrentPageIndex(targetPage);
-            
+
             // 애니메이션 완료 후 상태 초기화
             setTimeout(() => {
                 setIsAnimating(false);
@@ -172,28 +231,28 @@ export default function TimetableResult({
     // 스와이프 방향 감지 및 페이지 변경
     const handleSwipeEnd = () => {
         if (!isSwiping) return;
-        
+
         const deltaX = touchEnd.x - touchStart.x;
         const deltaY = Math.abs(touchEnd.y - touchStart.y);
-        
+
         // 수평 스와이프가 수직 움직임보다 크고 임계값을 넘었을 때만 처리
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > deltaY) {
             if (deltaX > 0) {
                 // 오른쪽 스와이프 - 이전 페이지
                 goToPage(currentPageIndex - 1);
             } else {
-                // 왼쪽 스와이프 - 다음 페이지  
+                // 왼쪽 스와이프 - 다음 페이지
                 goToPage(currentPageIndex + 1);
             }
         }
-        
+
         setIsSwiping(false);
     };
 
     // 스와이프 이벤트 처리 (터치, 마우스, 트랙패드 지원)
     useEffect(() => {
         const container = containerRef.current;
-        
+
         if (!container) return;
 
         // 스와이프 감지를 위한 터치 이벤트 핸들러
@@ -210,11 +269,11 @@ export default function TimetableResult({
             if (e.touches.length === 1 && isSwiping && !isAnimating) {
                 const touch = e.touches[0];
                 setTouchEnd({ x: touch.clientX, y: touch.clientY });
-                
+
                 // 수평 스와이프 시 기본 스크롤 방지
                 const deltaX = Math.abs(touch.clientX - touchStart.x);
                 const deltaY = Math.abs(touch.clientY - touchStart.y);
-                
+
                 if (deltaX > deltaY && deltaX > 10) {
                     e.preventDefault();
                 }
@@ -253,10 +312,10 @@ export default function TimetableResult({
             if (!isAnimating && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
                 // 수평 스크롤이 수직 스크롤보다 클 때만 처리
                 const threshold = 30; // 트랙패드 민감도 조절
-                
+
                 if (Math.abs(e.deltaX) > threshold) {
                     e.preventDefault();
-                    
+
                     if (e.deltaX > 0) {
                         // 왼쪽으로 스크롤 (다음 페이지)
                         goToPage(currentPageIndex + 1);
@@ -269,26 +328,30 @@ export default function TimetableResult({
         };
 
         // 이벤트 리스너 등록
-        container.addEventListener('touchstart', handleTouchStart, { passive: false });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
-        container.addEventListener('touchend', handleTouchEnd);
-        
+        container.addEventListener("touchstart", handleTouchStart, {
+            passive: false,
+        });
+        container.addEventListener("touchmove", handleTouchMove, {
+            passive: false,
+        });
+        container.addEventListener("touchend", handleTouchEnd);
+
         // 마우스 이벤트 (데스크톱 지원)
-        container.addEventListener('mousedown', handleMouseDown);
-        container.addEventListener('mousemove', handleMouseMove);
-        container.addEventListener('mouseup', handleMouseUp);
-        
+        container.addEventListener("mousedown", handleMouseDown);
+        container.addEventListener("mousemove", handleMouseMove);
+        container.addEventListener("mouseup", handleMouseUp);
+
         // 트랙패드 이벤트 (데스크톱 지원)
-        container.addEventListener('wheel', handleWheel, { passive: false });
+        container.addEventListener("wheel", handleWheel, { passive: false });
 
         return () => {
-            container.removeEventListener('touchstart', handleTouchStart);
-            container.removeEventListener('touchmove', handleTouchMove);
-            container.removeEventListener('touchend', handleTouchEnd);
-            container.removeEventListener('mousedown', handleMouseDown);
-            container.removeEventListener('mousemove', handleMouseMove);
-            container.removeEventListener('mouseup', handleMouseUp);
-            container.removeEventListener('wheel', handleWheel);
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchmove", handleTouchMove);
+            container.removeEventListener("touchend", handleTouchEnd);
+            container.removeEventListener("mousedown", handleMouseDown);
+            container.removeEventListener("mousemove", handleMouseMove);
+            container.removeEventListener("mouseup", handleMouseUp);
+            container.removeEventListener("wheel", handleWheel);
         };
     }, [touchStart, touchEnd, isSwiping, isAnimating, currentPageIndex]); // 필요한 의존성만 포함
 
@@ -296,23 +359,25 @@ export default function TimetableResult({
     const getAllPages = () => {
         const pages = [];
         const maxPage = getMaxPageIndex();
-        
+
         for (let i = 0; i <= maxPage; i++) {
             pages.push(getPageInfo(i));
         }
-        
+
         return pages;
     };
 
     const getCarouselContainerStyle = () => {
         const pages = getAllPages();
         const totalWidth = pages.length * 100; // 각 페이지는 100% 너비
-        
+
         return {
             width: `${totalWidth}%`,
-            display: 'flex',
-            transform: `translateX(-${currentPageIndex * (100 / pages.length)}%)`,
-            transition: isAnimating ? 'transform 0.3s ease-out' : 'none'
+            display: "flex",
+            transform: `translateX(-${
+                currentPageIndex * (100 / pages.length)
+            }%)`,
+            transition: isAnimating ? "transform 0.3s ease-out" : "none",
         };
     };
 
@@ -320,7 +385,7 @@ export default function TimetableResult({
         const pages = getAllPages();
         return {
             width: `${100 / pages.length}%`, // 각 페이지는 전체 컨테이너의 동일한 비율
-            flexShrink: 0
+            flexShrink: 0,
         };
     };
 
@@ -328,39 +393,49 @@ export default function TimetableResult({
         if (pageInfo.shouldStretch) {
             // 7개 미만이면 컨테이너 너비를 채우도록 100%
             return {
-                width: '100%'
+                width: "100%",
             };
         } else {
             // 7개일 때는 고정 너비
             return {
-                width: `${100 * (VISIBLE_DAY_COUNT / VISIBLE_DAY_COUNT)}%` // 100%
+                width: `${100 * (VISIBLE_DAY_COUNT / VISIBLE_DAY_COUNT)}%`, // 100%
             };
         }
     };
 
     // 현재 표시할 슬롯들 결정
-    const currentSelectedSlots = selectedUser ? getUserAvailabilitySlots() : getResultSlots();
+    const currentSelectedSlots = selectedUser
+        ? getUserAvailabilitySlots()
+        : getResultSlots();
 
     // 셀 클릭 핸들러
     const handleCellClick = (dayIndex, halfIndex, pageStartDay) => {
         // 사용자가 선택된 상태가 아닐 때만 작동
         if (selectedUser) return;
-        
+
         const actualDayIndex = pageStartDay + dayIndex;
         const slotId = `${dayIndex}-${halfIndex}`;
-        
-        console.log('Cell clicked:', { dayIndex, halfIndex, actualDayIndex, slotId });
-        
+
+        console.log("Cell clicked:", {
+            dayIndex,
+            halfIndex,
+            actualDayIndex,
+            slotId,
+        });
+
         // 해당 셀의 결과 데이터 찾기
-        const clickedResults = results.filter(result => {
+        const clickedResults = results.filter((result) => {
             const resultDateIndex = meeting?.dates?.indexOf(result.date);
             const resultHalfIndex = getHalfIndexFromTime(result.start_time);
-            
-            return resultDateIndex === actualDayIndex && resultHalfIndex === halfIndex;
+
+            return (
+                resultDateIndex === actualDayIndex &&
+                resultHalfIndex === halfIndex
+            );
         });
-        
-        console.log('Found results for clicked cell:', clickedResults);
-        
+
+        console.log("Found results for clicked cell:", clickedResults);
+
         if (clickedResults.length > 0) {
             // 첫 번째 결과에 위치 정보 추가
             const cellData = {
@@ -368,7 +443,7 @@ export default function TimetableResult({
                 dayIndex: dayIndex,
                 halfIndex: halfIndex,
                 pageStartDay: pageStartDay,
-                slotId: slotId
+                slotId: slotId,
             };
             onCellSelect(cellData);
         }
@@ -377,62 +452,59 @@ export default function TimetableResult({
     return (
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
-                <TimeHeader 
+                <TimeHeader
                     halfCount={dynamicHalfCount}
                     startTime={dynamicStartTime}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
 
-            <div 
+            <div
                 ref={containerRef}
                 className="flex-1 min-w-0"
-                style={{ 
-                    position: 'relative',
-                    touchAction: 'manipulation'  // TimetableSelect와 동일한 설정
+                style={{
+                    position: "relative",
+                    touchAction: "manipulation", // TimetableSelect와 동일한 설정
                 }}
             >
-                <div 
+                <div
                     ref={timetableRef}
                     className="overflow-hidden"
                     data-scroll-container="true"
-                    style={{ 
-                        touchAction: 'pan-y',  // 세로 스크롤만 허용, 가로는 스와이프로 처리
-                        userSelect: 'none',  // 텍스트 선택 방지
-                        WebkitUserSelect: 'none',
-                        minHeight: '100px',
-                        width: '100%'
+                    style={{
+                        touchAction: "pan-y", // 세로 스크롤만 허용, 가로는 스와이프로 처리
+                        userSelect: "none", // 텍스트 선택 방지
+                        WebkitUserSelect: "none",
+                        minHeight: "100px",
+                        width: "100%",
                     }}
                 >
                     <div style={getCarouselContainerStyle()}>
                         {getAllPages().map((pageInfo, pageIndex) => (
-                            <div 
-                                key={pageIndex}
-                                style={getPageStyle(pageInfo)}
-                            >
+                            <div key={pageIndex} style={getPageStyle(pageInfo)}>
                                 <div style={getTimetableStyle(pageInfo)}>
-                                    <Timetable 
+                                    <Timetable
                                         dayCount={pageInfo.dayCount}
                                         halfCount={dynamicHalfCount}
                                         hasDateHeaderAbove={false}
-                                        selectedSlots={currentSelectedSlots}  // 결과 또는 사용자 availability 표시
-                                        onSlotSelection={() => {}}  // 터치 선택 비활성화
-                                        onTapSelection={() => {}}   // 터치 선택 비활성화
-                                        onTouchPending={() => {}}   // 터치 선택 비활성화
-                                        onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
-                                        onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
-                                        onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
-                                        isSelectionEnabled={false}       // 선택 기능 완전 비활성화
+                                        selectedSlots={currentSelectedSlots} // 결과 또는 사용자 availability 표시
+                                        onSlotSelection={() => {}} // 터치 선택 비활성화
+                                        onTapSelection={() => {}} // 터치 선택 비활성화
+                                        onTouchPending={() => {}} // 터치 선택 비활성화
+                                        onDragSelectionStart={() => {}} // 드래그 선택 비활성화
+                                        onDragSelectionMove={() => {}} // 드래그 선택 비활성화
+                                        onDragSelectionEnd={() => {}} // 드래그 선택 비활성화
+                                        isSelectionEnabled={false} // 선택 기능 완전 비활성화
                                         isDragSelecting={false}
                                         pendingTouchSlot={null}
-                                        selectedDates={meeting?.dates}    // 실제 날짜 배열 전달
-                                        pageStartDay={pageInfo.startDay}  // 페이지 시작 날짜 정보
-                                        onCellClick={handleCellClick}     // 셀 클릭 핸들러 추가
-                                        selectedCell={selectedCell}       // 선택된 셀 정보 전달
-                                        selectedCells={selectedCells}     // 연속 선택된 셀들 정보 전달
-                                        results={results}                  // 결과 데이터 전달
-                                        meeting={meeting}                  // 미팅 데이터 전달
-                                        dynamicStartTime={dynamicStartTime}  // 동적 시작 시간 전달
+                                        selectedDates={meeting?.dates} // 실제 날짜 배열 전달
+                                        pageStartDay={pageInfo.startDay} // 페이지 시작 날짜 정보
+                                        onCellClick={handleCellClick} // 셀 클릭 핸들러 추가
+                                        selectedCell={selectedCell} // 선택된 셀 정보 전달
+                                        selectedCells={selectedCells} // 연속 선택된 셀들 정보 전달
+                                        results={results} // 결과 데이터 전달
+                                        meeting={meeting} // 미팅 데이터 전달
+                                        dynamicStartTime={dynamicStartTime} // 동적 시작 시간 전달
                                     />
                                 </div>
                             </div>
@@ -442,4 +514,4 @@ export default function TimetableResult({
             </div>
         </div>
     );
-} 
+}
