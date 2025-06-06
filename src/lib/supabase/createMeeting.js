@@ -3,58 +3,6 @@
 import { supabase } from "../supabase.js";
 
 /**
- * 8자 랜덤 Meeting ID 생성 (Base62: 0-9, a-z, A-Z)
- * 62^8 = 약 218조 개의 조합으로 충돌 확률 매우 낮음
- * @returns {string} 8자 랜덤 문자열 (예: "k2J4h9X1")
- */
-function generateMeetingId() {
-    const chars =
-        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let result = "";
-    for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
-
-/**
- * Meeting ID 중복 확인
- * @param {string} meetingId - 확인할 meeting ID
- * @returns {Promise<boolean>} 중복이면 true, 사용 가능하면 false
- */
-async function checkMeetingIdExists(meetingId) {
-    const { data, error } = await supabase
-        .from("meeting")
-        .select("meetingid")
-        .eq("meetingid", meetingId)
-        .single();
-
-    // 데이터가 있으면 중복, 없으면 사용 가능
-    return data !== null;
-}
-
-/**
- * 중복되지 않는 고유한 Meeting ID 생성
- * @returns {Promise<string>} 고유한 8자 meeting ID
- */
-async function generateUniqueMeetingId() {
-    let meetingId;
-    let attempts = 0;
-    const maxAttempts = 10; // 최대 10번 시도
-
-    do {
-        meetingId = generateMeetingId();
-        attempts++;
-
-        if (attempts >= maxAttempts) {
-            throw new Error("고유한 Meeting ID 생성에 실패했습니다.");
-        }
-    } while (await checkMeetingIdExists(meetingId));
-
-    return meetingId;
-}
-
-/**
  * 새로운 미팅 생성
  * @param {Object} meetingData - 미팅 데이터
  * @param {string} meetingData.title - 미팅 제목
@@ -67,22 +15,16 @@ async function generateUniqueMeetingId() {
  */
 export async function createMeeting(meetingData) {
     try {
-        // 고유한 8자 랜덤 Meeting ID 생성
-        const meetingId = await generateUniqueMeetingId();
-
-        console.log("Generated Meeting ID:", meetingId);
-
         // dates 배열 정렬 (오름차순)
         const sortedDates = [...meetingData.dates].sort((a, b) => {
             return new Date(a).getTime() - new Date(b).getTime();
         });
 
-        // meeting 테이블에 미팅 생성 (custom meetingid 사용)
+        // meeting 테이블에 미팅 생성 (createdAt은 DEFAULT NOW()로 자동 설정)
         const { data: meeting, error: meetingError } = await supabase
             .from("meeting")
             .insert([
                 {
-                    meetingid: meetingId,
                     title: meetingData.title,
                     dates: sortedDates,
                     selectable_time: meetingData.selectableTime,
