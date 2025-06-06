@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Comeet - 모임 일정 조율 서비스
 
-## Getting Started
+Comeet은 여러 사람의 일정을 효율적으로 조율할 수 있는 웹 기반 모임 일정 조율 서비스입니다.
 
-First, run the development server:
+## 주요 기능
+
+-   🗓️ 직관적인 타임테이블 인터페이스
+-   👥 다수의 참여자 일정 조율
+-   📱 모바일 친화적인 UI/UX
+-   🎯 드래그 앤 드롭으로 쉽게 가능 시간 선택
+-   🔍 확대/축소 및 스와이프로 편리한 탐색
+-   📊 가능한 시간대 자동 분석 및 추천
+
+## 기술 스택
+
+-   **Frontend**: Next.js, React, Tailwind CSS
+-   **Backend**: Node.js, Supabase
+
+## 시작하기
+
+### 필수 조건
+
+-   Node.js 18.0.0 이상
+-   npm 또는 yarn
+
+### 설치
+
+1. 저장소 클론
+
+```bash
+git clone https://github.com/your-username/comeet.git
+cd comeet
+```
+
+2. 의존성 설치
+
+```bash
+npm install
+# 또는
+yarn install
+```
+
+3. 개발 서버 실행
 
 ```bash
 npm run dev
-# or
+# 또는
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 사용 방법
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. 새로운 모임 생성
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+    - 모임 이름과 기간 설정
+    - 참여자 초대 링크 생성
 
-## Learn More
+2. 일정 선택
 
-To learn more about Next.js, take a look at the following resources:
+    - 타임테이블에서 가능한 시간대 드래그로 선택
+    - 확대/축소로 상세 시간 확인
+    - 좌우 스와이프로 다른 날짜 확인
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. 결과 확인
+    - 모든 참여자의 가능한 시간대 자동 분석
+    - 최적의 모임 시간 추천
