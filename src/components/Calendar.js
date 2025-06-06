@@ -126,7 +126,17 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     // ===== 터치 관련 함수들 =====
     // 터치 시작 처리 (즉시 선택 및 드래그 준비) - TimetableSelect와 동일
     const handleTouchStart = (dayIndex, event) => {
+        console.log(
+            "handleTouchStart called with dayIndex:",
+            dayIndex,
+            "isSelectionEnabled:",
+            isSelectionEnabled
+        );
+
         if (!isSelectionEnabled || dayIndex === null) {
+            console.log(
+                "Touch start blocked - selection disabled or dayIndex null"
+            );
             return;
         }
 
@@ -137,6 +147,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         setPendingTouchDay(dayIndex);
         setHasMoved(false);
 
+        console.log("About to call handleTapSelection from handleTouchStart");
         // 터치 시작 시 즉시 선택 처리 (자연스러운 UX)
         handleTapSelection(dayIndex);
     };
@@ -338,8 +349,16 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - TimetableSelect와 동일
     const handleTapSelection = (day) => {
+        console.log(
+            "handleTapSelection called with day:",
+            day,
+            "isSelectionEnabled:",
+            isSelectionEnabled
+        );
+
         // 빠른 응답을 위해 필수 체크만 수행
         if (!isSelectionEnabled || day === null) {
+            console.log("Selection disabled or day is null");
             return;
         }
 
@@ -347,11 +366,24 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const dateStr = formatDate(year, month, day);
         const willAdd = !selectedDates.includes(dateStr);
 
+        console.log(
+            "dateStr:",
+            dateStr,
+            "willAdd:",
+            willAdd,
+            "currentDates:",
+            selectedDates
+        );
+
         if (willAdd && selectedDates.length >= MAX_SELECTED_DATES) {
             showToast("날짜 선택은 최대 31일까지 가능합니다.");
             return;
         }
 
+        console.log(
+            "Calling onChange with:",
+            toggleDate(dateStr, selectedDates)
+        );
         onChange(toggleDate(dateStr, selectedDates));
     };
 
