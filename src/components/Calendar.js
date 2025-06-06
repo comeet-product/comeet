@@ -13,8 +13,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const [toastMessage, setToastMessage] = useState("");
     const dateSelectorRef = useRef(null);
 
-    // 터치 처리 상태 (간소화)
+    // 터치 처리 상태 (TimetableSelect 방식 재적용)
+    const [pendingTouchDay, setPendingTouchDay] = useState(null);
+    const [touchTimeout, setTouchTimeout] = useState(null);
     const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+    const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
+    const TAP_THRESHOLD = 80; // 80ms 후 탭으로 확정
     const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그
 
     // 날짜 선택 관련 유틸리티 함수
@@ -59,48 +63,17 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const isTouch = event.type === "touchstart";
         const isMouseDrag = event.buttons && event.type === "mousedown";
 
-        // 터치 이벤트 처리 - 간단하게 변경
+        // 터치 이벤트 처리 - TimetableSelect 방식
         if (isTouch) {
             const touch = event.touches[0];
             setTouchStartPos({ x: touch.clientX, y: touch.clientY });
-
-            // 터치 시작 시 즉시 선택/해제 (타이머 없이)
-            const dateStr = formatDate(year, month, day);
-            const willAdd = !selectedDates.includes(dateStr);
-
-            // 31일 제한 체크
-            if (willAdd && selectedDates.length >= 31) {
-                setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 1500);
-                return;
-            }
-
-            // 즉시 토글
-            onChange(toggleDate(dateStr, selectedDates));
-
-            // 드래그 상태 설정 (범위 선택을 위해)
-            setDragState({
-                isDragging: false, // 일단 false로 시작
-                startDay: day,
-                isAddMode: willAdd,
-            });
+            handleTouchPending(day);
             return;
         }
 
         // 마우스 이벤트 처리 (기존 로직)
         if (!isMouseDrag) {
-            const dateStr = formatDate(year, month, day);
-            const willAdd = !selectedDates.includes(dateStr);
-
-            if (willAdd && selectedDates.length >= 31) {
-                setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 1500);
-                return;
-            }
-
-            onChange(toggleDate(dateStr, selectedDates));
+            handleTapSelection(day);
             return;
         }
 
@@ -125,23 +98,6 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     };
 
     const handleDragEnter = (day, event) => {
-        // 터치 이벤트의 경우는 드래그 엔터 대신 터치 무브에서 처리
-        if (event?.type === "touchmove") {
-            // 터치 좌표로부터 해당 날짜 찾기
-            const touch = event.touches[0];
-            const element = document.elementFromPoint(
-                touch.clientX,
-                touch.clientY
-            );
-            const dayElement = element?.closest("[data-day]");
-            if (dayElement) {
-                const touchDay = parseInt(dayElement.getAttribute("data-day"));
-                if (touchDay && touchDay !== day) {
-                    day = touchDay;
-                }
-            }
-        }
-
         if (
             !dragState.isDragging ||
             day === null ||
@@ -149,57 +105,62 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         )
             return;
 
-        const start = Math.min(dragState.startDay, day);
-        const end = Math.max(dragState.startDay, day);
+        // 수평/수직 드래그 모두 지원 - 직사각형 범위 선택
+        const startDay = dragState.startDay;
+        const endDay = day;
 
-        let potentialNewDates = new Set(selectedDates);
+        // 날짜를 행(주)과 열(요일)로 변환
+        const getRowCol = (dayNum) => {
+            const dayIndex = dayNum - 1; // 0-based index
+            const totalCells = startingDay + daysInMonth;
+            let cellIndex = startingDay + dayIndex;
+            return {
+                row: Math.floor(cellIndex / 7),
+                col: cellIndex % 7,
+            };
+        };
 
-        // 드래그 범위의 모든 날짜를 잠재적 새 날짜에 추가/제거
-        for (let i = start; i <= end; i++) {
-            const dateStr = formatDate(year, month, i);
-            if (dragState.isAddMode) {
-                potentialNewDates.add(dateStr);
-            } else {
-                potentialNewDates.delete(dateStr);
+        const startPos = getRowCol(startDay);
+        const endPos = getRowCol(endDay);
+
+        // 직사각형 범위 계산
+        const minRow = Math.min(startPos.row, endPos.row);
+        const maxRow = Math.max(startPos.row, endPos.row);
+        const minCol = Math.min(startPos.col, endPos.col);
+        const maxCol = Math.max(startPos.col, endPos.col);
+
+        let currentDragDates = new Set(selectedDates);
+
+        // 직사각형 범위 내의 모든 유효한 날짜 처리
+        for (let row = minRow; row <= maxRow; row++) {
+            for (let col = minCol; col <= maxCol; col++) {
+                const cellIndex = row * 7 + col;
+                const dayNum = cellIndex - startingDay + 1;
+
+                // 유효한 날짜인지 확인
+                if (dayNum >= 1 && dayNum <= daysInMonth) {
+                    const dateStr = formatDate(year, month, dayNum);
+
+                    if (dragState.isAddMode) {
+                        currentDragDates.add(dateStr);
+                    } else {
+                        currentDragDates.delete(dateStr);
+                    }
+                }
             }
         }
 
-        // 31일 초과 체크
-        if (potentialNewDates.size > 31) {
+        // 31일 제한 체크
+        if (currentDragDates.size > 31) {
             setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
             setShowToast(true);
-            setTimeout(() => {
-                setShowToast(false);
-            }, 1500);
+            setTimeout(() => setShowToast(false), 1500);
             handleDragEnd(); // 드래그 종료
-            return; // 변경 적용 안 함
+            return;
         }
 
-        // 31일 초과하지 않으면 변경 사항 반영
-        // 드래그 중 실시간 선택 상태 변경
-        let currentDragDates = new Set(selectedDates);
-        for (let i = 1; i <= daysInMonth; i++) {
-            // 현재 달의 모든 날짜를 순회
-            const dateStr = formatDate(year, month, i);
-            const isWithinDragRange = i >= start && i <= end;
-
-            if (dragState.isAddMode) {
-                // 드래그 범위 내 날짜는 추가
-                if (isWithinDragRange) {
-                    currentDragDates.add(dateStr);
-                }
-            } else {
-                // 드래그 범위 내 날짜는 제거
-                if (isWithinDragRange) {
-                    currentDragDates.delete(dateStr);
-                }
-            }
-        }
-
-        // 31일 제한을 통과한 경우에만 onChange 호출
-        if (currentDragDates.size <= 31) {
-            onChange([...currentDragDates]);
-        }
+        // 변경사항 적용
+        onChange([...currentDragDates]);
     };
 
     const handleDragEnd = () => {
@@ -213,23 +174,23 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         // onChange([...selectedDates]); // 현재 selectedDates 상태로 업데이트
     };
 
-    // 터치 무브 핸들러 - 드래그 감지 (간단하게)
+    // 터치 무브 핸들러 - TimetableSelect 방식 (수평 드래그 허용)
     const handleTouchMove = (event) => {
-        if (!dragState.startDay) return;
+        if (!pendingTouchDay && !dragState.isDragging) return;
 
         const touch = event.touches[0];
         const dx = Math.abs(touch.clientX - touchStartPos.x);
         const dy = Math.abs(touch.clientY - touchStartPos.y);
         const moved = dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD;
 
-        // 움직임이 감지되면 드래그 모드로 전환
-        if (moved && !dragState.isDragging) {
-            setDragState((prev) => ({ ...prev, isDragging: true }));
+        // 움직임이 감지되면 드래그 시작
+        if (moved && pendingTouchDay && !dragState.isDragging) {
+            handleDragSelectionStart(pendingTouchDay);
         }
 
         // 드래그 중이면 범위 선택 처리
         if (dragState.isDragging) {
-            event.preventDefault(); // 스크롤 방지
+            event.preventDefault(); // 페이지 스크롤 방지
             const element = document.elementFromPoint(
                 touch.clientX,
                 touch.clientY
@@ -245,18 +206,18 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         }
     };
 
-    // 터치 엔드 핸들러 (간단하게)
+    // 터치 엔드 핸들러 - TimetableSelect 방식
     const handleTouchEnd = () => {
+        // 대기 중인 터치 타이머 정리
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            setTouchTimeout(null);
+        }
+        setPendingTouchDay(null);
+
         // 드래그 중이었다면 종료
         if (dragState.isDragging) {
             handleDragEnd();
-        } else {
-            // 드래그가 아니었다면 상태만 초기화
-            setDragState({
-                isDragging: false,
-                startDay: null,
-                isAddMode: true,
-            });
         }
     };
 
@@ -276,8 +237,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         // cleanup 함수에서 터치 타이머 정리
         return () => {
             document.removeEventListener("mouseup", handleClickOutside);
+
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+            }
         };
-    }, []);
+    }, [touchTimeout]);
 
     // 달력 관련 계산
     const year = currentDate.getFullYear();
@@ -334,6 +299,80 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const handleMonthSelect = (selectedMonth) => {
         setCurrentDate(new Date(year, selectedMonth, 1));
         setIsDateSelectorOpen(false);
+    };
+
+    // 터치 대기 시작 (TimetableSelect 방식)
+    const handleTouchPending = (day) => {
+        if (!isSelectionEnabled || day === null) return;
+
+        // 기존 타이머가 있다면 클리어
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+        }
+
+        // 대기 중인 날짜 설정
+        setPendingTouchDay(day);
+
+        // 일정 시간 후 개별 선택으로 확정 (드래그가 시작되지 않았을 때만)
+        const timer = setTimeout(() => {
+            if (!dragState.isDragging) {
+                handleTapSelection(day);
+            }
+            setPendingTouchDay(null);
+        }, TAP_THRESHOLD);
+
+        setTouchTimeout(timer);
+    };
+
+    // 드래그 선택 시작 (움직임이 감지되었을 때)
+    const handleDragSelectionStart = (day) => {
+        if (!isSelectionEnabled || day === null) return;
+
+        // 대기 중인 터치 취소
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            setTouchTimeout(null);
+        }
+        setPendingTouchDay(null);
+
+        const dateStr = formatDate(year, month, day);
+        const isAddMode = !selectedDates.includes(dateStr);
+
+        // 31일 제한 체크
+        if (isAddMode && selectedDates.length >= 31) {
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 1500);
+            return;
+        }
+
+        setDragState({
+            isDragging: true,
+            startDay: day,
+            isAddMode,
+        });
+
+        // 시작 날짜 즉시 선택/해제
+        onChange(toggleDate(dateStr, selectedDates, isAddMode));
+    };
+
+    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
+    const handleTapSelection = (day) => {
+        if (!isSelectionEnabled || day === null) return;
+
+        const dateStr = formatDate(year, month, day);
+        const willAdd = !selectedDates.includes(dateStr);
+
+        // 31일 제한 체크
+        if (willAdd && selectedDates.length >= 31) {
+            setToastMessage("날짜 선택은 최대 31일까지 가능합니다.");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 1500);
+            return;
+        }
+
+        // 날짜 토글
+        onChange(toggleDate(dateStr, selectedDates));
     };
 
     return (
@@ -447,6 +486,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                 {/* Days Grid */}
                 <div
                     className="grid grid-cols-7 gap-2 w-full"
+                    style={{ touchAction: "none" }}
                     onMouseLeave={handleDragEnd}
                     onMouseUp={handleDragEnd}
                     onTouchMove={handleTouchMove}
