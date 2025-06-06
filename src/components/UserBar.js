@@ -1,9 +1,21 @@
 'use client';
 
 import React from "react";
+import Avatar from "boring-avatars";
 import Select from "./select";
 
-const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }) => {
+const USERS = [
+    { id: 1, name: "서윤" },
+    { id: 2, name: "예진" },
+    { id: 3, name: "재완" },
+    { id: 4, name: "기훈" },
+    { id: 5, name: "기훈" },
+    { id: 6, name: "기훈" },
+    { id: 7, name: "기훈" },
+    { id: 8, name: "기훈" },
+];
+
+const UserItem = ({ id, name, isAddButton = false, isSelected, onClick, onAddClick }) => {
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
@@ -69,11 +81,14 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }
                     onClick();
                 }}
             >
-                <img
-                    src="/profile.png"
-                    alt={`${name}의 프로필`}
-                    className="w-8 h-8 rounded-full mb-1"
-                />
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden">
+                    <Avatar
+                        name={id.toString()}
+                        variant="beam"
+                        size={32}
+                        colors={["#3674B5", "#86ACD3", "#B6C9DC", "#D7E3F0", "#F5F5F5"]}
+                    />
+                </div>
                 <span className="text-xs font-normal tracking-[0.06px] text-gray-800 whitespace-nowrap">
                     {name}
                 </span>
@@ -81,17 +96,6 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }
         </div>
     );
 };
-
-const USERS = [
-    { id: 1, name: "서윤" },
-    { id: 2, name: "예진" },
-    { id: 3, name: "재완" },
-    { id: 4, name: "기훈" },
-    { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
-];
 
 const UserBar = () => {
     const [selectedUser, setSelectedUser] = React.useState(null);
@@ -137,7 +141,8 @@ const UserBar = () => {
                     >
                         {users.map((user) => (
                             <UserItem 
-                                key={user.id} 
+                                key={user.id}
+                                id={user.id}
                                 name={user.name} 
                                 isSelected={selectedUser === user.id}
                                 onClick={() => handleUserClick(user.id)}
