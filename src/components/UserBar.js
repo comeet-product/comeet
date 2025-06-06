@@ -77,7 +77,7 @@ const UserItem = ({
             <div className="flex-shrink-0" style={{ width: '60px' }}>
                 <button 
                     onClick={isEditMode ? onEditClick : onAddClick}
-                    className="w-full flex flex-col items-center group py-1 px-2"
+                    className="w-full flex flex-col items-center mb-4 group py-1 px-2"
                 >
                     <img
                         src={
@@ -541,7 +541,11 @@ const UserBar = ({
                              }} />
                     </div>
 
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0" style={{
+                        display: 'flex',
+                        alignItems: 'flex-start', // 상단 정렬로 UserItem들과 맞춤
+                        paddingTop: '8px', // UserItem 컨테이너와 동일한 상단 패딩
+                    }}>
                         <UserItem
                             isAddButton
                             isEditMode={selectedUser !== null}
