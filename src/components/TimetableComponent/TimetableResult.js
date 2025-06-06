@@ -27,7 +27,7 @@ export default function TimetableResult() {
     // 페이지 계산 로직
     const getMaxPageIndex = () => {
         if (TOTAL_DAYS <= VISIBLE_DAY_COUNT) return 0;
-        return Math.ceil((TOTAL_DAYS - VISIBLE_DAY_COUNT) / VISIBLE_DAY_COUNT);
+        return Math.ceil(TOTAL_DAYS / VISIBLE_DAY_COUNT) - 1;
     };
 
     const getCurrentStartDay = () => {
@@ -40,7 +40,34 @@ export default function TimetableResult() {
         return endDay - startDay;
     };
 
-    // 페이지 이동 함수
+    // 각 페이지별 컬럼 정보 계산
+    const getPageInfo = (pageIndex) => {
+        const startDay = pageIndex * VISIBLE_DAY_COUNT;
+        const endDay = Math.min(startDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
+        const dayCount = endDay - startDay;
+        
+        return {
+            startDay,
+            endDay,
+            dayCount,
+            // 7개 미만이면 컨테이너 너비를 채우도록 조정
+            shouldStretch: dayCount < VISIBLE_DAY_COUNT
+        };
+    };
+
+    // 날짜 계산 헬퍼 함수
+    const getStartDateForPage = (pageIndex) => {
+        const baseDate = new Date('2024-05-19'); // 기준 날짜
+        const pageInfo = getPageInfo(pageIndex);
+        const targetDate = new Date(baseDate);
+        targetDate.setDate(baseDate.getDate() + pageInfo.startDay);
+        
+        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(targetDate.getDate()).padStart(2, '0');
+        return `${month}/${day}`;
+    };
+
+    // 페이지 이동 함수 - 캐러셀 효과 적용
     const goToPage = (pageIndex) => {
         const maxPage = getMaxPageIndex();
         const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
@@ -49,22 +76,10 @@ export default function TimetableResult() {
             setIsAnimating(true);
             setCurrentPageIndex(targetPage);
             
-            const timetable = timetableRef.current;
-            if (timetable) {
-                const startDay = targetPage * VISIBLE_DAY_COUNT;
-                const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
-                const targetScrollLeft = startDay * columnWidth;
-                
-                timetable.scrollTo({
-                    left: targetScrollLeft,
-                    behavior: 'smooth'
-                });
-                
-                // 애니메이션 완료 후 상태 초기화
-                setTimeout(() => {
-                    setIsAnimating(false);
-                }, 300);
-            }
+            // 애니메이션 완료 후 상태 초기화
+            setTimeout(() => {
+                setIsAnimating(false);
+            }, 300);
         }
     };
 
@@ -89,7 +104,7 @@ export default function TimetableResult() {
         setIsSwiping(false);
     };
 
-    // 스와이프 이벤트 처리
+    // 스와이프 이벤트 처리 (터치, 마우스, 트랙패드 지원)
     useEffect(() => {
         const container = containerRef.current;
         
@@ -147,6 +162,26 @@ export default function TimetableResult() {
             }
         };
 
+        // 트랙패드 스와이프 지원 (데스크톱 wheel 이벤트)
+        const handleWheel = (e) => {
+            if (!isAnimating && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                // 수평 스크롤이 수직 스크롤보다 클 때만 처리
+                const threshold = 30; // 트랙패드 민감도 조절
+                
+                if (Math.abs(e.deltaX) > threshold) {
+                    e.preventDefault();
+                    
+                    if (e.deltaX > 0) {
+                        // 왼쪽으로 스크롤 (다음 페이지)
+                        goToPage(currentPageIndex + 1);
+                    } else {
+                        // 오른쪽으로 스크롤 (이전 페이지)
+                        goToPage(currentPageIndex - 1);
+                    }
+                }
+            }
+        };
+
         // 이벤트 리스너 등록
         container.addEventListener('touchstart', handleTouchStart, { passive: false });
         container.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -156,6 +191,9 @@ export default function TimetableResult() {
         container.addEventListener('mousedown', handleMouseDown);
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mouseup', handleMouseUp);
+        
+        // 트랙패드 이벤트 (데스크톱 지원)
+        container.addEventListener('wheel', handleWheel, { passive: false });
 
         return () => {
             container.removeEventListener('touchstart', handleTouchStart);
@@ -164,16 +202,54 @@ export default function TimetableResult() {
             container.removeEventListener('mousedown', handleMouseDown);
             container.removeEventListener('mousemove', handleMouseMove);
             container.removeEventListener('mouseup', handleMouseUp);
+            container.removeEventListener('wheel', handleWheel);
         };
     }, [touchStart, touchEnd, isSwiping, isAnimating, currentPageIndex]); // 필요한 의존성만 포함
 
-    // 테이블 스타일 계산 - 페이지네이션 방식
-    const getTableStyle = () => {
-        const currentVisibleDays = getCurrentVisibleDays();
+    // 모든 페이지 렌더링을 위한 스타일 계산
+    const getAllPages = () => {
+        const pages = [];
+        const maxPage = getMaxPageIndex();
+        
+        for (let i = 0; i <= maxPage; i++) {
+            pages.push(getPageInfo(i));
+        }
+        
+        return pages;
+    };
+
+    const getCarouselContainerStyle = () => {
+        const pages = getAllPages();
+        const totalWidth = pages.length * 100; // 각 페이지는 100% 너비
+        
         return {
-            width: `${100 * (currentVisibleDays / VISIBLE_DAY_COUNT)}%`,
-            minWidth: '100%'
+            width: `${totalWidth}%`,
+            display: 'flex',
+            transform: `translateX(-${currentPageIndex * (100 / pages.length)}%)`,
+            transition: isAnimating ? 'transform 0.3s ease-out' : 'none'
         };
+    };
+
+    const getPageStyle = (pageInfo) => {
+        const pages = getAllPages();
+        return {
+            width: `${100 / pages.length}%`, // 각 페이지는 전체 컨테이너의 동일한 비율
+            flexShrink: 0
+        };
+    };
+
+    const getTimetableStyle = (pageInfo) => {
+        if (pageInfo.shouldStretch) {
+            // 7개 미만이면 컨테이너 너비를 채우도록 100%
+            return {
+                width: '100%'
+            };
+        } else {
+            // 7개일 때는 고정 너비
+            return {
+                width: `${100 * (VISIBLE_DAY_COUNT / VISIBLE_DAY_COUNT)}%` // 100%
+            };
+        }
     };
 
     return (
@@ -202,27 +278,37 @@ export default function TimetableResult() {
                         touchAction: 'pan-y',  // 세로 스크롤만 허용, 가로는 스와이프로 처리
                         userSelect: 'none',  // 텍스트 선택 방지
                         WebkitUserSelect: 'none',
-                        minHeight: '100px'
+                        minHeight: '100px',
+                        width: '100%'
                     }}
                 >
-                    <div style={getTableStyle()}>
-                        <Timetable 
-                            dayCount={getCurrentVisibleDays()}  // 현재 페이지의 visible days만 표시
-                            halfCount={16}
-                            startDate="05/19"
-                            hasDateHeaderAbove={false}
-                            selectedSlots={new Set()}  // 빈 Set으로 선택 없음 표시
-                            onSlotSelection={() => {}}  // 터치 선택 비활성화
-                            onTapSelection={() => {}}   // 터치 선택 비활성화
-                            onTouchPending={() => {}}   // 터치 선택 비활성화
-                            onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
-                            onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
-                            onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
-                            isSelectionEnabled={false}       // 선택 기능 완전 비활성화
-                            isDragSelecting={false}
-                            pendingTouchSlot={null}
-                            pageStartDay={getCurrentStartDay()}  // 페이지 시작 날짜 전달 (만약 Timetable이 지원한다면)
-                        />
+                    <div style={getCarouselContainerStyle()}>
+                        {getAllPages().map((pageInfo, pageIndex) => (
+                            <div 
+                                key={pageIndex}
+                                style={getPageStyle(pageInfo)}
+                            >
+                                <div style={getTimetableStyle(pageInfo)}>
+                                    <Timetable 
+                                        dayCount={pageInfo.dayCount}
+                                        halfCount={16}
+                                        startDate={getStartDateForPage(pageIndex)}
+                                        hasDateHeaderAbove={false}
+                                        selectedSlots={new Set()}  // 빈 Set으로 선택 없음 표시
+                                        onSlotSelection={() => {}}  // 터치 선택 비활성화
+                                        onTapSelection={() => {}}   // 터치 선택 비활성화
+                                        onTouchPending={() => {}}   // 터치 선택 비활성화
+                                        onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
+                                        onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
+                                        onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
+                                        isSelectionEnabled={false}       // 선택 기능 완전 비활성화
+                                        isDragSelecting={false}
+                                        pendingTouchSlot={null}
+                                        pageStartDay={pageInfo.startDay}  // 페이지 시작 날짜 정보
+                                    />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
