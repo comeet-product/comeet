@@ -27,11 +27,9 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
     
     // 터치 처리 상태
     const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
-    const [touchTimeout, setTouchTimeout] = useState(null);
-    const [dragTimeout, setDragTimeout] = useState(null);
-    const TAP_THRESHOLD = 30; // 30ms 후 탭으로 확정 (더 빠른 탭 인식)
-    const DRAG_THRESHOLD = 150; // 150ms 후 드래그 모드로 전환 (더 긴 터치 요구)
-    const MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
+    const [touchStartPosition, setTouchStartPosition] = useState(null);
+    const [hasMoved, setHasMoved] = useState(false);
+    const VERTICAL_DRAG_THRESHOLD = 8; // 8px 이상 수직 이동하면 드래그로 인식
     
     // Refs for DOM elements
     const containerRef = useRef(null);
@@ -251,34 +249,118 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         }
     };
 
-    // 터치 대기 시작 (드래그 가능성을 고려하여 지연 선택)
-    const handleTouchPending = (dayIndex, halfIndex) => {
+    // 터치 시작 처리 (즉시 선택 및 드래그 준비)
+    const handleTouchStart = (dayIndex, halfIndex, clientY) => {
         if (!isSelectionEnabled) {
             return;
         }
 
-        // 기존 타이머들이 있다면 클리어
-        if (touchTimeout) {
-            clearTimeout(touchTimeout);
-        }
-        if (dragTimeout) {
-            clearTimeout(dragTimeout);
-        }
-
-        // 대기 중인 슬롯 설정
+        // 터치 시작 위치와 대기 슬롯 설정
+        setTouchStartPosition({ y: clientY });
         setPendingTouchSlot({ dayIndex, halfIndex });
+        setHasMoved(false);
 
-        // 즉시 탭 선택 처리 (더 빠른 반응을 위해)
-        if (!isDragSelecting) {
-            handleTapSelection(dayIndex, halfIndex);
+        // 터치 시작 시 즉시 선택 처리 (자연스러운 UX)
+        handleTapSelection(dayIndex, halfIndex);
+    };
+
+    // 터치 이동 처리 (수직 드래그 감지)
+    const handleTouchMove = (dayIndex, halfIndex, clientY) => {
+        if (!touchStartPosition || !pendingTouchSlot || !isSelectionEnabled) {
+            return;
         }
 
-        // 드래그 준비 모드로 전환하기 위한 타이머만 설정
-        const dragTimer = setTimeout(() => {
-            setPendingTouchSlot(null);
-        }, DRAG_THRESHOLD);
+        const verticalDistance = clientY - touchStartPosition.y;
+        
+        // 수직 아래 방향으로 임계값 이상 이동했을 때 드래그 시작
+        if (!hasMoved && verticalDistance >= VERTICAL_DRAG_THRESHOLD) {
+            setHasMoved(true);
+            
+            // 드래그 선택 시작
+            if (!isDragSelecting) {
+                handleDragSelectionStart(pendingTouchSlot.dayIndex, pendingTouchSlot.halfIndex);
+            }
+        }
 
-        setDragTimeout(dragTimer);
+        // 드래그 중이면 현재 위치까지 선택 확장
+        if (isDragSelecting && hasMoved) {
+            handleDragSelectionMove(dayIndex, halfIndex);
+        }
+    };
+
+    // 터치 종료 처리 (드래그가 아니면 이미 선택된 상태 유지)
+    const handleTouchEnd = () => {
+        if (!isSelectionEnabled) {
+            return;
+        }
+
+        // 드래그 선택 중이었다면 종료
+        if (isDragSelecting) {
+            handleDragSelectionEnd();
+        }
+
+        // 드래그가 아니었다면 이미 터치 시작 시점에 선택 처리되었으므로 추가 처리 없음
+
+        // 상태 초기화
+        setTouchStartPosition(null);
+        setPendingTouchSlot(null);
+        setHasMoved(false);
+    };
+
+    // 마우스 시작 처리 (터치와 동일한 로직)
+    const handleMouseStart = (dayIndex, halfIndex, clientY) => {
+        if (!isSelectionEnabled) {
+            return;
+        }
+
+        // 마우스 시작 위치와 대기 슬롯 설정
+        setTouchStartPosition({ y: clientY });
+        setPendingTouchSlot({ dayIndex, halfIndex });
+        setHasMoved(false);
+
+        // 마우스 시작 시 즉시 선택 처리
+        handleTapSelection(dayIndex, halfIndex);
+    };
+
+    // 마우스 이동 처리 (터치와 동일한 로직)
+    const handleMouseMove = (dayIndex, halfIndex, clientY) => {
+        if (!touchStartPosition || !pendingTouchSlot || !isSelectionEnabled) {
+            return;
+        }
+
+        const verticalDistance = clientY - touchStartPosition.y;
+        
+        // 수직 아래 방향으로 임계값 이상 이동했을 때 드래그 시작
+        if (!hasMoved && verticalDistance >= VERTICAL_DRAG_THRESHOLD) {
+            setHasMoved(true);
+            
+            // 드래그 선택 시작
+            if (!isDragSelecting) {
+                handleDragSelectionStart(pendingTouchSlot.dayIndex, pendingTouchSlot.halfIndex);
+            }
+        }
+
+        // 드래그 중이면 현재 위치까지 선택 확장
+        if (isDragSelecting && hasMoved) {
+            handleDragSelectionMove(dayIndex, halfIndex);
+        }
+    };
+
+    // 마우스 종료 처리 (터치와 동일한 로직)
+    const handleMouseEnd = () => {
+        if (!isSelectionEnabled) {
+            return;
+        }
+
+        // 드래그 선택 중이었다면 종료
+        if (isDragSelecting) {
+            handleDragSelectionEnd();
+        }
+
+        // 상태 초기화
+        setTouchStartPosition(null);
+        setPendingTouchSlot(null);
+        setHasMoved(false);
     };
 
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
@@ -350,27 +432,16 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
 
     // 드래그 선택 시작 (움직임이 감지되었을 때)
     const handleDragSelectionStart = (dayIndex, halfIndex) => {
-        // 드래그 시작 시에는 빠른 응답을 위해 최소한의 체크만
         if (!isSelectionEnabled) {
             return;
         }
-
-        // 대기 중인 터치 및 드래그 타이머 취소 (즉시)
-        if (touchTimeout) {
-            clearTimeout(touchTimeout);
-            setTouchTimeout(null);
-        }
-        if (dragTimeout) {
-            clearTimeout(dragTimeout);
-            setDragTimeout(null);
-        }
-        setPendingTouchSlot(null);
 
         const slotId = `${dayIndex}-${halfIndex}`;
         const isCurrentlySelected = selectedSlots.has(slotId);
         
         // 현재 슬롯의 선택 상태에 따라 드래그 모드 결정
-        const mode = isCurrentlySelected ? 'deselect' : 'select';
+        // 터치 시작 시 이미 선택 처리되었으므로, 원래 상태를 확인하여 드래그 모드 결정
+        const mode = isCurrentlySelected ? 'select' : 'deselect';
         
         setIsDragSelecting(true);
         setDragStartSlot({ dayIndex, halfIndex });
@@ -415,17 +486,6 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
 
     // 드래그 선택 종료
     const handleDragSelectionEnd = () => {
-        // 대기 중인 터치 및 드래그 타이머도 정리
-        if (touchTimeout) {
-            clearTimeout(touchTimeout);
-            setTouchTimeout(null);
-        }
-        if (dragTimeout) {
-            clearTimeout(dragTimeout);
-            setDragTimeout(null);
-        }
-        
-        setPendingTouchSlot(null);
         setIsDragSelecting(false);
         setDragStartSlot(null);
         setDragMode('select');
@@ -645,27 +705,11 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
             }
         };
 
-        const handleTouchEnd = (e) => {
-            // 드래그 선택 종료
-            if (isDragSelecting) {
-                handleDragSelectionEnd();
-            }
-            
-            // 대기 중인 터치 및 드래그 타이머 정리
-            if (touchTimeout) {
-                clearTimeout(touchTimeout);
-                setTouchTimeout(null);
-            }
-            if (dragTimeout) {
-                clearTimeout(dragTimeout);
-                setDragTimeout(null);
-            }
-            
+        const handleGlobalTouchEnd = (e) => {
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
                 // 즉시 상태 초기화 (지연 없이)
                 setIsSelectionEnabled(true);
-                setPendingTouchSlot(null);
                 
                 handleScrollEnd();
             }
@@ -695,7 +739,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         container.addEventListener('wheel', handleWheel, { passive: false, capture: true });
         container.addEventListener('touchstart', handleTouchStart, { passive: true });
         container.addEventListener('touchmove', handleTouchMove, { passive: false }); // 스크롤 제어를 위해 preventDefault 필요
-        container.addEventListener('touchend', handleTouchEnd);
+        container.addEventListener('touchend', handleGlobalTouchEnd);
         timetable.addEventListener('scroll', handleTableScroll);
 
         // 전역 마우스 업 이벤트 등록
@@ -711,21 +755,13 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
                 clearTimeout(scrollTimeoutRef.current);
             }
             
-            // 터치 및 드래그 타이머 정리
-            if (touchTimeout) {
-                clearTimeout(touchTimeout);
-            }
-            if (dragTimeout) {
-                clearTimeout(dragTimeout);
-            }
-            
             container.removeEventListener('gesturestart', handleGestureStart, true);
             container.removeEventListener('gesturechange', handleGestureChange, true);
             container.removeEventListener('gestureend', handleGestureEnd, true);
             container.removeEventListener('wheel', handleWheel, true);
             container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchmove', handleTouchMove);
-            container.removeEventListener('touchend', handleTouchEnd);
+            container.removeEventListener('touchend', handleGlobalTouchEnd);
             if (timetable) {
                 timetable.removeEventListener('scroll', handleTableScroll);
             }
@@ -737,7 +773,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
             document.removeEventListener('gesturechange', preventDefaults, true);
             document.removeEventListener('gestureend', preventDefaults, true);
         };
-    }, [visibleDayCount, isDragSelecting, touchTimeout, dragTimeout, isSelectionEnabled]);
+    }, [visibleDayCount, isDragSelecting, isSelectionEnabled, touchStartPosition, pendingTouchSlot, hasMoved]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
@@ -785,7 +821,12 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
                             selectedSlots={selectedSlots}
                             onSlotSelection={handleSlotSelection}
                             onTapSelection={handleTapSelection}
-                            onTouchPending={handleTouchPending}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                            onMouseStart={handleMouseStart}
+                            onMouseMove={handleMouseMove}
+                            onMouseEnd={handleMouseEnd}
                             onDragSelectionStart={handleDragSelectionStart}
                             onDragSelectionMove={handleDragSelectionMove}
                             onDragSelectionEnd={handleDragSelectionEnd}

@@ -10,7 +10,12 @@ export default function Timetable({
   slotOpacities = null,
   onSlotSelection, 
   onTapSelection,
-  onTouchPending,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+  onMouseStart,
+  onMouseMove,
+  onMouseEnd,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
@@ -42,18 +47,19 @@ export default function Timetable({
         slotOpacities={slotOpacities}
         onSlotSelection={onSlotSelection}
         onTapSelection={onTapSelection}
-        onTouchPending={onTouchPending}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseStart={onMouseStart}
+        onMouseMove={onMouseMove}
+        onMouseEnd={onMouseEnd}
         onDragSelectionStart={onDragSelectionStart}
         onDragSelectionMove={onDragSelectionMove}
         onDragSelectionEnd={onDragSelectionEnd}
         isSelectionEnabled={isSelectionEnabled}
         isDragSelecting={isDragSelecting}
         pendingTouchSlot={pendingTouchSlot}
-        touchStartTime={touchStartTime}
-        setTouchStartTime={setTouchStartTime}
-        tapThreshold={tapThreshold}
-        touchMoved={touchMoved}
-        moveThreshold={moveThreshold}
+        verticalDragThreshold={verticalDragThreshold}
       />
     </div>
   );

@@ -1,22 +1,23 @@
 'use client';
 
 import React from "react";
+import Avatar from "boring-avatars";
 
-const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }) => {
+const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick }) => {
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
                 <button 
-                    onClick={onAddClick}
+                    onClick={isEditMode ? onEditClick : onAddClick}
                     className="flex flex-col items-center group py-1 px-2"
                 >
                     <img
-                        src="/addprofile.png"
-                        alt="사용자 추가"
+                        src={isEditMode ? "/editProfile.svg" : "/addprofile.png"}
+                        alt={isEditMode ? "사용자 수정" : "사용자 추가"}
                         className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity"
                     />
                     <span className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity whitespace-nowrap">
-                        추가하기
+                        {isEditMode ? "수정하기" : "추가하기"}
                     </span>
                 </button>
             </div>
@@ -68,11 +69,14 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }
                     onClick();
                 }}
             >
-                <img
-                    src="/profile.png"
-                    alt={`${name}의 프로필`}
-                    className="w-8 h-8 rounded-full mb-1"
-                />
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden">
+                    <Avatar
+                        name={id.toString()}
+                        variant="beam"
+                        size={32}
+                        colors={["#3674B5", "#86ACD3", "#B6C9DC", "#D7E3F0", "#F5F5F5"]}
+                    />
+                </div>
                 <span className="text-xs font-normal tracking-[0.06px] text-gray-800 whitespace-nowrap">
                     {name}
                 </span>
@@ -91,8 +95,20 @@ const UserBar = ({ meetingId, users = [], selectedUser, onUserSelect, onShowSele
     };
 
     const handleAddClick = () => {
-        if (onShowSelect) {
-            onShowSelect();
+        setIsAddMode(true);
+    };
+
+    const handleEditClick = () => {
+        // 수정 로직은 일단 비워둠
+    };
+
+    const handleBack = (newName) => {
+        if (newName) {
+            const newUser = {
+                id: users.length + 1,
+                name: newName
+            };
+            setUsers(prev => [...prev, newUser]);
         }
     };
 
@@ -124,7 +140,9 @@ const UserBar = ({ meetingId, users = [], selectedUser, onUserSelect, onShowSele
                 <div className="flex-shrink-0">
                     <UserItem 
                         isAddButton 
+                        isEditMode={selectedUser !== null}
                         onAddClick={handleAddClick}
+                        onEditClick={handleEditClick}
                     />
                 </div>
             </div>

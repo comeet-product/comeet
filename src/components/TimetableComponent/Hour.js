@@ -10,18 +10,19 @@ export default function Hour({
   slotOpacities = null,
   onSlotSelection, 
   onTapSelection,
-  onTouchPending,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+  onMouseStart,
+  onMouseMove,
+  onMouseEnd,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  touchStartTime,
-  setTouchStartTime,
-  tapThreshold,
-  touchMoved,
-  moveThreshold
+  verticalDragThreshold
 }) {
   const topHalfIndex = hourIndex * 2;
   const bottomHalfIndex = hourIndex * 2 + 1;
@@ -39,18 +40,19 @@ export default function Hour({
           slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
-          onTouchPending={onTouchPending}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseStart={onMouseStart}
+          onMouseMove={onMouseMove}
+          onMouseEnd={onMouseEnd}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
-          touchStartTime={touchStartTime}
-          setTouchStartTime={setTouchStartTime}
-          tapThreshold={tapThreshold}
-          touchMoved={touchMoved}
-          moveThreshold={moveThreshold}
+          verticalDragThreshold={verticalDragThreshold}
         />
         <Half 
           dayIndex={dayIndex}
@@ -61,18 +63,19 @@ export default function Hour({
           slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
-          onTouchPending={onTouchPending}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseStart={onMouseStart}
+          onMouseMove={onMouseMove}
+          onMouseEnd={onMouseEnd}
           onDragSelectionStart={onDragSelectionStart}
           onDragSelectionMove={onDragSelectionMove}
           onDragSelectionEnd={onDragSelectionEnd}
           isSelectionEnabled={isSelectionEnabled}
           isDragSelecting={isDragSelecting}
           pendingTouchSlot={pendingTouchSlot}
-          touchStartTime={touchStartTime}
-          setTouchStartTime={setTouchStartTime}
-          tapThreshold={tapThreshold}
-          touchMoved={touchMoved}
-          moveThreshold={moveThreshold}
+          verticalDragThreshold={verticalDragThreshold}
         />
     </div>
   );

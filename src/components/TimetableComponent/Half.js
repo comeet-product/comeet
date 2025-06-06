@@ -14,18 +14,19 @@ export default function Half({
   slotOpacities = null,
   onSlotSelection,
   onTapSelection,
-  onTouchPending,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+  onMouseStart,
+  onMouseMove,
+  onMouseEnd,
   onDragSelectionStart,
   onDragSelectionMove,
   onDragSelectionEnd,
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  touchStartTime,
-  setTouchStartTime,
-  tapThreshold,
-  touchMoved,
-  moveThreshold
+  verticalDragThreshold
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
   const isSelected = selectedSlots?.has(slotId) || false;
@@ -155,44 +156,26 @@ export default function Half({
     
     const touch = e.touches[0];
     
-    // 터치 시작 위치와 시간 기록
-    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
-    setTouchStartTimestamp(Date.now());
-    setLocalTouchMoved(false);
-    
-    // 상위 컴포넌트 터치 시간 기록
-    if (setTouchStartTime) {
-      setTouchStartTime(Date.now());
-    }
-    
-    // 즉시 선택하지 않고 대기 (드래그 가능성을 위해)
-    if (onTouchPending) {
-      onTouchPending(dayIndex, halfIndex);
+    // 상위 컴포넌트의 터치 시작 핸들러 호출
+    if (onTouchStart) {
+      onTouchStart(dayIndex, halfIndex, touch.clientY);
     }
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMoveEvent = (e) => {
     // 터치가 하나일 때만 처리
     if (e.touches.length !== 1) {
       return;
     }
 
     const touch = e.touches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
-    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
     
-    // 움직임이 충분히 감지되면 localTouchMoved 설정
-    if ((deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) && !localTouchMoved) {
-      setLocalTouchMoved(true);
-      
-      // 세로 움직임이 가로 움직임보다 크면 드래그 선택 시작
-      if (deltaY >= deltaX && onDragSelectionStart && !isDragSelecting) {
-        onDragSelectionStart(dayIndex, halfIndex);
-        return;
-      }
+    // 상위 컴포넌트의 터치 이동 핸들러 호출
+    if (onTouchMove) {
+      onTouchMove(dayIndex, halfIndex, touch.clientY);
     }
     
-    // 이미 드래그 선택 중이면 드래그 이동 처리
+    // 이미 드래그 선택 중이면 드래그 이동도 처리
     if (isDragSelecting && onDragSelectionMove) {
       // 터치 포인트 아래의 엘리먼트 찾기
       const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -207,21 +190,49 @@ export default function Half({
     }
   };
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEndEvent = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // 드래그 선택이 진행 중이었다면 종료
-    if (isDragSelecting && onDragSelectionEnd) {
-      onDragSelectionEnd();
+    // 상위 컴포넌트의 터치 종료 핸들러 호출
+    if (onTouchEnd) {
+      onTouchEnd();
     }
+  };
+
+  // 마우스 이벤트 핸들러
+  const handleMouseDownEvent = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // 상태 초기화
-    setTimeout(() => {
-      setTouchStartPos({ x: 0, y: 0 });
-      setLocalTouchMoved(false);
-      setTouchStartTimestamp(0);
-    }, 50);
+    // 상위 컴포넌트의 마우스 시작 핸들러 호출
+    if (onMouseStart) {
+      onMouseStart(dayIndex, halfIndex, e.clientY);
+    }
+  };
+
+  const handleMouseMoveEvent = (e) => {
+    // 상위 컴포넌트의 마우스 이동 핸들러 호출
+    if (onMouseMove) {
+      onMouseMove(dayIndex, halfIndex, e.clientY);
+    }
+  };
+
+  const handleMouseEnterEvent = (e) => {
+    // 전역 드래그 중일 때만 드래그 이동 처리
+    if (isDragSelecting && onDragSelectionMove) {
+      onDragSelectionMove(dayIndex, halfIndex);
+    }
+  };
+
+  const handleMouseUpEvent = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 상위 컴포넌트의 마우스 종료 핸들러 호출
+    if (onMouseEnd) {
+      onMouseEnd();
+    }
   };
 
   return (
@@ -235,14 +246,13 @@ export default function Half({
       } ${
         backgroundStyle.className
       }`}
-      onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseUp={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDownEvent}
+      onMouseMove={handleMouseMoveEvent}
+      onMouseEnter={handleMouseEnterEvent}
+      onMouseUp={handleMouseUpEvent}
+      onTouchStart={handleTouchStartEvent}
+      onTouchMove={handleTouchMoveEvent}
+      onTouchEnd={handleTouchEndEvent}
       data-day-index={String(dayIndex)}
       data-half-index={String(halfIndex)}
       style={{
