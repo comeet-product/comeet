@@ -338,35 +338,29 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         );
     };
 
-    // 범위 내 날짜들 선택/해제 - Calendar.js 전용 (직사각형 선택)
+    // 범위 내 날짜들 선택/해제 - 연속 날짜 선택 (16일→26일 = 16~26일)
     const selectDatesInRange = (startDay, endDay) => {
         if (!startDay || !endDay) return;
 
-        const { startingDay, daysInMonth, year, month } = getCalendarData();
-        const startPos = getRowColFromDay(startDay, startingDay);
-        const endPos = getRowColFromDay(endDay, startingDay);
+        const { daysInMonth, year, month } = getCalendarData();
 
-        const minRow = Math.min(startPos.row, endPos.row);
-        const maxRow = Math.max(startPos.row, endPos.row);
-        const minCol = Math.min(startPos.col, endPos.col);
-        const maxCol = Math.max(startPos.col, endPos.col);
+        // 시작일과 끝일 정렬 (작은 값이 시작)
+        const minDay = Math.min(startDay, endDay);
+        const maxDay = Math.max(startDay, endDay);
+
+        console.log(`Selecting range: ${minDay} to ${maxDay}`);
 
         const newSelectedDates = new Set(localSelectedDates);
 
-        // 직사각형 범위의 모든 날짜 선택
-        for (let row = minRow; row <= maxRow; row++) {
-            for (let col = minCol; col <= maxCol; col++) {
-                const cellIndex = row * 7 + col;
-                const dayNum = cellIndex - startingDay + 1;
+        // 시작일부터 끝일까지 연속으로 선택
+        for (let dayNum = minDay; dayNum <= maxDay; dayNum++) {
+            if (dayNum >= 1 && dayNum <= daysInMonth) {
+                const dateStr = formatDate(year, month, dayNum);
 
-                if (dayNum >= 1 && dayNum <= daysInMonth) {
-                    const dateStr = formatDate(year, month, dayNum);
-
-                    if (dragMode === "select") {
-                        newSelectedDates.add(dateStr);
-                    } else {
-                        newSelectedDates.delete(dateStr);
-                    }
+                if (dragMode === "select") {
+                    newSelectedDates.add(dateStr);
+                } else {
+                    newSelectedDates.delete(dateStr);
                 }
             }
         }
