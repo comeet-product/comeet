@@ -227,7 +227,7 @@ export default function EditPage({ params }) {
             }
             
             if (result.success) {
-                alert(isEditMode ? '사용자 정보가 성공적으로 수정되었습니다.' : '가용성이 성공적으로 저장되었습니다.');
+                alert(isEditMode ? '사용자 정보가 성공적으로 수정되었습니다.' : '성공적으로 저장되었습니다.');
                 
                 // 수정 모드일 때는 수정한 사용자를 선택된 상태로 돌아가기
                 if (isEditMode && userId) {
