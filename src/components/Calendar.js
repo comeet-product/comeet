@@ -419,7 +419,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                     <div
                                         key={y}
                                         onClick={() => handleYearSelect(y)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                        className={`px-3 py-2 cursor-pointer transition-colors duration-200 ease-in-out hover:bg-[#3674B5]/10
                                             ${
                                                 y === year
                                                     ? "bg-[#3674B5]/20 text-[#3674B5]"
@@ -437,7 +437,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                     <div
                                         key={m}
                                         onClick={() => handleMonthSelect(index)}
-                                        className={`px-3 py-2 cursor-pointer hover:bg-[#3674B5]/10
+                                        className={`px-3 py-2 cursor-pointer transition-colors duration-200 ease-in-out hover:bg-[#3674B5]/10
                                             ${
                                                 index === month
                                                     ? "bg-[#3674B5]/20 text-[#3674B5]"
@@ -456,13 +456,13 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                 <div className="flex items-center gap-6">
                     <span
                         onClick={handlePrevMonth}
-                        className="w-5 h-5 flex items-center justify-center cursor-pointer text-[#3674B5] hover:text-[#3674B5]/80 font-medium"
+                        className="w-5 h-5 flex items-center justify-center cursor-pointer text-[#3674B5] transition-colors duration-150 ease-in-out hover:text-[#3674B5]/80 font-medium"
                     >
                         &lt;
                     </span>
                     <span
                         onClick={handleNextMonth}
-                        className="w-5 h-5 flex items-center justify-center cursor-pointer text-[#3674B5] hover:text-[#3674B5]/80 font-medium"
+                        className="w-5 h-5 flex items-center justify-center cursor-pointer text-[#3674B5] transition-colors duration-150 ease-in-out hover:text-[#3674B5]/80 font-medium"
                     >
                         &gt;
                     </span>
@@ -496,6 +496,12 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                         const dateStr = day
                             ? formatDate(year, month, day)
                             : null;
+                        const isPendingTouch = pendingTouchDay === day;
+                        const isSelected =
+                            day !== null && selectedDates?.includes(dateStr);
+                        const isDragStartDay =
+                            dragState.isDragging && dragState.startDay === day;
+
                         return (
                             <div
                                 key={index}
@@ -505,10 +511,11 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                 onTouchStart={(e) => handleDragStart(day, e)}
                                 className={`
                                     w-full aspect-square flex items-center justify-center select-none text-base
+                                    transition-colors duration-200 ease-in-out
                                     ${
                                         day === null
                                             ? "invisible"
-                                            : "cursor-pointer"
+                                            : "cursor-pointer active:scale-95 transform transition-transform duration-100"
                                     }
                                     ${
                                         day !== null &&
@@ -518,18 +525,30 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                             : "text-black"
                                     }
                                     ${
-                                        day !== null &&
-                                        selectedDates?.includes(dateStr)
+                                        isSelected
                                             ? "bg-blue-100 rounded-full"
                                             : ""
                                     }
                                     ${
+                                        isDragStartDay
+                                            ? "bg-blue-200 rounded-full ring-2 ring-blue-300 ring-opacity-50"
+                                            : ""
+                                    }
+                                    ${
+                                        isPendingTouch && !isSelected
+                                            ? "bg-blue-50 rounded-full"
+                                            : ""
+                                    }
+                                    ${
                                         day !== null &&
-                                        !selectedDates.includes(dateStr) &&
+                                        !isSelected &&
+                                        !isPendingTouch &&
+                                        !isDragStartDay &&
                                         (!isCurrentMonth || day !== today)
                                             ? "md:hover:bg-gray-200 rounded-full"
                                             : ""
-                                    }                                `}
+                                    }
+                                `}
                             >
                                 {day}
                             </div>
