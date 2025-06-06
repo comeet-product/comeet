@@ -1,7 +1,6 @@
 'use client';
 
 import React from "react";
-import Select from "./select";
 
 const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }) => {
     if (isAddButton) {
@@ -83,19 +82,18 @@ const UserItem = ({ name, isAddButton = false, isSelected, onClick, onAddClick }
 };
 
 const USERS = [
-    { id: 1, name: "서윤" },
-    { id: 2, name: "예진" },
-    { id: 3, name: "재완" },
-    { id: 4, name: "기훈" },
-    { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
+    { id: 1, name: "신서윤" },
+    { id: 2, name: "한예진" },
+    { id: 3, name: "김재완" },
+    { id: 4, name: "박기훈" },
+    { id: 5, name: "박기훈" },
+    { id: 6, name: "박기훈" },
+    { id: 7, name: "박기훈" },
+    { id: 8, name: "박기훈" },
 ];
 
-const UserBar = () => {
+const UserBar = ({ meetingId, onShowSelect }) => {
     const [selectedUser, setSelectedUser] = React.useState(null);
-    const [isAddMode, setIsAddMode] = React.useState(false);
     const [users, setUsers] = React.useState(USERS);
     const containerRef = React.useRef(null);
 
@@ -104,23 +102,10 @@ const UserBar = () => {
     };
 
     const handleAddClick = () => {
-        setIsAddMode(true);
-    };
-
-    const handleBack = (newName) => {
-        if (newName) {
-            const newUser = {
-                id: users.length + 1,
-                name: newName
-            };
-            setUsers(prev => [...prev, newUser]);
+        if (onShowSelect) {
+            onShowSelect();
         }
-        setIsAddMode(false);
     };
-
-    if (isAddMode) {
-        return <Select onBack={handleBack} />;
-    }
 
     return (
         <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">

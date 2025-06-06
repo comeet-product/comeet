@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import { useRouter } from "next/navigation";
 import { getMeeting } from "@/lib/supabase/getMeeting";
 import { updateMeetingTitle } from "@/lib/supabase/updateMeeting";
 import Title from "@/components/Title";
@@ -10,6 +11,7 @@ import UserBar from "@/components/UserBar";
 
 export default function MeetingPage({ params }) {
     const [meeting, setMeeting] = useState(null);
+    const router = useRouter();
     const unwrappedParams = use(params);
 
     useEffect(() => {
@@ -30,6 +32,10 @@ export default function MeetingPage({ params }) {
         } else {
             alert(result.message);
         }
+    };
+
+    const handleShowSelect = () => {
+        router.push(`/${unwrappedParams.id}/edit`);
     };
 
     if (!meeting) return <div>Loading...</div>;
@@ -55,7 +61,7 @@ export default function MeetingPage({ params }) {
                 </div>
             </div>
             <div className="flex-shrink-0">
-                <UserBar meetingId={unwrappedParams.id} />
+                <UserBar meetingId={unwrappedParams.id} onShowSelect={handleShowSelect} />
             </div>
         </div>
     );
