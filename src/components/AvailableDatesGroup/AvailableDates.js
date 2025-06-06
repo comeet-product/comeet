@@ -15,7 +15,7 @@ export default function AvailableDates({
             <h2 className="text-base font-medium text-gray-900">
                 {memberCount}명이 모두 가능한 날짜
             </h2>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                 {availableDates.map((item, index) => (
                     <AvailableDate
                         key={index}
