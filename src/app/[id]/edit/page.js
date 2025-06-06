@@ -9,6 +9,9 @@ import {
 import { getMeeting } from "@/lib/supabase/getMeeting";
 import { getUser } from "@/lib/supabase/getUsers";
 import { getUserAvailability } from "@/lib/supabase/getUserAvailability";
+import { deleteUser } from "@/lib/supabase/deleteUser";
+import { calculateResults } from "@/lib/supabase/calculateResults";
+import { calculateRecommendations } from "@/lib/supabase/calculateRecommendations";
 import Title from "@/components/Title";
 import TimetableSelect from "@/components/TimetableComponent/TimetableSelect";
 import Button from "@/components/Button";
@@ -30,11 +33,13 @@ export default function EditPage({ params }) {
     const [isVerifying, setIsVerifying] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
-    const [showTutorial, setShowTutorial] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
     const unwrappedParams = use(params);
     const userId = searchParams.get("userId");
+    
+    // Tutorial은 '추가하기'(userId가 없을 때)에서만 표시
+    const [showTutorial, setShowTutorial] = useState(!userId);
 
     // availability를 시간 슬롯으로 변환하는 함수
     const convertAvailabilityToSlots = (availability, meeting) => {
@@ -327,25 +332,37 @@ export default function EditPage({ params }) {
             }
 
             if (result.success) {
-                const successMessage = isEditMode
-                    ? "사용자 정보가 성공적으로 수정되었습니다."
+                console.log('User data saved successfully, now calculating results and recommendations...');
+                
+                // 결과 및 추천 다시 계산
+                try {
+                    // 결과 계산
+                    const calculateResult = await calculateResults(unwrappedParams.id);
+                    if (calculateResult.success) {
+                        console.log('Results calculated successfully after user update');
+                    } else {
+                        console.error('Failed to calculate results after user update:', calculateResult.message);
+                    }
+
+                    // 추천 계산
+                    const recResult = await calculateRecommendations(unwrappedParams.id);
+                    if (recResult.success) {
+                        console.log('Recommendations calculated successfully after user update');
+                    } else {
+                        console.error('Failed to calculate recommendations after user update:', recResult.message);
+                    }
+                } catch (calcError) {
+                    console.error('Error calculating results/recommendations after user update:', calcError);
+                }
+                
+                const successMessage = isEditMode 
+                    ? '사용자 정보가 성공적으로 수정되었습니다.' 
                     : `${name.trim()}님이 성공적으로 추가되었습니다.`;
                 alert(successMessage);
-                console.log("Success! Redirecting to main page...");
-
-                // 수정 모드일 때는 수정한 사용자를 선택된 상태로 돌아가기
-                if (isEditMode && userId) {
-                    router.push(
-                        `/${unwrappedParams.id}?selectedUser=${userId}&scrollTo=result`
-                    );
-                } else if (result.data && result.data.userid) {
-                    // 새 사용자 추가일 때는 새로 생성된 사용자를 선택된 상태로 돌아가기
-                    router.push(
-                        `/${unwrappedParams.id}?selectedUser=${result.data.userid}&scrollTo=result`
-                    );
-                } else {
-                    router.push(`/${unwrappedParams.id}`);
-                }
+                console.log('Success! Redirecting to main page...');
+                
+                // 메인 페이지로 돌아가기 (쿼리 파라미터 없이)
+                router.push(`/${unwrappedParams.id}`);
             } else {
                 alert(result.message);
             }
@@ -404,28 +421,23 @@ export default function EditPage({ params }) {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-80 mx-4">
                     <div className="flex items-center justify-center mb-6 relative">
-                        <button
-                            onClick={handleVerificationBack}
-                            className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
-                            disabled={isVerifying}
-                        >
-                            <svg
-                                width="30"
-                                height="30"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                            >
-                                <path d="M15 18l-6-6 6-6" />
-                            </svg>
-                        </button>
                         <h2 className="text-lg text-black font-medium">
                             비밀번호 확인
                         </h2>
+                        <button
+                            onClick={handleVerificationBack}
+                            className="absolute right-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
+                            disabled={isVerifying}
+                        >
+                            <img 
+                                src="/xmark.png" 
+                                alt="닫기"
+                                className="w-3 h-3 object-contain"
+                            />
+                        </button>
                     </div>
-
-                    <div className="mb-4">
+                    
+                    <div className="mb-2 h-10">
                         <Input
                             type="password"
                             value={verificationPassword}
@@ -434,7 +446,7 @@ export default function EditPage({ params }) {
                             }
                             placeholder="비밀번호를 입력하세요"
                             disabled={isVerifying}
-                            className="text-base h-12"
+                            className="text-base"
                         />
                     </div>
 
@@ -468,90 +480,70 @@ export default function EditPage({ params }) {
                     className="absolute left-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-main"
                     disabled={isSubmitting}
                 >
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                    >
-                        <path d="M19 12H5M12 19l-7-7 7-7" />
-                    </svg>
+                    <img 
+                        src="/chevron.left.png" 
+                        alt="뒤로가기"
+                        className="w-5 h-5 object-contain"
+                    />
                 </button>
                 <Title link={false} editable={false}>
                     {meeting.title}
                 </Title>
             </div>
-
-            <div className="flex-1">
-                <TimetableSelect
-                    selectedSlots={selectedSlots}
-                    onSlotsChange={setSelectedSlots}
-                    meeting={meeting}
-                />
-            </div>
-
-            <div>
-                <form
-                    onSubmit={handleSubmit}
-                    className="flex gap-3 w-full items-stretch"
-                >
-                    <div className="flex-1 flex flex-col gap-2">
-                        <div className="h-10">
-                            <Input
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="이름을 입력하세요"
-                                onCheckDuplicate={() => false}
-                                disabled={isSubmitting}
-                                className="text-sm"
-                            />
-                        </div>
-
-                        {/* 새 사용자 추가 또는 기존 비밀번호가 있고 확인된 경우 - 비밀번호 입력 표시 */}
-                        {(!isEditMode ||
-                            (hasExistingPassword && isVerified)) && (
+            <div className="flex flex-col px-5 gap-6">
+                <div className="flex-1">
+                    <TimetableSelect 
+                        selectedSlots={selectedSlots}
+                        onSlotsChange={setSelectedSlots}
+                        meeting={meeting}
+                    />
+                </div>
+                
+                <div>
+                    <form onSubmit={handleSubmit} className="flex gap-3 w-full items-stretch">
+                        <div className="flex-1 flex flex-col gap-2">
                             <div className="h-10">
                                 <Input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
-                                    placeholder={
-                                        !isEditMode
-                                            ? "비밀번호 (선택)"
-                                            : "새 비밀번호 (변경 안 하려면 비워두세요)"
-                                    }
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="이름을 입력하세요"
+                                    onCheckDuplicate={() => false}
                                     disabled={isSubmitting}
-                                    className="text-sm"
+                                    className="text-base"
                                 />
                             </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center">
-                        <Button
-                            size="small"
-                            onClick={handleSubmit}
-                            disabled={
-                                !name.trim() ||
-                                selectedSlots.size === 0 ||
-                                isSubmitting
-                            }
-                            className="whitespace-nowrap px-4 text-sm h-full"
-                        >
-                            {isSubmitting
-                                ? isEditMode
-                                    ? "수정 중..."
-                                    : "저장 중..."
-                                : isEditMode
-                                ? "완료"
-                                : "저장"}
-                        </Button>
-                    </div>
-                </form>
+                            
+                            {/* 새 사용자 추가 또는 기존 비밀번호가 있고 확인된 경우 - 비밀번호 입력 표시 */}
+                            {(!isEditMode || (hasExistingPassword && isVerified)) && (
+                                <div className="h-10">
+                                    <Input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder={
+                                            !isEditMode 
+                                                ? "비밀번호 (선택)" 
+                                                : "새 비밀번호 (변경 안 하려면 비워두세요)"
+                                        }
+                                        disabled={isSubmitting}
+                                        className="text-base"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="flex items-center">
+                            <Button 
+                                size="small"
+                                onClick={handleSubmit}
+                                disabled={!name.trim() || selectedSlots.size === 0 || isSubmitting}
+                                className="whitespace-nowrap px-4 text-sm h-full"
+                            >
+                                {isSubmitting ? (isEditMode ? '수정 중...' : '저장 중...') : (isEditMode ? '완료' : '저장')}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

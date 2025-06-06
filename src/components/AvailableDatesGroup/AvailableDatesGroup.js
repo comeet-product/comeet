@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getRecommendations } from "@/lib/supabase/getRecommendations";
 import AvailableDates from "./AvailableDates";
 
-export default function AvailableDatesGroup({ meetingId, refreshKey, onRecommendationClick }) {
+export default function AvailableDatesGroup({ meetingId, refreshKey, onRecommendationClick, selectedRecommendation }) {
     const [recommendationsData, setRecommendationsData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -102,20 +102,21 @@ export default function AvailableDatesGroup({ meetingId, refreshKey, onRecommend
 
     if (recommendationsData.length === 0) {
         return (
-            <div className="flex justify-center items-center py-4">
-                <div className="text-gray-500">추천 가능한 시간이 없습니다.</div>
+            <div className="flex justify-center items-center">
+                <div className="text-gray-500 text-center text-sm">오른쪽 아래의 추가하기 버튼을 눌러<br/>가능한 시간을 입력해주세요.</div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col space-y-5">
+        <div className="flex flex-col gap-5">
             {recommendationsData.map((data, index) => (
                 <AvailableDates
                     key={index}
                     memberCount={data.memberCount}
                     availableDates={data.availableDates}
                     onRecommendationClick={handleRecommendationClick}
+                    selectedRecommendation={selectedRecommendation}
                 />
             ))}
         </div>

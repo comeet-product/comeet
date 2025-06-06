@@ -1,15 +1,21 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getMeeting } from "@/lib/supabase/getMeeting";
+import { deleteUser } from "@/lib/supabase/deleteUser";
+import { getUser } from "@/lib/supabase/getUsers";
+import { calculateResults } from "@/lib/supabase/calculateResults";
+import { calculateRecommendations } from "@/lib/supabase/calculateRecommendations";
 
 export default function Header() {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [currentUrl, setCurrentUrl] = useState("");
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         setCurrentUrl(window.location.href);
@@ -59,6 +65,82 @@ export default function Header() {
         }
     };
 
+    const handleDeleteClick = async () => {
+        if (!userId) {
+            alert('삭제할 사용자 정보를 찾을 수 없습니다.\n편집 모드에서만 삭제가 가능합니다.');
+            return;
+        }
+
+        if (isDeleting) {
+            return; // 이미 삭제 진행 중
+        }
+
+        try {
+            // 사용자 정보 먼저 가져오기 (이름 확인용)
+            const userResult = await getUser(userId);
+            const userName = userResult.success ? userResult.data.name : '사용자';
+            
+            const confirmMessage = `정말로 ${userName}님을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            setIsDeleting(true);
+            
+            const result = await deleteUser(userId);
+            
+            if (result.success) {
+                console.log('User deleted successfully, now calculating results and recommendations...');
+                
+                // 미팅 ID 추출
+                const pathSegments = pathname.split('/');
+                const meetingId = pathSegments[1];
+                
+                // 삭제 후 결과 및 추천 다시 계산
+                try {
+                    // 결과 계산
+                    const calculateResult = await calculateResults(meetingId);
+                    if (calculateResult.success) {
+                        console.log('Results calculated successfully after user deletion');
+                    } else {
+                        console.error('Failed to calculate results after user deletion:', calculateResult.message);
+                    }
+
+                    // 추천 계산
+                    const recResult = await calculateRecommendations(meetingId);
+                    if (recResult.success) {
+                        console.log('Recommendations calculated successfully after user deletion');
+                    } else {
+                        console.error('Failed to calculate recommendations after user deletion:', recResult.message);
+                    }
+                } catch (calcError) {
+                    console.error('Error calculating results/recommendations after user deletion:', calcError);
+                }
+                
+                setToastMessage(result.message);
+                setShowToast(true);
+                
+                setTimeout(() => {
+                    setShowToast(false);
+                    // 메인 페이지로 돌아가기
+                    router.push(`/${meetingId}`);
+                }, 1500);
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error('삭제 중 오류:', error);
+            alert('삭제 중 오류가 발생했습니다.');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // edit 화면인지 확인
+    const isEditPage = pathname.includes('/edit');
+    const userId = searchParams.get('userId');
+    const isEditingExistingUser = isEditPage && userId;
+
     return (
         <div className="px-6 py-4 flex justify-between items-center relative">
             {/* 왼쪽 로고 */}
@@ -77,14 +159,24 @@ export default function Header() {
                 onClick={handleLogoClick}
             />
             
-            {/* 오른쪽 공유 아이콘 */}
+            {/* 오른쪽 아이콘 - 기존 사용자 편집시에는 삭제, 나머지는 공유 */}
             <div className="relative">
-                <img
-                    src="/share_icon.png"
-                    className="w-6 h-6 object-contain cursor-pointer hover:opacity-70 transition-opacity"
-                    alt="공유"
-                    onClick={handleShareClick}
-                />
+                {isEditingExistingUser ? (
+                    <img
+                        src="/trash.png"
+                        className={`w-6 h-6 object-contain cursor-pointer hover:opacity-70 transition-opacity ${isDeleting ? 'opacity-50' : ''}`}
+                        alt="삭제"
+                        onClick={handleDeleteClick}
+                        style={{ pointerEvents: isDeleting ? 'none' : 'auto' }}
+                    />
+                ) : (
+                    <img
+                        src="/share_icon.png"
+                        className="w-6 h-6 object-contain cursor-pointer hover:opacity-70 transition-opacity"
+                        alt="공유"
+                        onClick={handleShareClick}
+                    />
+                )}
                 
                 {/* 토스트 메시지 */}
                 {showToast && (

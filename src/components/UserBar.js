@@ -1,25 +1,9 @@
-"use client";
+'use client';
 
 import React from "react";
 import Avatar from "boring-avatars";
 
-const UserItem = ({
-    id,
-    name,
-    isAddButton = false,
-    isEditMode = false,
-    isSelected,
-    onClick,
-    onAddClick,
-    onEditClick,
-    isScrolling,
-    isAvailable,
-    isHighlighted,
-    animationOrder,
-
-    scrollContainerRef
-
-}) => {
+const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick, isScrolling, isAvailable, isHighlighted, animationOrder }) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
     const [isDraggingScroll, setIsDraggingScroll] = React.useState(false);
@@ -29,7 +13,7 @@ const UserItem = ({
         touchStartRef.current = {
             x: e.touches[0].clientX,
             y: e.touches[0].clientY,
-            time: Date.now(),
+            time: Date.now()
         };
         setIsPressed(true);
         setIsDraggingScroll(false);
@@ -84,11 +68,9 @@ const UserItem = ({
                     className="w-full flex flex-col items-center mb-4 group py-1 px-2"
                 >
                     <img
-                        src={
-                            isEditMode ? "/editProfile.svg" : "/addprofile.png"
-                        }
+                        src={isEditMode ? "/editProfile.svg" : "/addprofile.png"}
                         alt={isEditMode ? "사용자 수정" : "사용자 추가"}
-                        className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity flex-shrink-0"
+                        className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity"
                     />
                     <div className="w-full min-w-0 flex justify-center">
                         <span
@@ -199,18 +181,12 @@ const UserItem = ({
                     onClick();
                 }}
             >
-                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden transition-all duration-300 ease-out flex-shrink-0">
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden">
                     <Avatar
                         name={id.toString()}
                         variant="beam"
                         size={32}
-                        colors={[
-                            "#3674B5",
-                            "#86ACD3",
-                            "#B6C9DC",
-                            "#D7E3F0",
-                            "#F5F5F5",
-                        ]}
+                        colors={["#3674B5", "#86ACD3", "#B6C9DC", "#D7E3F0", "#F5F5F5"]}
                     />
                 </div>
                 <div className="w-full min-w-0 flex justify-center">
@@ -235,50 +211,47 @@ const UserItem = ({
     );
 };
 
-const UserBar = ({
+const UserBar = ({ 
     meetingId,
     users = [],
     selectedUser = null,
     selectedCell = null,
     selectedCells = [],
+    selectedRecommendationMembers = null,
     onUserSelect = () => {},
     onShowSelect = () => {},
-    onUserAdded = () => {},
+    onUserAdded = () => {}
 }) => {
     const containerRef = React.useRef(null);
     const scrollContainerRef = React.useRef(null);
     const [isDragging, setIsDragging] = React.useState(false);
     const [dragStart, setDragStart] = React.useState({ x: 0, scrollLeft: 0 });
-
+    
     // 정렬 상태를 별도로 관리
     const [lastSortState, setLastSortState] = React.useState(null);
 
     // 현재 활성 셀이 있는지 확인 (단일 셀 선택 또는 연속 셀 선택)
-    const hasActiveCell =
-        selectedCell || (selectedCells && selectedCells.length > 0);
+    const hasActiveCell = selectedCell || (selectedCells && selectedCells.length > 0);
 
     // 선택된 셀에 따라 사용자들을 정렬하고 상태를 설정
     const processedUsers = React.useMemo(() => {
         // 새로운 셀이 선택되었을 때만 정렬 상태 업데이트
-        if (
-            (selectedCell && selectedCell !== lastSortState?.selectedCell) ||
-            (selectedCells &&
-                selectedCells.length > 0 &&
-                JSON.stringify(selectedCells) !==
-                    JSON.stringify(lastSortState?.selectedCells))
-        ) {
+        if ((selectedCell && selectedCell !== lastSortState?.selectedCell) || 
+            (selectedCells && selectedCells.length > 0 && JSON.stringify(selectedCells) !== JSON.stringify(lastSortState?.selectedCells)) ||
+            (selectedRecommendationMembers && JSON.stringify(selectedRecommendationMembers) !== JSON.stringify(lastSortState?.selectedRecommendationMembers))) {
+            
             // 단일 셀 선택의 경우
             if (selectedCell) {
                 const availableMembers = selectedCell.members || [];
-                console.log("Selected cell members:", availableMembers);
-                console.log("All users:", users);
+                console.log('Selected cell members:', availableMembers);
+                console.log('All users:', users);
 
-                const processedList = users.map((user) => {
+                const processedList = users.map(user => {
                     const isAvailable = availableMembers.includes(user.name);
                     return {
                         ...user,
                         available: isAvailable,
-                        highlighted: isAvailable,
+                        highlighted: isAvailable
                     };
                 });
 
@@ -293,74 +266,110 @@ const UserBar = ({
                 setLastSortState({
                     selectedCell: selectedCell,
                     selectedCells: selectedCells,
-                    sortedUsers: sortedList,
+                    selectedRecommendationMembers: selectedRecommendationMembers,
+                    sortedUsers: sortedList
                 });
 
                 return sortedList;
             }
-            // 연속 셀 선택의 경우 (selectedCells)
+            // 연속 셀 선택의 경우 (selectedCells) - 추천에서 온 경우
             else if (selectedCells && selectedCells.length > 0) {
-                // 연속 셀의 경우 모든 사용자를 하이라이트 처리
-                const processedList = users.map((user) => ({
-                    ...user,
-                    available: true,
-                    highlighted: true,
-                }));
+                // 추천에서 온 경우 selectedRecommendationMembers 사용
+                if (selectedRecommendationMembers && Array.isArray(selectedRecommendationMembers)) {
+                    console.log('Selected recommendation members:', selectedRecommendationMembers);
+                    console.log('All users:', users);
 
-                setLastSortState({
-                    selectedCell: selectedCell,
-                    selectedCells: selectedCells,
-                    sortedUsers: processedList,
-                });
+                    const processedList = users.map(user => {
+                        const isAvailable = selectedRecommendationMembers.includes(user.name);
+                        return {
+                            ...user,
+                            available: isAvailable,
+                            highlighted: isAvailable
+                        };
+                    });
 
-                return processedList;
+                    // 가능한 사용자들을 먼저, 불가능한 사용자들을 뒤에 정렬
+                    const sortedList = processedList.sort((a, b) => {
+                        if (a.available && !b.available) return -1;
+                        if (!a.available && b.available) return 1;
+                        return 0;
+                    });
+
+                    setLastSortState({
+                        selectedCell: selectedCell,
+                        selectedCells: selectedCells,
+                        selectedRecommendationMembers: selectedRecommendationMembers,
+                        sortedUsers: sortedList
+                    });
+
+                    return sortedList;
+                } else {
+                    // 추천이 아닌 일반적인 연속 셀 선택의 경우 모든 사용자를 하이라이트
+                    const processedList = users.map(user => ({
+                        ...user,
+                        available: true,
+                        highlighted: true
+                    }));
+
+                    setLastSortState({
+                        selectedCell: selectedCell,
+                        selectedCells: selectedCells,
+                        selectedRecommendationMembers: selectedRecommendationMembers,
+                        sortedUsers: processedList
+                    });
+
+                    return processedList;
+                }
             }
         }
 
         // 이전에 정렬된 상태가 있으면 정렬 순서는 유지하되, 하이라이트는 현재 상태에 따라 결정
         if (lastSortState && lastSortState.sortedUsers) {
-            return lastSortState.sortedUsers
-                .map((user) => {
-                    const updatedUser = users.find(
-                        (u) => u.userid === user.userid
-                    );
-                    if (!updatedUser) return null; // 삭제된 사용자
-
-                    // 하이라이트는 현재 선택 상태에 따라 결정
-                    let highlighted = false;
-                    let available = true;
-
-                    if (selectedCell) {
-                        // 단일 셀이 선택된 경우
-                        const availableMembers = selectedCell.members || [];
-                        available = availableMembers.includes(user.name);
+            return lastSortState.sortedUsers.map(user => {
+                const updatedUser = users.find(u => u.userid === user.userid);
+                if (!updatedUser) return null; // 삭제된 사용자
+                
+                // 하이라이트는 현재 선택 상태에 따라 결정
+                let highlighted = false;
+                let available = true;
+                
+                if (selectedCell) {
+                    // 단일 셀이 선택된 경우
+                    const availableMembers = selectedCell.members || [];
+                    available = availableMembers.includes(user.name);
+                    highlighted = available;
+                } else if (selectedCells && selectedCells.length > 0) {
+                    // 연속 셀이 선택된 경우
+                    if (selectedRecommendationMembers && Array.isArray(selectedRecommendationMembers)) {
+                        // 추천에서 온 경우
+                        available = selectedRecommendationMembers.includes(user.name);
                         highlighted = available;
-                    } else if (selectedCells && selectedCells.length > 0) {
-                        // 연속 셀이 선택된 경우
+                    } else {
+                        // 일반적인 연속 셀 선택의 경우
                         highlighted = true;
                         available = true;
-                    } else {
-                        // 아무것도 선택되지 않은 경우
-                        highlighted = false;
-                        available = true;
                     }
-
-                    return {
-                        ...updatedUser,
-                        available: available,
-                        highlighted: highlighted,
-                    };
-                })
-                .filter((user) => user !== null); // 삭제된 사용자 제거
+                } else {
+                    // 아무것도 선택되지 않은 경우
+                    highlighted = false;
+                    available = true;
+                }
+                
+                return {
+                    ...updatedUser,
+                    available: available,
+                    highlighted: highlighted
+                };
+            }).filter(user => user !== null); // 삭제된 사용자 제거
         }
 
         // 아직 정렬 상태가 없으면 원본 사용자 목록 반환
-        return users.map((user) => ({
+        return users.map(user => ({
             ...user,
             available: true,
-            highlighted: false,
+            highlighted: false
         }));
-    }, [users, selectedCell, selectedCells, lastSortState]);
+    }, [users, selectedCell, selectedCells, selectedRecommendationMembers, lastSortState]);
 
     const handleUserClick = (userId) => {
         onUserSelect(userId);
@@ -379,27 +388,23 @@ const UserBar = ({
     // 터치/마우스 드래그 스크롤 이벤트 핸들러
     const handleMouseDown = (e) => {
         // 터치 디바이스가 아닌 경우에만 마우스 드래그 적용
-        if (typeof window !== "undefined" && "ontouchstart" in window) return;
-
+        if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
+        
         setIsDragging(true);
         const scrollContainer = scrollContainerRef.current;
         if (scrollContainer) {
             setDragStart({
                 x: e.clientX,
-                scrollLeft: scrollContainer.scrollLeft,
+                scrollLeft: scrollContainer.scrollLeft
             });
-            scrollContainer.style.cursor = "grabbing";
-            scrollContainer.style.userSelect = "none";
+            scrollContainer.style.cursor = 'grabbing';
+            scrollContainer.style.userSelect = 'none';
         }
     };
 
     const handleMouseMove = (e) => {
-        if (
-            !isDragging ||
-            (typeof window !== "undefined" && "ontouchstart" in window)
-        )
-            return;
-
+        if (!isDragging || (typeof window !== 'undefined' && 'ontouchstart' in window)) return;
+        
         e.preventDefault();
         const scrollContainer = scrollContainerRef.current;
         if (scrollContainer) {
@@ -409,13 +414,13 @@ const UserBar = ({
     };
 
     const handleMouseUp = () => {
-        if (typeof window !== "undefined" && "ontouchstart" in window) return;
-
+        if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
+        
         setIsDragging(false);
         const scrollContainer = scrollContainerRef.current;
         if (scrollContainer) {
-            scrollContainer.style.cursor = "grab";
-            scrollContainer.style.userSelect = "";
+            scrollContainer.style.cursor = 'grab';
+            scrollContainer.style.userSelect = '';
         }
     };
 
@@ -424,11 +429,11 @@ const UserBar = ({
     // 전역 마우스 이벤트 리스너
     React.useEffect(() => {
         if (isDragging) {
-            document.addEventListener("mousemove", handleMouseMove);
-            document.addEventListener("mouseup", handleMouseUp);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
             return () => {
-                document.removeEventListener("mousemove", handleMouseMove);
-                document.removeEventListener("mouseup", handleMouseUp);
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
             };
         }
     }, [isDragging, dragStart]);
@@ -498,7 +503,7 @@ const UserBar = ({
                         border-radius: 10px !important;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
                     }
-
+                    
                     .custom-scrollbar::-webkit-scrollbar-thumb:active {
                         background: rgba(54, 116, 181, 0.9) !important;
                         box-shadow: 0 3px 6px rgba(0,0,0,0.2) !important;
@@ -524,7 +529,7 @@ const UserBar = ({
                          userSelect: "none",
                      }}>
                     <div className="relative flex-1 overflow-hidden">
-                        <div
+                        <div 
                             ref={scrollContainerRef}
                             className="flex items-center gap-2 custom-scrollbar"
                             style={{
@@ -559,10 +564,10 @@ const UserBar = ({
                             onMouseDown={handleMouseDown}
                         >
                             {processedUsers.map((user) => (
-                                <UserItem
+                                <UserItem 
                                     key={user.userid}
                                     id={user.userid}
-                                    name={user.name}
+                                    name={user.name} 
                                     isSelected={selectedUser === user.userid}
                                     onClick={() => handleUserClick(user.userid)}
                                     isAvailable={user.available}
