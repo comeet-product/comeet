@@ -82,16 +82,28 @@ export default function TimetableSelect({
         const startHHMM = meeting.selectable_time.start || 900; // 기본값 9:00 (900)
         const endHHMM = meeting.selectable_time.end || 1700; // 기본값 17:00 (1700)
 
+        // 시작 시간 분석 (HHMM 형식)
         const startHour = Math.floor(startHHMM / 100);
+        const startMinute = startHHMM % 100;
+
+        // 종료 시간 분석 (HHMM 형식)
         const endHour = Math.floor(endHHMM / 100);
         const endMinute = endHHMM % 100;
 
-        // 30분 단위로 계산
-        const totalHalfHours =
-            (endHour - startHour) * 2 + (endMinute >= 30 ? 1 : 0);
+        // 30분 단위로 정확한 시작 시간 계산
+        // 9시 30분 = 9.5, 10시 = 10.0
+        const startTimeInHalfHours =
+            startHour * 2 + (startMinute >= 30 ? 1 : 0);
+        const endTimeInHalfHours = endHour * 2 + (endMinute >= 30 ? 1 : 0);
+
+        // 실제 표시할 시작 시간 (30분 단위 고려)
+        const displayStartTime = startTimeInHalfHours / 2;
+
+        // 총 30분 단위 슬롯 개수
+        const totalHalfHours = endTimeInHalfHours - startTimeInHalfHours;
 
         return {
-            startTime: startHour,
+            startTime: displayStartTime, // 9.5 (9시 30분), 10.0 (10시)
             halfCount: totalHalfHours,
         };
     };
