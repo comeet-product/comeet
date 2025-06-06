@@ -21,3 +21,13 @@ body {
   background: var(--background);
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 }
+
+/* Hide scrollbar for webkit browsers */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+.overflow-x-auto {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
