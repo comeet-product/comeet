@@ -102,7 +102,7 @@ export async function calculateRecommendations(meetingId) {
             return {
                 success: true,
                 message: "가용성 데이터가 없습니다.",
-                data: { recommendations: [], results: [] },
+                data: { recommendations: [] },
             };
         }
 
@@ -132,32 +132,13 @@ export async function calculateRecommendations(meetingId) {
         // 4. 연속된 시간 블록 계산 (추천 시간)
         const recommendations = calculateContinuousBlocks(timeMap);
 
-        // 5. 모든 시간대별 결과 계산 (result 테이블용)
-        const results = [];
-        const { start, end, interval } = meetingData.selectable_time;
-
-        Object.entries(timeMap).forEach(([date, timeSlots]) => {
-            // 모든 가능한 시간대에 대해 결과 생성
-            for (let time = start; time < end; time += interval) {
-                const members = timeSlots[time] || [];
-                results.push({
-                    meeting_id: meetingId,
-                    date,
-                    start_time: time,
-                    members,
-                    number: members.length,
-                });
-            }
-        });
-
-        // 6. 기존 recommendation, result 데이터 삭제
+        // 5. 기존 recommendation 데이터 삭제
         await supabase
             .from("recommendation")
             .delete()
             .eq("meeting_id", meetingId);
-        await supabase.from("result").delete().eq("meeting_id", meetingId);
 
-        // 7. recommendation 테이블에 저장
+        // 6. recommendation 테이블에 저장
         if (recommendations.length > 0) {
             const recommendationData = recommendations
                 .slice(0, 10)
@@ -180,24 +161,11 @@ export async function calculateRecommendations(meetingId) {
             }
         }
 
-        // 8. result 테이블에 저장
-        if (results.length > 0) {
-            const { error: resultError } = await supabase
-                .from("result")
-                .insert(results);
-
-            if (resultError) {
-                console.error("Error saving results:", resultError);
-                throw resultError;
-            }
-        }
-
         return {
             success: true,
             message: "추천 시간이 성공적으로 계산되었습니다.",
             data: {
                 recommendations: recommendations.slice(0, 10),
-                totalResults: results.length,
             },
         };
     } catch (error) {

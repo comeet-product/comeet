@@ -137,12 +137,13 @@ const UserBar = () => {
         isTouch: false
     });
 
-    const handleUserClick = (id) => {
-        setSelectedUser(prev => prev === id ? null : id);
+    const handleUserClick = (userId) => {
+        setSelectedUser(userId);
     };
 
     const handleAddClick = () => {
-        setIsAddMode(true);
+        // 추가 기능 구현 예정
+        console.log('Add user clicked');
     };
 
     const handleEditClick = () => {
@@ -318,7 +319,7 @@ const UserBar = () => {
                     >
                         {users.map((user) => (
                             <UserItem 
-                                key={user.id}
+                                key={user.id} 
                                 id={user.id}
                                 name={user.name} 
                                 isSelected={selectedUser === user.id}
