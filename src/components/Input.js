@@ -20,7 +20,7 @@ const Input = ({ value, onChange, placeholder, className = "", onCheckDuplicate 
                 value={value}
                 onChange={handleChange}
                 placeholder={placeholder}
-                className="w-full h-full px-3 border border-main/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-main focus:border-main"
+                className="w-full h-full px-3 border border-main/50 text-black rounded-lg focus:outline-none focus:ring-1 focus:ring-main focus:border-main"
             />
         </div>
     );
