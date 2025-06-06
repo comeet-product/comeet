@@ -134,7 +134,8 @@ const UserBar = () => {
         touchStartY: 0,
         touchStartTime: 0,
         hasMoved: false,
-        isTouch: false
+        isTouch: false,
+        scrollTimeout: null
     });
 
     const handleUserClick = (userId) => {
@@ -211,7 +212,7 @@ const UserBar = () => {
             if (scrollStateRef.current.hasMoved) {
                 setTimeout(() => {
                     setIsScrolling(false);
-                }, 100);
+                }, 800); // 터치와 동일하게 800ms로 설정
             } else {
                 setIsScrolling(false);
             }
@@ -261,10 +262,10 @@ const UserBar = () => {
         if (!scrollStateRef.current.hasMoved && touchDuration < 200) {
             setIsScrolling(false);
         } else if (scrollStateRef.current.hasMoved) {
-            // 스크롤이 끝난 후 짧은 딜레이로 클릭 재활성화
+            // 스크롤이 끝난 후 지연시간을 늘려서 스크롤바가 조금 더 오래 보이게 함
             setTimeout(() => {
                 setIsScrolling(false);
-            }, 50);
+            }, 800); // 800ms로 증가하여 사용자가 스크롤바를 더 오래 볼 수 있게 함
         } else {
             setIsScrolling(false);
         }
@@ -272,10 +273,27 @@ const UserBar = () => {
         scrollStateRef.current.isTouch = false;
     };
 
+    // 네이티브 스크롤 이벤트 처리
+    const handleNativeScroll = () => {
+        setIsScrolling(true);
+        
+        // 스크롤 종료 감지를 위한 디바운스
+        if (scrollStateRef.current.scrollTimeout) {
+            clearTimeout(scrollStateRef.current.scrollTimeout);
+        }
+        
+        scrollStateRef.current.scrollTimeout = setTimeout(() => {
+            setIsScrolling(false);
+        }, 800);
+    };
+
     // 스크롤 이벤트 리스너 등록
     React.useEffect(() => {
         const scrollContainer = scrollContainerRef.current;
         if (!scrollContainer) return;
+
+        // 네이티브 스크롤 이벤트 (휠 스크롤, 스크롤바 드래그 등)
+        scrollContainer.addEventListener('scroll', handleNativeScroll, { passive: true });
 
         // 마우스 이벤트 (데스크톱용)
         scrollContainer.addEventListener('mousedown', handleMouseDown);
@@ -290,6 +308,11 @@ const UserBar = () => {
         scrollContainer.addEventListener('touchcancel', handleTouchEnd);
 
         return () => {
+            if (scrollStateRef.current.scrollTimeout) {
+                clearTimeout(scrollStateRef.current.scrollTimeout);
+            }
+            
+            scrollContainer.removeEventListener('scroll', handleNativeScroll);
             scrollContainer.removeEventListener('mousedown', handleMouseDown);
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
@@ -301,20 +324,119 @@ const UserBar = () => {
         };
     }, []);
 
+    // 스크롤바 스타일을 동적으로 추가
+    React.useEffect(() => {
+        const styleId = 'userbar-scrollbar-styles';
+        let existingStyle = document.getElementById(styleId);
+        
+        if (!existingStyle) {
+            existingStyle = document.createElement('style');
+            existingStyle.id = styleId;
+            document.head.appendChild(existingStyle);
+        }
+        
+        existingStyle.textContent = `
+            /* 스크롤바 기본 스타일 */
+            .scrollbar-thin::-webkit-scrollbar {
+                height: 4px;
+                display: block !important;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: #F3F4F6;
+                border-radius: 2px;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: #D1D5DB;
+                border-radius: 2px;
+                transition: all 0.2s ease;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+                background: #9CA3AF;
+            }
+
+            /* 스크롤바 두꺼운 스타일 */
+            .scrollbar-thick::-webkit-scrollbar {
+                height: 8px;
+                display: block !important;
+            }
+            
+            .scrollbar-thick::-webkit-scrollbar-track {
+                background: #F3F4F6;
+                border-radius: 4px;
+            }
+            
+            .scrollbar-thick::-webkit-scrollbar-thumb {
+                background: #9CA3AF;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+            
+            .scrollbar-thick::-webkit-scrollbar-thumb:hover {
+                background: #6B7280;
+            }
+
+            /* Firefox 스크롤바 */
+            .scrollbar-thin {
+                scrollbar-width: thin;
+                scrollbar-color: #D1D5DB #F3F4F6;
+            }
+            
+            .scrollbar-thick {
+                scrollbar-width: auto;
+                scrollbar-color: #9CA3AF #F3F4F6;
+            }
+
+            /* 스크롤바 항상 보이기 */
+            .scrollbar-thin, .scrollbar-thick {
+                overflow-x: scroll !important;
+            }
+
+            /* 스크롤바 전환 애니메이션 */
+            .scrollbar-thin::-webkit-scrollbar,
+            .scrollbar-thick::-webkit-scrollbar {
+                transition: height 0.2s ease;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-thumb,
+            .scrollbar-thick::-webkit-scrollbar-thumb {
+                transition: background-color 0.2s ease, border-radius 0.2s ease;
+            }
+        `;
+        
+        return () => {
+            // cleanup on unmount
+            if (existingStyle && existingStyle.parentNode) {
+                existingStyle.parentNode.removeChild(existingStyle);
+            }
+        };
+    }, []);
+
     return (
-        <div className="sticky bottom-0 left-0 right-0 px-5 py-1.5 bg-gray-200 z-10">
-            <div className="relative flex items-center" ref={containerRef}>
+        <>
+            <div className="sticky bottom-0 left-0 right-0 px-5 py-1.5 bg-gray-200 z-10">
+                <div className="relative flex items-center" ref={containerRef}>
                 <div className="relative flex-1 overflow-hidden">
                     <div 
                         ref={scrollContainerRef}
-                        className="flex items-center overflow-x-auto px-2 gap-2"
+                        className={`flex items-center overflow-x-auto px-2 gap-2 ${
+                            isScrolling ? 'scrollbar-thick' : 'scrollbar-thin'
+                        }`}
                         style={{ 
                             WebkitOverflowScrolling: 'touch',
                             scrollSnapType: 'x mandatory',
                             width: '100%',
                             paddingBottom: '6px',
                             cursor: 'grab',
-                            touchAction: 'pan-x' // 가로 스크롤만 허용
+                            touchAction: 'pan-x', // 가로 스크롤만 허용
+                            // 스크롤바 항상 보이기
+                            scrollbarWidth: isScrolling ? 'thick' : 'thin',
+                            // WebKit 스크롤바 스타일링
+                            '--scrollbar-height': isScrolling ? '8px' : '4px',
+                            '--scrollbar-thumb-color': isScrolling ? '#9CA3AF' : '#D1D5DB',
+                            '--scrollbar-track-color': '#F3F4F6'
                         }}
                     >
                         {users.map((user) => (
@@ -342,6 +464,7 @@ const UserBar = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
