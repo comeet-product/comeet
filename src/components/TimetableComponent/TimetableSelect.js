@@ -14,7 +14,7 @@ export default function TimetableSelect({
     const VERTICAL_DRAG_THRESHOLD = 8; // 모바일 전용: 8px 이상 수직 이동하면 드래그로 인식
 
     // States for gesture and view control
-    const [visibleDayCount, setVisibleDayCount] = useState(7);
+    const [visibleDayCount, setVisibleDayCount] = useState(7); // 기본값을 7로 고정
     const [startTouchX, setStartTouchX] = useState(0);
     const [startTouch1, setStartTouch1] = useState({ x: 0, y: 0 });
     const [startTouch2, setStartTouch2] = useState({ x: 0, y: 0 });
@@ -165,44 +165,47 @@ export default function TimetableSelect({
 
     // Auto-Align 함수 - 가장 가까운 컬럼으로 스냅
     const autoAlignToColumn = () => {
-        const timetable = timetableRef.current;
-        if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
+        // auto-align 기능 제거 - 자유로운 스크롤을 위해 비활성화
+        return;
+        
+        // const timetable = timetableRef.current;
+        // if (!timetable || visibleDayCount >= TOTAL_DAYS) return;
 
-        const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
-        const viewportStartX = timetable.scrollLeft;
-        const viewportCenterX = viewportStartX + timetable.clientWidth / 2;
+        // const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
+        // const viewportStartX = timetable.scrollLeft;
+        // const viewportCenterX = viewportStartX + timetable.clientWidth / 2;
 
-        // 뷰포트 중심에 가장 가까운 컬럼 찾기
-        const centerColumnFloat = viewportCenterX / columnWidth;
-        const nearestColumn = Math.round(centerColumnFloat);
+        // // 뷰포트 중심에 가장 가까운 컬럼 찾기
+        // const centerColumnFloat = viewportCenterX / columnWidth;
+        // const nearestColumn = Math.round(centerColumnFloat);
 
-        // 스크롤 가능한 범위 내에서 조정
-        const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
-        let targetColumn = Math.max(
-            0,
-            Math.min(nearestColumn, maxScrollColumns)
-        );
+        // // 스크롤 가능한 범위 내에서 조정
+        // const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
+        // let targetColumn = Math.max(
+        //     0,
+        //     Math.min(nearestColumn, maxScrollColumns)
+        // );
 
-        // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
-        const currentColumnFloat = viewportStartX / columnWidth;
-        const currentColumnIndex = Math.floor(currentColumnFloat);
-        const columnProgress = currentColumnFloat - currentColumnIndex;
+        // // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
+        // const currentColumnFloat = viewportStartX / columnWidth;
+        // const currentColumnIndex = Math.floor(currentColumnFloat);
+        // const columnProgress = currentColumnFloat - currentColumnIndex;
 
-        // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
-        if (columnProgress < 0.05 || columnProgress > 0.95) {
-            return;
-        }
+        // // 이미 충분히 정렬되어 있다면 스킵 (5% 이내의 오차)
+        // if (columnProgress < 0.05 || columnProgress > 0.95) {
+        //     return;
+        // }
 
-        // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
-        const targetScrollLeft = targetColumn * columnWidth;
+        // // 타겟 컬럼의 시작 위치로 부드럽게 스크롤
+        // const targetScrollLeft = targetColumn * columnWidth;
 
-        // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
-        if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
-            timetable.scrollTo({
-                left: targetScrollLeft,
-                behavior: "smooth",
-            });
-        }
+        // // 현재 위치와 충분히 다를 때만 스크롤 (2px 이상 차이)
+        // if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
+        //     timetable.scrollTo({
+        //         left: targetScrollLeft,
+        //         behavior: "smooth",
+        //     });
+        // }
     };
 
     // 스크롤 종료 감지 (debounce)
@@ -217,8 +220,8 @@ export default function TimetableSelect({
             if (!isDragSelecting) {
                 setIsSelectionEnabled(true);
             }
-            // Auto-align을 더 빠르게 실행
-            autoAlignToColumn();
+            // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+            // autoAlignToColumn();
         }, 100); // 100ms 후 스크롤이 끝난 것으로 간주 (더 빠르게)
     };
 
@@ -246,10 +249,10 @@ export default function TimetableSelect({
 
         // 스크롤 위치 업데이트 (상태 저장 없이 직접 처리)
 
-        // pinch zoom 후 auto-align 실행 (약간의 지연을 두어 스크롤이 완료된 후 실행)
-        setTimeout(() => {
-            autoAlignToColumn();
-        }, 100);
+        // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+        // setTimeout(() => {
+        //     autoAlignToColumn();
+        // }, 100);
     };
 
     // 핀치와 스와이프를 구분하는 함수
@@ -767,10 +770,10 @@ export default function TimetableSelect({
             e.preventDefault();
             setGestureScale(1);
 
-            // gesture 종료 후 auto-align 실행
-            setTimeout(() => {
-                autoAlignToColumn();
-            }, 100);
+            // Auto-align 제거 - 자유로운 스크롤을 위해 비활성화
+            // setTimeout(() => {
+            //     autoAlignToColumn();
+            // }, 100);
         };
 
         // 휠 이벤트로 기본 확대/축소 차단

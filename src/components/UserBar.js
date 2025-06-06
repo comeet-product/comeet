@@ -15,6 +15,7 @@ const UserItem = ({
     isScrolling,
     isAvailable,
     isHighlighted,
+    animationOrder
 }) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
@@ -30,11 +31,11 @@ const UserItem = ({
 
     const handleTouchMove = (e) => {
         if (!touchStartRef.current) return;
-
+        
         const touch = e.touches[0];
         const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-
+        
         // 가로 스크롤이 세로 스크롤보다 크면 스크롤로 인식
         if (deltaX > deltaY && deltaX > 3) {
             setIsPressed(false);
@@ -45,11 +46,11 @@ const UserItem = ({
         setIsPressed(false);
         touchStartRef.current = null;
     };
-
+  
     if (isAddButton) {
         return (
             <div className="flex-shrink-0">
-                <button
+                <button 
                     onClick={isEditMode ? onEditClick : onAddClick}
                     className="flex flex-col items-center group py-1 px-2"
                 >
@@ -69,63 +70,65 @@ const UserItem = ({
     }
 
     return (
-        <div className="flex-shrink-0">
-            <button
-                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer transition-all duration-200 border touch-none select-none ${
-                    isSelected
-                        ? "bg-main/20 border-main"
+        <div 
+            className="flex-shrink-0 transition-all duration-500 ease-out"
+            style={{
+                order: animationOrder,
+                transform: 'translateX(0)',
+            }}
+        >
+            <button 
+                className={`flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer border touch-none select-none ${
+                    isSelected 
+                        ? 'bg-main/30 border-main' 
                         : isHighlighted
-                        ? "bg-green-100 border-green-300"
-                        : "border-transparent"
+                        ? 'bg-main/10 border-main/30'
+                        : 'border-transparent'
                 }`}
                 style={{
-                    WebkitTapHighlightColor: "transparent",
-                    WebkitUserSelect: "none",
-                    userSelect: "none",
-                    backgroundColor: isSelected
-                        ? "rgba(25, 118, 210, 0.2)"
-                        : isHighlighted
-                        ? "rgba(34, 197, 94, 0.1)"
-                        : "transparent",
+                    WebkitTapHighlightColor: 'transparent', 
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none',
+                    backgroundColor: isSelected 
+                        ? 'rgba(54, 116, 181, 0.3)' 
+                        : isHighlighted 
+                        ? 'rgba(54, 116, 181, 0.1)'
+                        : 'transparent',
                     opacity: isAvailable === false ? 0.4 : 1, // 불가능한 사용자는 반투명
+                    transition: 'all 0.3s ease-out', // 모든 속성에 대해 부드러운 전환 적용
+                    borderColor: isSelected 
+                        ? '#3674B5' 
+                        : isHighlighted 
+                        ? 'rgba(54, 116, 181, 0.3)'
+                        : 'transparent'
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted
-                            ? "rgba(34, 197, 94, 0.15)"
-                            : "rgba(25, 118, 210, 0.1)";
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted
-                            ? "rgba(34, 197, 94, 0.1)"
-                            : "transparent";
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchStart={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted
-                            ? "rgba(34, 197, 94, 0.15)"
-                            : "rgba(25, 118, 210, 0.1)";
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchEnd={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted
-                            ? "rgba(34, 197, 94, 0.1)"
-                            : "transparent";
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onTouchCancel={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted
-                            ? "rgba(34, 197, 94, 0.1)"
-                            : "transparent";
+                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
@@ -135,7 +138,7 @@ const UserItem = ({
                     onClick();
                 }}
             >
-                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden">
+                <div className="w-8 h-8 rounded-full mb-1 overflow-hidden transition-all duration-300 ease-out">
                     <Avatar
                         name={id.toString()}
                         variant="beam"
@@ -149,13 +152,9 @@ const UserItem = ({
                         ]}
                     />
                 </div>
-                <span
-                    className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate ${
-                        isHighlighted
-                            ? "text-green-700 font-medium"
-                            : "text-gray-800"
-                    }`}
-                >
+                <span className={`text-xs font-normal tracking-[0.06px] max-w-12 truncate transition-all duration-300 ease-out text-black ${
+                    isSelected ? 'font-medium' : isHighlighted ? 'font-medium' : ''
+                }`}>
                     {name}
                 </span>
             </button>
@@ -443,6 +442,7 @@ const UserBar = ({
                                     onClick={() => handleUserClick(user.userid)}
                                     isAvailable={user.available}
                                     isHighlighted={user.highlighted}
+                                    animationOrder={user.animationOrder}
                                 />
                             ))}
                         </div>

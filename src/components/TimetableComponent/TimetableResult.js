@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableResult({
-    dayCount = 7,
-    halfCount = 8,
-    startDate = "05/19",
-    startTime = 10,
+export default function TimetableResult({ 
+    dayCount = 7, 
+    halfCount = 8, 
+    startDate = "05/19", 
+    startTime = 10, 
     dateHeaderHeight = 23,
     meetingId,
     meeting,
@@ -20,15 +20,26 @@ export default function TimetableResult({
     selectedCells = [],
     onCellSelect = () => {},
 }) {
+    // Props 전달 상태 확인을 위한 로그
+    useEffect(() => {
+        console.log('📊 TimetableResult props updated:', {
+            selectedUser,
+            hasSelectedUserAvailability: !!selectedUserAvailability,
+            selectedUserAvailability: selectedUserAvailability,
+            meetingDatesLength: meeting?.dates?.length,
+            meetingId
+        });
+    }, [selectedUser, selectedUserAvailability, meetingId]);
+
     // 페이지네이션 상태 관리
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
-
+    
     // 스와이프 감지를 위한 터치 상태
     const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
     const [touchEnd, setTouchEnd] = useState({ x: 0, y: 0 });
     const [isSwiping, setIsSwiping] = useState(false);
-
+    
     // Refs for DOM elements
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
@@ -135,22 +146,23 @@ export default function TimetableResult({
         }
     };
 
-    // 결과 데이터를 시간 슬롯 정보로 변환
-    const getResultSlots = () => {
+    // 결과 데이터를 시간 슬롯 정보로 변환 (페이지별)
+    const getResultSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
         const resultSlots = new Map(); // Set 대신 Map을 사용하여 투명도 정보도 저장
-
-        results.forEach((result) => {
-            const dateIndex = meeting?.dates?.indexOf(result.date);
-            if (dateIndex !== -1) {
+        
+        results.forEach(result => {
+            const absoluteDateIndex = meeting?.dates?.indexOf(result.date);
+            if (absoluteDateIndex !== -1) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (absoluteDateIndex >= pageStartDay && absoluteDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = absoluteDateIndex - pageStartDay; // 페이지 내 상대적 인덱스
                 const halfIndex = timeToHalfIndex(result.start_time);
                 if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
-                    const slotId = `${dateIndex}-${halfIndex}`;
+                        const slotId = `${relativeDayIndex}-${halfIndex}`;
                     // 사람 수에 따른 투명도 계산 (선택사람수/전체사람수*100)
-                    const opacity =
-                        users.length > 0
-                            ? (result.number / users.length) * 100
-                            : 0;
+                    const opacity = users.length > 0 ? (result.number / users.length) * 100 : 0;
                     resultSlots.set(slotId, { opacity, count: result.number });
+                    }
                 }
             }
         });
@@ -158,27 +170,92 @@ export default function TimetableResult({
         return resultSlots;
     };
 
-    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환
-    const getUserAvailabilitySlots = () => {
+    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환 (페이지별)
+    const getUserAvailabilitySlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
         if (!selectedUser || !selectedUserAvailability) {
             return new Set();
         }
 
         const availabilitySlots = new Set();
-
+        
         Object.entries(selectedUserAvailability).forEach(([date, times]) => {
-            const dateIndex = meeting?.dates?.indexOf(date);
-            if (dateIndex !== -1 && Array.isArray(times)) {
-                times.forEach((time) => {
+            const absoluteDateIndex = meeting?.dates?.indexOf(date);
+            if (absoluteDateIndex !== -1 && Array.isArray(times)) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (absoluteDateIndex >= pageStartDay && absoluteDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = absoluteDateIndex - pageStartDay; // 페이지 내 상대적 인덱스
+                times.forEach(time => {
                     const halfIndex = timeToHalfIndex(time);
                     if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
-                        availabilitySlots.add(`${dateIndex}-${halfIndex}`);
+                            availabilitySlots.add(`${relativeDayIndex}-${halfIndex}`);
                     }
                 });
+                }
             }
         });
 
         return availabilitySlots;
+    };
+
+    // 선택된 셀들을 시간 슬롯 정보로 변환 (페이지별)
+    const getSelectedCellSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
+        const selectedCellSlots = new Map();
+        
+        // 단일 선택된 셀 처리
+        if (selectedCell && !selectedUser) {
+            const cellDateIndex = meeting?.dates?.indexOf(selectedCell.date);
+            if (cellDateIndex !== -1) {
+                // 현재 페이지 범위 내에 있는지 확인
+                if (cellDateIndex >= pageStartDay && cellDateIndex < pageStartDay + pageDayCount) {
+                    const relativeDayIndex = cellDateIndex - pageStartDay;
+                    const halfIndex = getHalfIndexFromTime(selectedCell.start_time);
+                    if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                        const slotId = `${relativeDayIndex}-${halfIndex}`;
+                        // 기존 결과 데이터의 opacity 유지 (selectedCell에 저장된 실제 참여자 수 기반)
+                        const opacity = users.length > 0 ? (selectedCell.number / users.length) * 100 : 0;
+                        selectedCellSlots.set(slotId, { opacity, count: selectedCell.number, isSelected: true });
+                    }
+                }
+            }
+        }
+        
+        // 연속 선택된 셀들 처리
+        if (selectedCells && selectedCells.length > 0 && !selectedUser) {
+            selectedCells.forEach(cell => {
+                const cellDateIndex = meeting?.dates?.indexOf(cell.date);
+                if (cellDateIndex !== -1) {
+                    // 현재 페이지 범위 내에 있는지 확인
+                    if (cellDateIndex >= pageStartDay && cellDateIndex < pageStartDay + pageDayCount) {
+                        const relativeDayIndex = cellDateIndex - pageStartDay;
+                        const halfIndex = getHalfIndexFromTime(cell.start_time);
+                        if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                            const slotId = `${relativeDayIndex}-${halfIndex}`;
+                            // 기존 결과 데이터의 opacity 유지 (cell에 저장된 실제 참여자 수 기반)
+                            const opacity = users.length > 0 ? (cell.number / users.length) * 100 : 0;
+                            selectedCellSlots.set(slotId, { opacity, count: cell.number, isSelected: true });
+                        }
+                    }
+                }
+            });
+        }
+        
+        return selectedCellSlots;
+    };
+
+    // 모든 슬롯 데이터를 합치는 함수 (페이지별)
+    const getCombinedSlots = (pageStartDay = 0, pageDayCount = VISIBLE_DAY_COUNT) => {
+        if (selectedUser) {
+            // 사용자가 선택된 경우 availability만 표시
+            return getUserAvailabilitySlots(pageStartDay, pageDayCount);
+        } else {
+            // 결과 데이터와 선택된 셀들을 합쳐서 반환
+            const resultSlots = getResultSlots(pageStartDay, pageDayCount);
+            const selectedCellSlots = getSelectedCellSlots(pageStartDay, pageDayCount);
+            
+            // Map을 합치기 (선택된 셀이 우선순위를 가짐)
+            const combinedSlots = new Map([...resultSlots, ...selectedCellSlots]);
+            return combinedSlots;
+        }
     };
 
     // 페이지 계산 로직
@@ -202,7 +279,7 @@ export default function TimetableResult({
         const startDay = pageIndex * VISIBLE_DAY_COUNT;
         const endDay = Math.min(startDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
         const dayCount = endDay - startDay;
-
+        
         return {
             startDay,
             endDay,
@@ -216,43 +293,212 @@ export default function TimetableResult({
     const goToPage = (pageIndex) => {
         const maxPage = getMaxPageIndex();
         const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
-
+        
+        console.log('🔄 goToPage called:', {
+            requestedPage: pageIndex,
+            maxPage,
+            targetPage,
+            currentPageIndex,
+            isAnimating
+        });
+        
         if (targetPage !== currentPageIndex && !isAnimating) {
+            console.log('✅ Moving to page:', targetPage);
             setIsAnimating(true);
             setCurrentPageIndex(targetPage);
-
+            
             // 애니메이션 완료 후 상태 초기화
             setTimeout(() => {
+                console.log('✅ Animation completed, page is now:', targetPage);
                 setIsAnimating(false);
             }, 300);
+        } else {
+            console.log('❌ Page change blocked:', {
+                samePageRequest: targetPage === currentPageIndex,
+                isAnimating
+            });
         }
     };
+
+    // 특정 날짜가 포함된 페이지를 찾는 함수
+    const findPageWithDate = (date) => {
+        const dateIndex = meeting?.dates?.indexOf(date);
+        console.log('Finding page with date:', { date, dateIndex, meetingDates: meeting?.dates });
+        
+        if (dateIndex === -1) {
+            console.log('Date not found in meeting dates');
+            return -1;
+        }
+        
+        const pageIndex = Math.floor(dateIndex / VISIBLE_DAY_COUNT);
+        console.log('Calculated page index:', pageIndex, 'for date index:', dateIndex);
+        return pageIndex;
+    };
+
+    // 사용자 availability에서 첫 번째 가능한 날짜를 찾는 함수
+    const findFirstAvailableDate = (availability) => {
+        console.log('Finding first available date in:', availability);
+        
+        if (!availability || typeof availability !== 'object') {
+            console.log('Invalid availability object');
+            return null;
+        }
+        
+        // 가능한 날짜들을 정렬하여 첫 번째를 반환
+        const availableDates = Object.keys(availability).filter(date => {
+            const hasAvailability = Array.isArray(availability[date]) && availability[date].length > 0;
+            console.log(`Date ${date} has availability:`, hasAvailability, availability[date]);
+            return hasAvailability;
+        });
+        
+        console.log('Available dates found:', availableDates);
+        
+        if (availableDates.length === 0) {
+            console.log('No available dates');
+            return null;
+        }
+        
+        // 미팅 날짜 순서에 따라 정렬
+        const meetingDates = meeting?.dates || [];
+        console.log('Meeting dates for sorting:', meetingDates);
+        
+        availableDates.sort((a, b) => {
+            const indexA = meetingDates.indexOf(a);
+            const indexB = meetingDates.indexOf(b);
+            console.log(`Sorting: ${a} (index ${indexA}) vs ${b} (index ${indexB})`);
+            return indexA - indexB;
+        });
+        
+        console.log('Sorted available dates:', availableDates);
+        const firstDate = availableDates[0];
+        console.log('First available date:', firstDate);
+        return firstDate;
+    };
+
+    // 현재 페이지에 사용자의 availability가 있는지 확인하는 함수
+    const isUserAvailabilityInCurrentPage = (availability) => {
+        if (!availability || typeof availability !== 'object') return false;
+        
+        const currentStartDay = getCurrentStartDay();
+        const currentEndDay = Math.min(currentStartDay + VISIBLE_DAY_COUNT, TOTAL_DAYS);
+        const currentPageDates = meeting?.dates?.slice(currentStartDay, currentEndDay) || [];
+        
+        console.log('Checking availability in current page:', {
+            currentStartDay,
+            currentEndDay,
+            currentPageDates,
+            availability: Object.keys(availability)
+        });
+        
+        // 현재 페이지의 날짜 중에 사용자 availability가 있는지 확인
+        const hasAvailability = currentPageDates.some(date => {
+            const hasDate = availability[date] && Array.isArray(availability[date]) && availability[date].length > 0;
+            console.log(`Date ${date}: has availability = ${hasDate}`, availability[date]);
+            return hasDate;
+        });
+        
+        console.log('User availability in current page:', hasAvailability);
+        return hasAvailability;
+    };
+
+    // 선택된 사용자가 변경될 때 자동 페이지 이동
+    useEffect(() => {
+        if (selectedUser && selectedUserAvailability) {
+            console.log('=== Auto page navigation check ===');
+            console.log('Selected user:', selectedUser);
+            console.log('Current page index:', currentPageIndex);
+            console.log('User availability:', selectedUserAvailability);
+            console.log('Meeting dates:', meeting?.dates);
+            console.log('Total days:', TOTAL_DAYS);
+            
+            // 현재 페이지에 사용자의 availability가 있는지 확인
+            const hasAvailabilityInCurrentPage = isUserAvailabilityInCurrentPage(selectedUserAvailability);
+            console.log('Has availability in current page:', hasAvailabilityInCurrentPage);
+            
+            if (!hasAvailabilityInCurrentPage) {
+                console.log('User availability not in current page, finding appropriate page...');
+                
+                // 사용자의 첫 번째 가능한 날짜 찾기
+                const firstAvailableDate = findFirstAvailableDate(selectedUserAvailability);
+                console.log('First available date:', firstAvailableDate);
+                
+                if (firstAvailableDate) {
+                    // 해당 날짜가 있는 페이지로 이동
+                    const targetPage = findPageWithDate(firstAvailableDate);
+                    console.log('Target page for date', firstAvailableDate, ':', targetPage);
+                    console.log('Current page:', currentPageIndex);
+                    
+                    if (targetPage !== -1 && targetPage !== currentPageIndex) {
+                        console.log(`🚀 Moving to page ${targetPage} for date ${firstAvailableDate}`);
+                        goToPage(targetPage);
+                    } else {
+                        console.log('Target page is same as current page or invalid');
+                    }
+                } else {
+                    console.log('No available date found');
+                }
+            } else {
+                console.log('User availability already visible in current page');
+            }
+            console.log('=== End auto page navigation check ===');
+        }
+    }, [selectedUser, selectedUserAvailability, currentPageIndex]); // meeting?.dates 제거하여 불필요한 재실행 방지
+
+    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동
+    useEffect(() => {
+        if (selectedCells && selectedCells.length > 0 && !selectedUser) {
+            console.log('=== Recommendation auto page navigation check ===');
+            console.log('Selected cells:', selectedCells);
+            console.log('Current page index:', currentPageIndex);
+            console.log('Meeting dates:', meeting?.dates);
+            
+            // 첫 번째 선택된 셀의 날짜 찾기
+            const firstSelectedCell = selectedCells[0];
+            const selectedDate = firstSelectedCell.date;
+            console.log('First selected date:', selectedDate);
+            
+            if (selectedDate) {
+                // 해당 날짜가 있는 페이지 찾기
+                const targetPage = findPageWithDate(selectedDate);
+                console.log('Target page for recommendation date', selectedDate, ':', targetPage);
+                console.log('Current page:', currentPageIndex);
+                
+                if (targetPage !== -1 && targetPage !== currentPageIndex) {
+                    console.log(`🎯 Moving to page ${targetPage} for recommendation date ${selectedDate}`);
+                    goToPage(targetPage);
+                } else {
+                    console.log('Target page is same as current page or invalid');
+                }
+            }
+            console.log('=== End recommendation auto page navigation check ===');
+        }
+    }, [selectedCells, currentPageIndex]);
 
     // 스와이프 방향 감지 및 페이지 변경
     const handleSwipeEnd = () => {
         if (!isSwiping) return;
-
+        
         const deltaX = touchEnd.x - touchStart.x;
         const deltaY = Math.abs(touchEnd.y - touchStart.y);
-
+        
         // 수평 스와이프가 수직 움직임보다 크고 임계값을 넘었을 때만 처리
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > deltaY) {
             if (deltaX > 0) {
                 // 오른쪽 스와이프 - 이전 페이지
                 goToPage(currentPageIndex - 1);
             } else {
-                // 왼쪽 스와이프 - 다음 페이지
+                // 왼쪽 스와이프 - 다음 페이지  
                 goToPage(currentPageIndex + 1);
             }
         }
-
+        
         setIsSwiping(false);
     };
 
     // 스와이프 이벤트 처리 (터치, 마우스, 트랙패드 지원)
     useEffect(() => {
         const container = containerRef.current;
-
+        
         if (!container) return;
 
         // 스와이프 감지를 위한 터치 이벤트 핸들러
@@ -269,11 +515,11 @@ export default function TimetableResult({
             if (e.touches.length === 1 && isSwiping && !isAnimating) {
                 const touch = e.touches[0];
                 setTouchEnd({ x: touch.clientX, y: touch.clientY });
-
+                
                 // 수평 스와이프 시 기본 스크롤 방지
                 const deltaX = Math.abs(touch.clientX - touchStart.x);
                 const deltaY = Math.abs(touch.clientY - touchStart.y);
-
+                
                 if (deltaX > deltaY && deltaX > 10) {
                     e.preventDefault();
                 }
@@ -312,10 +558,10 @@ export default function TimetableResult({
             if (!isAnimating && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
                 // 수평 스크롤이 수직 스크롤보다 클 때만 처리
                 const threshold = 30; // 트랙패드 민감도 조절
-
+                
                 if (Math.abs(e.deltaX) > threshold) {
                     e.preventDefault();
-
+                    
                     if (e.deltaX > 0) {
                         // 왼쪽으로 스크롤 (다음 페이지)
                         goToPage(currentPageIndex + 1);
@@ -335,12 +581,12 @@ export default function TimetableResult({
             passive: false,
         });
         container.addEventListener("touchend", handleTouchEnd);
-
+        
         // 마우스 이벤트 (데스크톱 지원)
         container.addEventListener("mousedown", handleMouseDown);
         container.addEventListener("mousemove", handleMouseMove);
         container.addEventListener("mouseup", handleMouseUp);
-
+        
         // 트랙패드 이벤트 (데스크톱 지원)
         container.addEventListener("wheel", handleWheel, { passive: false });
 
@@ -359,18 +605,18 @@ export default function TimetableResult({
     const getAllPages = () => {
         const pages = [];
         const maxPage = getMaxPageIndex();
-
+        
         for (let i = 0; i <= maxPage; i++) {
             pages.push(getPageInfo(i));
         }
-
+        
         return pages;
     };
 
     const getCarouselContainerStyle = () => {
         const pages = getAllPages();
         const totalWidth = pages.length * 100; // 각 페이지는 100% 너비
-
+        
         return {
             width: `${totalWidth}%`,
             display: "flex",
@@ -403,39 +649,34 @@ export default function TimetableResult({
         }
     };
 
-    // 현재 표시할 슬롯들 결정
-    const currentSelectedSlots = selectedUser
-        ? getUserAvailabilitySlots()
-        : getResultSlots();
-
     // 셀 클릭 핸들러
     const handleCellClick = (dayIndex, halfIndex, pageStartDay) => {
         // 사용자가 선택된 상태가 아닐 때만 작동
         if (selectedUser) return;
-
+        
         const actualDayIndex = pageStartDay + dayIndex;
         const slotId = `${dayIndex}-${halfIndex}`;
-
+        
         console.log("Cell clicked:", {
             dayIndex,
             halfIndex,
             actualDayIndex,
             slotId,
         });
-
+        
         // 해당 셀의 결과 데이터 찾기
         const clickedResults = results.filter((result) => {
             const resultDateIndex = meeting?.dates?.indexOf(result.date);
             const resultHalfIndex = getHalfIndexFromTime(result.start_time);
-
+            
             return (
                 resultDateIndex === actualDayIndex &&
                 resultHalfIndex === halfIndex
             );
         });
-
+        
         console.log("Found results for clicked cell:", clickedResults);
-
+        
         if (clickedResults.length > 0) {
             // 첫 번째 결과에 위치 정보 추가
             const cellData = {
@@ -452,26 +693,26 @@ export default function TimetableResult({
     return (
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
-                <TimeHeader
+                <TimeHeader 
                     halfCount={dynamicHalfCount}
                     startTime={dynamicStartTime}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
 
-            <div
+            <div 
                 ref={containerRef}
                 className="flex-1 min-w-0"
-                style={{
+                style={{ 
                     position: "relative",
                     touchAction: "manipulation", // TimetableSelect와 동일한 설정
                 }}
             >
-                <div
+                <div 
                     ref={timetableRef}
                     className="overflow-hidden"
                     data-scroll-container="true"
-                    style={{
+                    style={{ 
                         touchAction: "pan-y", // 세로 스크롤만 허용, 가로는 스와이프로 처리
                         userSelect: "none", // 텍스트 선택 방지
                         WebkitUserSelect: "none",
@@ -483,18 +724,18 @@ export default function TimetableResult({
                         {getAllPages().map((pageInfo, pageIndex) => (
                             <div key={pageIndex} style={getPageStyle(pageInfo)}>
                                 <div style={getTimetableStyle(pageInfo)}>
-                                    <Timetable
+                                    <Timetable 
                                         dayCount={pageInfo.dayCount}
                                         halfCount={dynamicHalfCount}
                                         hasDateHeaderAbove={false}
-                                        selectedSlots={currentSelectedSlots} // 결과 또는 사용자 availability 표시
-                                        onSlotSelection={() => {}} // 터치 선택 비활성화
-                                        onTapSelection={() => {}} // 터치 선택 비활성화
-                                        onTouchPending={() => {}} // 터치 선택 비활성화
-                                        onDragSelectionStart={() => {}} // 드래그 선택 비활성화
-                                        onDragSelectionMove={() => {}} // 드래그 선택 비활성화
-                                        onDragSelectionEnd={() => {}} // 드래그 선택 비활성화
-                                        isSelectionEnabled={false} // 선택 기능 완전 비활성화
+                                        selectedSlots={getCombinedSlots(pageInfo.startDay, pageInfo.dayCount)}  // 페이지별 데이터 전달
+                                        onSlotSelection={() => {}}  // 터치 선택 비활성화
+                                        onTapSelection={() => {}}   // 터치 선택 비활성화
+                                        onTouchPending={() => {}}   // 터치 선택 비활성화
+                                        onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
+                                        onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
+                                        onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
+                                        isSelectionEnabled={false}       // 선택 기능 완전 비활성화
                                         isDragSelecting={false}
                                         pendingTouchSlot={null}
                                         selectedDates={meeting?.dates} // 실제 날짜 배열 전달
@@ -514,4 +755,4 @@ export default function TimetableResult({
             </div>
         </div>
     );
-}
+} 

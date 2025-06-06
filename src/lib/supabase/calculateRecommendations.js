@@ -127,6 +127,8 @@ function calculateContinuousBlocks(timeMap) {
  */
 export async function calculateRecommendations(meetingId) {
     try {
+        console.log('Starting calculateRecommendations for meetingId:', meetingId);
+        
         // 1. 미팅의 selectable_time 정보 가져오기
         const { data: meetingData, error: meetingError } = await supabase
             .from("meeting")
@@ -138,6 +140,8 @@ export async function calculateRecommendations(meetingId) {
             console.error("Error fetching meeting data:", meetingError);
             throw meetingError;
         }
+
+        console.log('Meeting data fetched:', meetingData);
 
         // 2. 가용성 데이터 가져오기 (user 테이블과 조인)
         const { data: availabilityData, error: fetchError } = await supabase
@@ -159,7 +163,10 @@ export async function calculateRecommendations(meetingId) {
             throw fetchError;
         }
 
+        console.log('Availability data fetched:', availabilityData?.length, 'records');
+
         if (!availabilityData || availabilityData.length === 0) {
+            console.log('No availability data found');
             return {
                 success: true,
                 message: "가용성 데이터가 없습니다.",
@@ -190,36 +197,58 @@ export async function calculateRecommendations(meetingId) {
             });
         });
 
+        console.log('TimeMap created with', Object.keys(timeMap).length, 'dates');
+
         // 4. 연속된 시간 블록 계산 (추천 시간)
         const recommendations = calculateContinuousBlocks(timeMap);
+        console.log('Calculated recommendations:', recommendations.length, 'items');
 
-        // 5. 기존 recommendation 데이터 삭제
-        await supabase
+        // 5. recommendation 테이블에 저장 (안전한 upsert 방식)
+        
+        // 먼저 기존 데이터 삭제
+        console.log('Deleting existing recommendations...');
+        const { error: deleteError } = await supabase
             .from("recommendation")
             .delete()
             .eq("meeting_id", meetingId);
 
-        // 6. recommendation 테이블에 저장
+        if (deleteError) {
+            console.error("Error deleting existing recommendations:", deleteError);
+            throw deleteError;
+        }
+
         if (recommendations.length > 0) {
             const recommendationData = recommendations
                 .slice(0, 8)
-                .map((rec) => ({
+                .map((rec, index) => ({
                     meeting_id: meetingId,
                     date: rec.date,
                     start_time: rec.start_time,
                     duration: rec.duration,
-                    members: rec.members,
+                    members: rec.members, // PostgreSQL 배열로 직접 전달
                     number: rec.number,
                 }));
 
-            const { error: recError } = await supabase
+            console.log('Inserting recommendation data:', recommendationData);
+            
+            // 새 데이터 삽입
+            const { data: insertedData, error: recError } = await supabase
                 .from("recommendation")
-                .insert(recommendationData);
+                .insert(recommendationData)
+                .select(); // 삽입된 데이터를 반환받음
 
             if (recError) {
-                console.error("Error saving recommendations:", recError);
+                console.error("Error saving recommendations - Full error object:", JSON.stringify(recError, null, 2));
+                console.error("Error saving recommendations - Error code:", recError.code);
+                console.error("Error saving recommendations - Error message:", recError.message);
+                console.error("Error saving recommendations - Error details:", recError.details);
+                console.error("Error saving recommendations - Error hint:", recError.hint);
                 throw recError;
             }
+
+            console.log('Successfully inserted recommendations:', insertedData?.length, 'records');
+        } else {
+            console.log('No recommendations to save');
         }
 
         return {
@@ -230,9 +259,13 @@ export async function calculateRecommendations(meetingId) {
             },
         };
     } catch (error) {
+        console.error("Error in calculateRecommendations - Full error:", JSON.stringify(error, null, 2));
+        console.error("Error in calculateRecommendations - Error message:", error.message);
+        console.error("Error in calculateRecommendations - Error stack:", error.stack);
+        
         return {
             success: false,
-            message: "추천 시간 계산 중 오류가 발생했습니다: " + error.message,
+            message: "추천 시간 계산 중 오류가 발생했습니다: " + (error.message || JSON.stringify(error)),
         };
     }
 }
