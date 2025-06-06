@@ -15,6 +15,7 @@ export default function AvailableDate({
             disabled={disabled}
             className={`
                 w-full
+                min-w-[143px]
                 rounded-md
                 bg-white
                 border border-gray-200
@@ -27,9 +28,7 @@ export default function AvailableDate({
             `}
         >
             <div className="flex items-center gap-2 mx-auto">
-                <span className="text-sm text-gray-900">
-                    {date}
-                </span>
+                <span className="text-sm text-gray-900">{date}</span>
                 <Time text={timeText} backgroundColor={backgroundColor} />
             </div>
             <svg

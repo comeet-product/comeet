@@ -1,10 +1,14 @@
-"use client";
+"use client"
 
 import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableSelect() {
+export default function TimetableSelect({ 
+    selectedSlots: externalSelectedSlots, 
+    onSlotsChange, 
+    meeting 
+}) {
     // States for gesture and view control
     const [visibleDayCount, setVisibleDayCount] = useState(7);
     const [startTouchX, setStartTouchX] = useState(0);
@@ -14,33 +18,62 @@ export default function TimetableSelect() {
     const [gestureScale, setGestureScale] = useState(1);
     const [centerColumnIndex, setCenterColumnIndex] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
-
-    // 시간 슬롯 선택 상태 관리
-    const [selectedSlots, setSelectedSlots] = useState(new Set());
+    
+    // 시간 슬롯 선택 상태 관리 - 외부 props 또는 내부 상태 사용
+    const [internalSelectedSlots, setInternalSelectedSlots] = useState(new Set());
+    const selectedSlots = externalSelectedSlots || internalSelectedSlots;
+    const setSelectedSlots = onSlotsChange || setInternalSelectedSlots;
+    
     const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
-
+    
     // 드래그 선택 상태 관리
     const [isDragSelecting, setIsDragSelecting] = useState(false);
     const [dragStartSlot, setDragStartSlot] = useState(null);
-    const [dragMode, setDragMode] = useState("select"); // 'select' or 'deselect'
-
+    const [dragMode, setDragMode] = useState('select'); // 'select' or 'deselect'
+    
     // 터치 처리 상태
     const [pendingTouchSlot, setPendingTouchSlot] = useState(null);
     const [touchStartPosition, setTouchStartPosition] = useState(null);
     const [hasMoved, setHasMoved] = useState(false);
     const VERTICAL_DRAG_THRESHOLD = 8; // 8px 이상 수직 이동하면 드래그로 인식
-
+    
     // Refs for DOM elements
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
     const scrollTimeoutRef = useRef(null);
 
-    // Constants
-    const TOTAL_DAYS = 9;
+    // Constants - meeting 데이터 기반으로 계산
+    const TOTAL_DAYS = meeting?.dates?.length || 9;
     const MIN_VISIBLE_DAYS = 1;
     const MAX_VISIBLE_DAYS = 7;
     const DATE_HEADER_HEIGHT = 28;
-    const HORIZONTAL_SCROLL_FACTOR = 0.5; // 수평 스크롤 속도 조절 (0.7 = 손가락 움직임의 70% 속도)
+
+    // meeting 기반 시간 설정
+    const getMeetingTimeInfo = () => {
+        if (!meeting?.selectable_time) {
+            return {
+                startTime: 10,
+                halfCount: 16
+            };
+        }
+
+        const startHHMM = meeting.selectable_time.start || 900; // 기본값 9:00 (900)
+        const endHHMM = meeting.selectable_time.end || 1700; // 기본값 17:00 (1700)
+        
+        const startHour = Math.floor(startHHMM / 100);
+        const endHour = Math.floor(endHHMM / 100);
+        const endMinute = endHHMM % 100;
+        
+        // 30분 단위로 계산
+        const totalHalfHours = (endHour - startHour) * 2 + (endMinute >= 30 ? 1 : 0);
+        
+        return {
+            startTime: startHour,
+            halfCount: totalHalfHours
+        };
+    };
+
+    const { startTime, halfCount } = getMeetingTimeInfo();
 
     // 터치 지점에서 컬럼 인덱스 계산
     const getColumnIndexFromTouch = (clientX) => {
@@ -49,9 +82,9 @@ export default function TimetableSelect() {
 
         const timetableRect = timetable.getBoundingClientRect();
         const relativeX = clientX - timetableRect.left + timetable.scrollLeft;
-        const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
+        const columnWidth = (timetable.scrollWidth / TOTAL_DAYS);
         const columnIndex = Math.floor(relativeX / columnWidth);
-
+        
         return Math.max(0, Math.min(columnIndex, TOTAL_DAYS - 1));
     };
 
@@ -63,7 +96,7 @@ export default function TimetableSelect() {
         const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
         const columnStartX = columnIndex * columnWidth;
         const columnEndX = columnStartX + columnWidth;
-
+        
         const viewportStartX = timetable.scrollLeft;
         const viewportEndX = viewportStartX + timetable.clientWidth;
 
@@ -82,7 +115,7 @@ export default function TimetableSelect() {
 
         const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
         const viewportStartX = timetable.scrollLeft;
-        const viewportCenterX = viewportStartX + timetable.clientWidth / 2;
+        const viewportCenterX = viewportStartX + (timetable.clientWidth / 2);
 
         // 뷰포트 중심에 가장 가까운 컬럼 찾기
         const centerColumnFloat = viewportCenterX / columnWidth;
@@ -90,10 +123,7 @@ export default function TimetableSelect() {
 
         // 스크롤 가능한 범위 내에서 조정
         const maxScrollColumns = TOTAL_DAYS - visibleDayCount;
-        let targetColumn = Math.max(
-            0,
-            Math.min(nearestColumn, maxScrollColumns)
-        );
+        let targetColumn = Math.max(0, Math.min(nearestColumn, maxScrollColumns));
 
         // 현재 스크롤 위치가 컬럼 경계에 얼마나 가까운지 확인
         const currentColumnFloat = viewportStartX / columnWidth;
@@ -112,7 +142,7 @@ export default function TimetableSelect() {
         if (Math.abs(timetable.scrollLeft - targetScrollLeft) > 2) {
             timetable.scrollTo({
                 left: targetScrollLeft,
-                behavior: "smooth",
+                behavior: 'smooth'
             });
         }
     };
@@ -142,20 +172,16 @@ export default function TimetableSelect() {
         }
 
         // 중심 컬럼이 화면 중앙에 오도록 스크롤 위치 계산
-        const targetCenterPosition =
-            centerCol - Math.floor(newVisibleCount / 2);
+        const targetCenterPosition = centerCol - Math.floor(newVisibleCount / 2);
         const maxScrollColumns = TOTAL_DAYS - newVisibleCount;
-        const safeScrollPosition = Math.max(
-            0,
-            Math.min(targetCenterPosition, maxScrollColumns)
-        );
-
+        const safeScrollPosition = Math.max(0, Math.min(targetCenterPosition, maxScrollColumns));
+        
         // 실제 픽셀 단위로 스크롤 위치 설정
         const columnWidth = timetable.scrollWidth / TOTAL_DAYS;
         const targetScrollLeft = safeScrollPosition * columnWidth;
-
+        
         timetable.scrollLeft = targetScrollLeft;
-
+        
         // 스크롤 위치 업데이트 (상태 저장 없이 직접 처리)
 
         // pinch zoom 후 auto-align 실행 (약간의 지연을 두어 스크롤이 완료된 후 실행)
@@ -165,26 +191,20 @@ export default function TimetableSelect() {
     };
 
     // 핀치와 스와이프를 구분하는 함수
-    const isSameDirectionMove = (
-        touch1Start,
-        touch1Current,
-        touch2Start,
-        touch2Current
-    ) => {
+    const isSameDirectionMove = (touch1Start, touch1Current, touch2Start, touch2Current) => {
         const touch1DeltaX = touch1Current.clientX - touch1Start.x;
         const touch2DeltaX = touch2Current.clientX - touch2Start.x;
-
-        const isSameDirectionX =
-            (touch1DeltaX > 10 && touch2DeltaX > 10) ||
-            (touch1DeltaX < -10 && touch2DeltaX < -10);
-
+        
+        const isSameDirectionX = (touch1DeltaX > 10 && touch2DeltaX > 10) || 
+                               (touch1DeltaX < -10 && touch2DeltaX < -10);
+        
         const currentDistance = Math.hypot(
             touch1Current.clientX - touch2Current.clientX,
             touch1Current.clientY - touch2Current.clientY
         );
-
+        
         const distanceDifference = Math.abs(currentDistance - initialDistance);
-
+        
         return isSameDirectionX && distanceDifference < 30;
     };
 
@@ -196,7 +216,7 @@ export default function TimetableSelect() {
         }
 
         const slotId = `${dayIndex}-${halfIndex}`;
-        setSelectedSlots((prev) => {
+        setSelectedSlots(prev => {
             const newSet = new Set(prev);
             if (newSet.has(slotId)) {
                 newSet.delete(slotId); // 이미 선택된 경우 해제
@@ -207,8 +227,8 @@ export default function TimetableSelect() {
         });
     };
 
-    // 슬롯별 터치 시작 처리 (즉시 선택 및 드래그 준비)
-    const handleSlotTouchStart = (dayIndex, halfIndex, clientY) => {
+    // 터치 시작 처리 (즉시 선택 및 드래그 준비)
+    const handleTouchStart = (dayIndex, halfIndex, clientY) => {
         if (!isSelectionEnabled) {
             return;
         }
@@ -222,231 +242,27 @@ export default function TimetableSelect() {
         handleTapSelection(dayIndex, halfIndex);
     };
 
-    // 슬롯별 터치 이동 처리 (수직 드래그 감지)
-    const handleSlotTouchMove = (dayIndex, halfIndex, clientY) => {
+    // 터치 이동 처리 (수직 드래그 감지)
+    const handleTouchMove = (dayIndex, halfIndex, clientY) => {
         if (!touchStartPosition || !pendingTouchSlot || !isSelectionEnabled) {
             return;
         }
 
         const verticalDistance = clientY - touchStartPosition.y;
-
+        
         // 수직 아래 방향으로 임계값 이상 이동했을 때 드래그 시작
         if (!hasMoved && verticalDistance >= VERTICAL_DRAG_THRESHOLD) {
             setHasMoved(true);
-
+            
             // 드래그 선택 시작
             if (!isDragSelecting) {
-                handleDragSelectionStart(
-                    pendingTouchSlot.dayIndex,
-                    pendingTouchSlot.halfIndex
-                );
+                handleDragSelectionStart(pendingTouchSlot.dayIndex, pendingTouchSlot.halfIndex);
             }
         }
 
         // 드래그 중이면 현재 위치까지 선택 확장
         if (isDragSelecting && hasMoved) {
             handleDragSelectionMove(dayIndex, halfIndex);
-        }
-    };
-
-    // 슬롯별 터치 종료 처리 (드래그가 아니면 이미 선택된 상태 유지)
-    const handleSlotTouchEnd = () => {
-        if (!isSelectionEnabled) {
-            return;
-        }
-
-        // 드래그 선택 중이었다면 종료
-        if (isDragSelecting) {
-            handleDragSelectionEnd();
-        }
-
-        // 드래그가 아니었다면 이미 터치 시작 시점에 선택 처리되었으므로 추가 처리 없음
-
-        // 상태 초기화
-        setTouchStartPosition(null);
-        setPendingTouchSlot(null);
-        setHasMoved(false);
-    };
-
-    // 터치 시작 처리 (즉시 선택 및 드래그 준비)
-    const handleTouchStart = (e) => {
-        if (e.touches.length === 1) {
-            // 단일 터치 - 스크롤 및 선택 준비
-            const touch = e.touches[0];
-            setStartTouchX(touch.clientX);
-            setStartTouch1({ x: touch.clientX, y: touch.clientY }); // 방향 감지를 위한 시작 위치 저장
-            setIsScrolling(false);
-            // 터치 시작 시에는 선택 기능을 활성화 상태로 유지
-            setIsSelectionEnabled(true);
-        } else if (e.touches.length === 2) {
-            // 두 손가락 터치 - 핀치 줌 또는 스크롤 준비
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-
-            setStartTouch1({ x: touch1.clientX, y: touch1.clientY });
-            setStartTouch2({ x: touch2.clientX, y: touch2.clientY });
-
-            // 두 터치 포인트 사이의 거리 계산
-            const distance = Math.hypot(
-                touch1.clientX - touch2.clientX,
-                touch1.clientY - touch2.clientY
-            );
-            setInitialDistance(distance);
-
-            // 중앙 위치 계산
-            const centerX = (touch1.clientX + touch2.clientX) / 2;
-            setStartTouchX(centerX);
-
-            // 터치 중심점의 컬럼 인덱스 계산
-            const columnIndex = getColumnIndexFromTouch(centerX);
-            setCenterColumnIndex(columnIndex);
-
-            // 두 손가락 터치 시 즉시 선택 기능 비활성화 (더 빠른 반응)
-            setIsScrolling(true);
-            setIsSelectionEnabled(false);
-
-            // 진행 중인 드래그 선택이 있다면 즉시 종료
-            if (isDragSelecting) {
-                handleDragSelectionEnd();
-            }
-        } else if (e.touches.length > 2) {
-            // 세 손가락 이상은 완전히 무시하고 선택 비활성화
-            setIsSelectionEnabled(false);
-            setIsScrolling(true);
-            if (isDragSelecting) {
-                handleDragSelectionEnd();
-            }
-        }
-    };
-
-    // 터치 이동 처리 (수직 드래그 감지)
-    const handleTouchMove = (e) => {
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-
-            // 수평 스크롤 처리 (수직 드래그는 Half 컴포넌트에서 처리)
-            if (visibleDayCount < TOTAL_DAYS) {
-                // 움직임의 방향을 확인하여 수평 스크롤인지 판단
-                const deltaX = Math.abs(touch.clientX - startTouch1.x);
-                const deltaY = Math.abs(touch.clientY - startTouch1.y);
-
-                // 더 민감한 스크롤 감지 (5px로 낮춤)와 방향성 개선
-                if (deltaX > 5 && deltaX > deltaY * 1.5) {
-                    // 수평 우선 움직임 감지 강화
-                    e.preventDefault();
-                    setIsScrolling(true);
-                    setIsSelectionEnabled(false);
-
-                    // 진행 중인 드래그 선택이 있다면 즉시 종료
-                    if (isDragSelecting) {
-                        handleDragSelectionEnd();
-                    }
-
-                    const currentX = touch.clientX;
-                    const scrollDeltaX =
-                        (startTouchX - currentX) * HORIZONTAL_SCROLL_FACTOR;
-
-                    if (timetable.scrollLeft !== undefined) {
-                        timetable.scrollLeft += scrollDeltaX;
-                        setStartTouchX(currentX);
-                    }
-                }
-            }
-            // 수직 움직임은 Half 컴포넌트에서 처리
-        } else if (e.touches.length === 2) {
-            e.preventDefault();
-            setIsScrolling(true); // 두 손가락 제스처 시작
-            setIsSelectionEnabled(false); // 선택 기능 비활성화
-
-            // 진행 중인 드래그 선택이 있다면 즉시 종료
-            if (isDragSelecting) {
-                handleDragSelectionEnd();
-            }
-
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-
-            // 현재 두 손가락 사이의 거리 계산
-            const currentDistance = Math.hypot(
-                touch1.clientX - touch2.clientX,
-                touch1.clientY - touch2.clientY
-            );
-
-            // 손가락이 같은 방향으로 이동하는지 확인 (드래그)
-            const isDragGesture = isSameDirectionMove(
-                startTouch1,
-                touch1,
-                startTouch2,
-                touch2
-            );
-
-            if (isDragGesture && visibleDayCount < TOTAL_DAYS) {
-                // 드래그 모드: 두 손가락이 같은 방향으로 이동
-                const currentCenterX = (touch1.clientX + touch2.clientX) / 2;
-                const deltaX =
-                    (startTouchX - currentCenterX) * HORIZONTAL_SCROLL_FACTOR;
-
-                if (timetable.scrollLeft !== undefined) {
-                    timetable.scrollLeft += deltaX;
-                    setStartTouchX(currentCenterX);
-                }
-            } else {
-                // 확대/축소 모드: 두 손가락이 반대 방향으로 움직이거나 거리가 변함
-                const ratio = currentDistance / initialDistance;
-
-                if (ratio > 1.3) {
-                    // 손가락을 벌리는 동작 (핀치 아웃) - 확대 효과이므로 컬럼 감소
-                    const newVisibleCount = Math.max(
-                        visibleDayCount - 1,
-                        MIN_VISIBLE_DAYS
-                    );
-                    if (newVisibleCount !== visibleDayCount) {
-                        setVisibleDayCount(newVisibleCount);
-                        adjustScrollForCenterColumn(
-                            newVisibleCount,
-                            centerColumnIndex
-                        );
-                        setInitialDistance(currentDistance);
-                        setStartTouch1({
-                            x: touch1.clientX,
-                            y: touch1.clientY,
-                        });
-                        setStartTouch2({
-                            x: touch2.clientX,
-                            y: touch2.clientY,
-                        });
-                    }
-                } else if (ratio < 0.7) {
-                    // 손가락을 모으는 동작 (핀치 인) - 축소 효과이므로 컬럼 증가
-                    const newVisibleCount = Math.min(
-                        visibleDayCount + 1,
-                        MAX_VISIBLE_DAYS
-                    );
-                    if (newVisibleCount !== visibleDayCount) {
-                        setVisibleDayCount(newVisibleCount);
-                        adjustScrollForCenterColumn(
-                            newVisibleCount,
-                            centerColumnIndex
-                        );
-                        setInitialDistance(currentDistance);
-                        setStartTouch1({
-                            x: touch1.clientX,
-                            y: touch1.clientY,
-                        });
-                        setStartTouch2({
-                            x: touch2.clientX,
-                            y: touch2.clientY,
-                        });
-                    }
-                }
-            }
-        } else {
-            // 세 손가락 이상의 터치는 모든 선택 기능 비활성화
-            setIsSelectionEnabled(false);
-            setIsScrolling(true);
-            if (isDragSelecting) {
-                handleDragSelectionEnd();
-            }
         }
     };
 
@@ -491,17 +307,14 @@ export default function TimetableSelect() {
         }
 
         const verticalDistance = clientY - touchStartPosition.y;
-
+        
         // 수직 아래 방향으로 임계값 이상 이동했을 때 드래그 시작
         if (!hasMoved && verticalDistance >= VERTICAL_DRAG_THRESHOLD) {
             setHasMoved(true);
-
+            
             // 드래그 선택 시작
             if (!isDragSelecting) {
-                handleDragSelectionStart(
-                    pendingTouchSlot.dayIndex,
-                    pendingTouchSlot.halfIndex
-                );
+                handleDragSelectionStart(pendingTouchSlot.dayIndex, pendingTouchSlot.halfIndex);
             }
         }
 
@@ -536,27 +349,22 @@ export default function TimetableSelect() {
 
         const slotId = `${dayIndex}-${halfIndex}`;
         const isCurrentlySelected = selectedSlots.has(slotId);
-
+        
         // 현재 슬롯의 선택 상태에 따라 드래그 모드 결정
         // 터치 시작 시 이미 선택 처리되었으므로, 원래 상태를 확인하여 드래그 모드 결정
-        const mode = isCurrentlySelected ? "select" : "deselect";
-
+        const mode = isCurrentlySelected ? 'select' : 'deselect';
+        
         setIsDragSelecting(true);
         setDragStartSlot({ dayIndex, halfIndex });
         setDragMode(mode);
-
+        
         // 시작 슬롯은 이미 터치 시작 시점에 처리되었으므로 추가 처리 없음
         // 드래그 모드만 설정하고 실제 선택/해제는 드래그 이동 시 처리
     };
 
     // 드래그 선택 중
     const handleDragSelectionMove = (dayIndex, halfIndex) => {
-        if (
-            !isDragSelecting ||
-            isScrolling ||
-            !isSelectionEnabled ||
-            !dragStartSlot
-        ) {
+        if (!isDragSelecting || isScrolling || !isSelectionEnabled || !dragStartSlot) {
             return;
         }
 
@@ -578,7 +386,7 @@ export default function TimetableSelect() {
     const handleDragSelectionEnd = () => {
         setIsDragSelecting(false);
         setDragStartSlot(null);
-        setDragMode("select");
+        setDragMode('select');
     };
 
     // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
@@ -589,7 +397,7 @@ export default function TimetableSelect() {
         }
 
         const slotId = `${dayIndex}-${halfIndex}`;
-        setSelectedSlots((prev) => {
+        setSelectedSlots(prev => {
             const newSet = new Set(prev);
             if (newSet.has(slotId)) {
                 newSet.delete(slotId); // 이미 선택된 경우 해제
@@ -618,18 +426,14 @@ export default function TimetableSelect() {
         const startHalfIndex = startSlot.halfIndex;
         const endHalfIndex = endSlot.halfIndex;
 
-        setSelectedSlots((prev) => {
+        setSelectedSlots(prev => {
             const newSelectedSlots = new Set(prev);
 
             // 시작점부터 끝점까지 세로로 선택
-            for (
-                let halfIndex = startHalfIndex;
-                halfIndex <= endHalfIndex;
-                halfIndex++
-            ) {
+            for (let halfIndex = startHalfIndex; halfIndex <= endHalfIndex; halfIndex++) {
                 const slotId = `${dayIndex}-${halfIndex}`;
-
-                if (dragMode === "select") {
+                
+                if (dragMode === 'select') {
                     newSelectedSlots.add(slotId);
                 } else {
                     newSelectedSlots.delete(slotId);
@@ -646,12 +450,12 @@ export default function TimetableSelect() {
         if (e.touches && e.touches.length > 1) {
             return false;
         }
-
+        
         // 스크롤 중이면 선택 불가
         if (isScrolling || !isSelectionEnabled) {
             return false;
         }
-
+        
         return true;
     };
 
@@ -669,7 +473,7 @@ export default function TimetableSelect() {
         const handleGestureStart = (e) => {
             e.preventDefault();
             setGestureScale(e.scale);
-
+            
             // 제스처 시작 지점의 컬럼 인덱스 계산
             const columnIndex = getColumnIndexFromTouch(e.clientX);
             setCenterColumnIndex(columnIndex);
@@ -677,36 +481,24 @@ export default function TimetableSelect() {
 
         const handleGestureChange = (e) => {
             e.preventDefault();
-
+            
             const scaleChange = e.scale / gestureScale;
-
+            
             // 스케일 변화가 충분히 클 때만 zoom 변경
             if (scaleChange > 1.15) {
                 // 확대 (컬럼 감소)
-                const newVisibleCount = Math.max(
-                    visibleDayCount - 1,
-                    MIN_VISIBLE_DAYS
-                );
+                const newVisibleCount = Math.max(visibleDayCount - 1, MIN_VISIBLE_DAYS);
                 if (newVisibleCount !== visibleDayCount) {
                     setVisibleDayCount(newVisibleCount);
-                    adjustScrollForCenterColumn(
-                        newVisibleCount,
-                        centerColumnIndex
-                    );
+                    adjustScrollForCenterColumn(newVisibleCount, centerColumnIndex);
                     setGestureScale(e.scale);
                 }
             } else if (scaleChange < 0.85) {
                 // 축소 (컬럼 증가)
-                const newVisibleCount = Math.min(
-                    visibleDayCount + 1,
-                    MAX_VISIBLE_DAYS
-                );
+                const newVisibleCount = Math.min(visibleDayCount + 1, MAX_VISIBLE_DAYS);
                 if (newVisibleCount !== visibleDayCount) {
                     setVisibleDayCount(newVisibleCount);
-                    adjustScrollForCenterColumn(
-                        newVisibleCount,
-                        centerColumnIndex
-                    );
+                    adjustScrollForCenterColumn(newVisibleCount, centerColumnIndex);
                     setGestureScale(e.scale);
                 }
             }
@@ -715,7 +507,7 @@ export default function TimetableSelect() {
         const handleGestureEnd = (e) => {
             e.preventDefault();
             setGestureScale(1);
-
+            
             // gesture 종료 후 auto-align 실행
             setTimeout(() => {
                 autoAlignToColumn();
@@ -726,38 +518,26 @@ export default function TimetableSelect() {
         const handleWheel = (e) => {
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault();
-
+                
                 // 마우스 위치의 컬럼 인덱스 계산
                 const columnIndex = getColumnIndexFromTouch(e.clientX);
                 setCenterColumnIndex(columnIndex);
-
+                
                 // Ctrl/Cmd + 휠로 zoom 제어
                 const direction = e.deltaY > 0 ? 1 : -1;
                 if (direction > 0) {
                     // 축소 (컬럼 증가)
-                    const newVisibleCount = Math.min(
-                        visibleDayCount + 1,
-                        MAX_VISIBLE_DAYS
-                    );
+                    const newVisibleCount = Math.min(visibleDayCount + 1, MAX_VISIBLE_DAYS);
                     if (newVisibleCount !== visibleDayCount) {
                         setVisibleDayCount(newVisibleCount);
-                        adjustScrollForCenterColumn(
-                            newVisibleCount,
-                            columnIndex
-                        );
+                        adjustScrollForCenterColumn(newVisibleCount, columnIndex);
                     }
                 } else {
                     // 확대 (컬럼 감소)
-                    const newVisibleCount = Math.max(
-                        visibleDayCount - 1,
-                        MIN_VISIBLE_DAYS
-                    );
+                    const newVisibleCount = Math.max(visibleDayCount - 1, MIN_VISIBLE_DAYS);
                     if (newVisibleCount !== visibleDayCount) {
                         setVisibleDayCount(newVisibleCount);
-                        adjustScrollForCenterColumn(
-                            newVisibleCount,
-                            columnIndex
-                        );
+                        adjustScrollForCenterColumn(newVisibleCount, columnIndex);
                     }
                 }
             }
@@ -771,74 +551,53 @@ export default function TimetableSelect() {
                 setStartTouch1({ x: touch.clientX, y: touch.clientY }); // 방향 감지를 위한 시작 위치 저장
                 setIsScrolling(false);
                 // 터치 시작 시에는 선택 기능을 활성화 상태로 유지
-                setIsSelectionEnabled(true);
             } else if (e.touches.length === 2) {
                 // 두 손가락 터치 - 핀치 줌 또는 스크롤 준비
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
-
+                
                 setStartTouch1({ x: touch1.clientX, y: touch1.clientY });
                 setStartTouch2({ x: touch2.clientX, y: touch2.clientY });
-
+                
                 // 두 터치 포인트 사이의 거리 계산
                 const distance = Math.hypot(
                     touch1.clientX - touch2.clientX,
                     touch1.clientY - touch2.clientY
                 );
                 setInitialDistance(distance);
-
+                
                 // 중앙 위치 계산
                 const centerX = (touch1.clientX + touch2.clientX) / 2;
                 setStartTouchX(centerX);
-
+                
                 // 터치 중심점의 컬럼 인덱스 계산
                 const columnIndex = getColumnIndexFromTouch(centerX);
                 setCenterColumnIndex(columnIndex);
-
-                // 두 손가락 터치 시 즉시 선택 기능 비활성화 (더 빠른 반응)
-                setIsScrolling(true);
-                setIsSelectionEnabled(false);
-
-                // 진행 중인 드래그 선택이 있다면 즉시 종료
-                if (isDragSelecting) {
-                    handleDragSelectionEnd();
-                }
-            } else if (e.touches.length > 2) {
-                // 세 손가락 이상은 완전히 무시하고 선택 비활성화
-                setIsSelectionEnabled(false);
-                setIsScrolling(true);
-                if (isDragSelecting) {
-                    handleDragSelectionEnd();
-                }
+                
+                setIsScrolling(false); // 터치 시작 시점에서는 스크롤 상태가 아님
+                setIsSelectionEnabled(false); // 두 손가락 터치 시에만 선택 기능 비활성화
             }
         };
 
         const handleTouchMove = (e) => {
             if (e.touches.length === 1) {
                 const touch = e.touches[0];
-
+                
                 // 수평 스크롤 처리 (수직 드래그는 Half 컴포넌트에서 처리)
                 if (visibleDayCount < TOTAL_DAYS) {
                     // 움직임의 방향을 확인하여 수평 스크롤인지 판단
                     const deltaX = Math.abs(touch.clientX - startTouch1.x);
                     const deltaY = Math.abs(touch.clientY - startTouch1.y);
-
-                    // 더 민감한 스크롤 감지 (5px로 낮춤)와 방향성 개선
-                    if (deltaX > 5 && deltaX > deltaY * 1.5) {
-                        // 수평 우선 움직임 감지 강화
+                    
+                    // 수평 움직임이 세로 움직임보다 크고 최소 임계값을 넘었을 때만 스크롤 처리
+                    if (deltaX > 10 && deltaX > deltaY) { // 수평 우선 움직임 감지
                         e.preventDefault();
                         setIsScrolling(true);
                         setIsSelectionEnabled(false);
-
-                        // 진행 중인 드래그 선택이 있다면 즉시 종료
-                        if (isDragSelecting) {
-                            handleDragSelectionEnd();
-                        }
-
+                        
                         const currentX = touch.clientX;
-                        const scrollDeltaX =
-                            (startTouchX - currentX) * HORIZONTAL_SCROLL_FACTOR;
-
+                        const scrollDeltaX = startTouchX - currentX;
+                        
                         if (timetable.scrollLeft !== undefined) {
                             timetable.scrollLeft += scrollDeltaX;
                             setStartTouchX(currentX);
@@ -850,37 +609,24 @@ export default function TimetableSelect() {
                 e.preventDefault();
                 setIsScrolling(true); // 두 손가락 제스처 시작
                 setIsSelectionEnabled(false); // 선택 기능 비활성화
-
-                // 진행 중인 드래그 선택이 있다면 즉시 종료
-                if (isDragSelecting) {
-                    handleDragSelectionEnd();
-                }
-
+                
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
-
+                
                 // 현재 두 손가락 사이의 거리 계산
                 const currentDistance = Math.hypot(
                     touch1.clientX - touch2.clientX,
                     touch1.clientY - touch2.clientY
                 );
-
+                
                 // 손가락이 같은 방향으로 이동하는지 확인 (드래그)
-                const isDragGesture = isSameDirectionMove(
-                    startTouch1,
-                    touch1,
-                    startTouch2,
-                    touch2
-                );
-
+                const isDragGesture = isSameDirectionMove(startTouch1, touch1, startTouch2, touch2);
+                
                 if (isDragGesture && visibleDayCount < TOTAL_DAYS) {
                     // 드래그 모드: 두 손가락이 같은 방향으로 이동
-                    const currentCenterX =
-                        (touch1.clientX + touch2.clientX) / 2;
-                    const deltaX =
-                        (startTouchX - currentCenterX) *
-                        HORIZONTAL_SCROLL_FACTOR;
-
+                    const currentCenterX = (touch1.clientX + touch2.clientX) / 2;
+                    const deltaX = startTouchX - currentCenterX;
+                    
                     if (timetable.scrollLeft !== undefined) {
                         timetable.scrollLeft += deltaX;
                         setStartTouchX(currentCenterX);
@@ -888,59 +634,26 @@ export default function TimetableSelect() {
                 } else {
                     // 확대/축소 모드: 두 손가락이 반대 방향으로 움직이거나 거리가 변함
                     const ratio = currentDistance / initialDistance;
-
-                    if (ratio > 1.3) {
-                        // 손가락을 벌리는 동작 (핀치 아웃) - 확대 효과이므로 컬럼 감소
-                        const newVisibleCount = Math.max(
-                            visibleDayCount - 1,
-                            MIN_VISIBLE_DAYS
-                        );
+                    
+                    if (ratio > 1.3) { // 손가락을 벌리는 동작 (핀치 아웃) - 확대 효과이므로 컬럼 감소
+                        const newVisibleCount = Math.max(visibleDayCount - 1, MIN_VISIBLE_DAYS);
                         if (newVisibleCount !== visibleDayCount) {
                             setVisibleDayCount(newVisibleCount);
-                            adjustScrollForCenterColumn(
-                                newVisibleCount,
-                                centerColumnIndex
-                            );
+                            adjustScrollForCenterColumn(newVisibleCount, centerColumnIndex);
                             setInitialDistance(currentDistance);
-                            setStartTouch1({
-                                x: touch1.clientX,
-                                y: touch1.clientY,
-                            });
-                            setStartTouch2({
-                                x: touch2.clientX,
-                                y: touch2.clientY,
-                            });
+                            setStartTouch1({ x: touch1.clientX, y: touch1.clientY });
+                            setStartTouch2({ x: touch2.clientX, y: touch2.clientY });
                         }
-                    } else if (ratio < 0.7) {
-                        // 손가락을 모으는 동작 (핀치 인) - 축소 효과이므로 컬럼 증가
-                        const newVisibleCount = Math.min(
-                            visibleDayCount + 1,
-                            MAX_VISIBLE_DAYS
-                        );
+                    } else if (ratio < 0.7) { // 손가락을 모으는 동작 (핀치 인) - 축소 효과이므로 컬럼 증가
+                        const newVisibleCount = Math.min(visibleDayCount + 1, MAX_VISIBLE_DAYS);
                         if (newVisibleCount !== visibleDayCount) {
                             setVisibleDayCount(newVisibleCount);
-                            adjustScrollForCenterColumn(
-                                newVisibleCount,
-                                centerColumnIndex
-                            );
+                            adjustScrollForCenterColumn(newVisibleCount, centerColumnIndex);
                             setInitialDistance(currentDistance);
-                            setStartTouch1({
-                                x: touch1.clientX,
-                                y: touch1.clientY,
-                            });
-                            setStartTouch2({
-                                x: touch2.clientX,
-                                y: touch2.clientY,
-                            });
+                            setStartTouch1({ x: touch1.clientX, y: touch1.clientY });
+                            setStartTouch2({ x: touch2.clientX, y: touch2.clientY });
                         }
                     }
-                }
-            } else {
-                // 세 손가락 이상의 터치는 모든 선택 기능 비활성화
-                setIsSelectionEnabled(false);
-                setIsScrolling(true);
-                if (isDragSelecting) {
-                    handleDragSelectionEnd();
                 }
             }
         };
@@ -948,19 +661,10 @@ export default function TimetableSelect() {
         const handleGlobalTouchEnd = (e) => {
             // 터치 종료 시 Auto-Align 실행
             if (e.touches.length === 0) {
-                // 모든 터치가 끝났을 때만 선택 기능 재활성화
-                // 짧은 지연을 두어 스크롤이 완전히 끝난 후 재활성화
-                setTimeout(() => {
-                    setIsSelectionEnabled(true);
-                }, 50);
-
+                // 즉시 상태 초기화 (지연 없이)
+                setIsSelectionEnabled(true);
+                
                 handleScrollEnd();
-            } else if (e.touches.length === 1) {
-                // 두 손가락에서 한 손가락으로 변경 시 선택 기능 재활성화
-                setTimeout(() => {
-                    setIsSelectionEnabled(true);
-                    setIsScrolling(false);
-                }, 100);
             }
         };
 
@@ -968,7 +672,7 @@ export default function TimetableSelect() {
         const handleTableScroll = () => {
             if (timetable && visibleDayCount < TOTAL_DAYS) {
                 setIsScrolling(true);
-
+                
                 // 스크롤 종료 감지
                 handleScrollEnd();
             }
@@ -982,124 +686,95 @@ export default function TimetableSelect() {
         };
 
         // 이벤트 리스너 등록 (capture 단계에서 기본 동작 차단)
-        container.addEventListener("gesturestart", handleGestureStart, true);
-        container.addEventListener("gesturechange", handleGestureChange, true);
-        container.addEventListener("gestureend", handleGestureEnd, true);
-        container.addEventListener("wheel", handleWheel, {
-            passive: false,
-            capture: true,
-        });
-        container.addEventListener("touchstart", handleTouchStart, {
-            passive: true,
-        });
-        container.addEventListener("touchmove", handleTouchMove, {
-            passive: false,
-        }); // 스크롤 제어를 위해 preventDefault 필요
-        container.addEventListener("touchend", handleGlobalTouchEnd);
-        timetable.addEventListener("scroll", handleTableScroll);
+        container.addEventListener('gesturestart', handleGestureStart, true);
+        container.addEventListener('gesturechange', handleGestureChange, true);
+        container.addEventListener('gestureend', handleGestureEnd, true);
+        container.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false }); // 스크롤 제어를 위해 preventDefault 필요
+        container.addEventListener('touchend', handleGlobalTouchEnd);
+        timetable.addEventListener('scroll', handleTableScroll);
 
         // 전역 마우스 업 이벤트 등록
-        document.addEventListener("mouseup", handleGlobalMouseUp);
+        document.addEventListener('mouseup', handleGlobalMouseUp);
 
         // 브라우저 기본 제스처 차단
-        document.addEventListener("gesturestart", preventDefaults, true);
-        document.addEventListener("gesturechange", preventDefaults, true);
-        document.addEventListener("gestureend", preventDefaults, true);
+        document.addEventListener('gesturestart', preventDefaults, true);
+        document.addEventListener('gesturechange', preventDefaults, true);
+        document.addEventListener('gestureend', preventDefaults, true);
 
         return () => {
             if (scrollTimeoutRef.current) {
                 clearTimeout(scrollTimeoutRef.current);
             }
-
-            container.removeEventListener(
-                "gesturestart",
-                handleGestureStart,
-                true
-            );
-            container.removeEventListener(
-                "gesturechange",
-                handleGestureChange,
-                true
-            );
-            container.removeEventListener("gestureend", handleGestureEnd, true);
-            container.removeEventListener("wheel", handleWheel, true);
-            container.removeEventListener("touchstart", handleTouchStart);
-            container.removeEventListener("touchmove", handleTouchMove);
-            container.removeEventListener("touchend", handleGlobalTouchEnd);
+            
+            container.removeEventListener('gesturestart', handleGestureStart, true);
+            container.removeEventListener('gesturechange', handleGestureChange, true);
+            container.removeEventListener('gestureend', handleGestureEnd, true);
+            container.removeEventListener('wheel', handleWheel, true);
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleGlobalTouchEnd);
             if (timetable) {
-                timetable.removeEventListener("scroll", handleTableScroll);
+                timetable.removeEventListener('scroll', handleTableScroll);
             }
-
+            
             // 전역 마우스 업 이벤트 제거
-            document.removeEventListener("mouseup", handleGlobalMouseUp);
-
-            document.removeEventListener("gesturestart", preventDefaults, true);
-            document.removeEventListener(
-                "gesturechange",
-                preventDefaults,
-                true
-            );
-            document.removeEventListener("gestureend", preventDefaults, true);
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            
+            document.removeEventListener('gesturestart', preventDefaults, true);
+            document.removeEventListener('gesturechange', preventDefaults, true);
+            document.removeEventListener('gestureend', preventDefaults, true);
         };
-    }, [
-        visibleDayCount,
-        isDragSelecting,
-        isSelectionEnabled,
-        touchStartPosition,
-        pendingTouchSlot,
-        hasMoved,
-    ]);
+    }, [visibleDayCount, isDragSelecting, isSelectionEnabled, touchStartPosition, pendingTouchSlot, hasMoved]);
 
     // 테이블 스타일 계산
     const getTableStyle = () => {
         return {
             width: `${100 * (TOTAL_DAYS / visibleDayCount)}%`,
-            minWidth: "100%",
+            minWidth: '100%'
         };
     };
 
     return (
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
-                <TimeHeader
-                    halfCount={16}
-                    startTime={10}
+                <TimeHeader 
+                    halfCount={halfCount}
+                    startTime={startTime}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
 
-            <div
+            <div 
                 ref={containerRef}
                 className="flex-1 min-w-0"
-                style={{
-                    position: "relative",
-                    touchAction: "manipulation", // 더블탭 줌만 차단하고 다른 제스처는 허용
+                style={{ 
+                    position: 'relative',
+                    touchAction: 'manipulation'  // 더블탭 줌만 차단하고 다른 제스처는 허용
                 }}
             >
-                <div
+                <div 
                     ref={timetableRef}
                     className="overflow-x-auto overflow-y-hidden"
-                    style={{
-                        overflowX:
-                            visibleDayCount < TOTAL_DAYS ? "auto" : "hidden",
-                        touchAction: "manipulation", // 더블탭 줌만 차단하고 다른 제스처는 허용
-                        scrollSnapType: "none", // 브라우저 기본 snap 비활성화
-                        paddingLeft:
-                            visibleDayCount < TOTAL_DAYS ? "1.3px" : "0", // 왼쪽 border 보정
+                    style={{ 
+                        overflowX: visibleDayCount < TOTAL_DAYS ? 'auto' : 'hidden',
+                        touchAction: 'manipulation',  // 더블탭 줌만 차단하고 다른 제스처는 허용
+                        scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
+                        paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
                     }}
                 >
                     <div style={getTableStyle()}>
-                        <Timetable
+                        <Timetable 
                             dayCount={TOTAL_DAYS}
-                            halfCount={16}
-                            startDate="05/19"
+                            halfCount={halfCount}
                             hasDateHeaderAbove={false}
                             selectedSlots={selectedSlots}
                             onSlotSelection={handleSlotSelection}
                             onTapSelection={handleTapSelection}
-                            onTouchStart={handleSlotTouchStart}
-                            onTouchMove={handleSlotTouchMove}
-                            onTouchEnd={handleSlotTouchEnd}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
                             onMouseStart={handleMouseStart}
                             onMouseMove={handleMouseMove}
                             onMouseEnd={handleMouseEnd}
@@ -1110,6 +785,7 @@ export default function TimetableSelect() {
                             isDragSelecting={isDragSelecting}
                             pendingTouchSlot={pendingTouchSlot}
                             verticalDragThreshold={VERTICAL_DRAG_THRESHOLD}
+                            selectedDates={meeting?.dates}
                         />
                     </div>
                 </div>
