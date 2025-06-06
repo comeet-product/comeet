@@ -130,7 +130,7 @@ const UserBar = () => {
     // 마우스 드래그 스크롤 이벤트 핸들러
     const handleMouseDown = (e) => {
         // 터치 디바이스가 아닌 경우에만 마우스 드래그 적용
-        if ('ontouchstart' in window) return;
+        if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
         
         setIsDragging(true);
         const scrollContainer = scrollContainerRef.current;
@@ -145,7 +145,7 @@ const UserBar = () => {
     };
 
     const handleMouseMove = (e) => {
-        if (!isDragging || 'ontouchstart' in window) return;
+        if (!isDragging || (typeof window !== 'undefined' && 'ontouchstart' in window)) return;
         
         e.preventDefault();
         const scrollContainer = scrollContainerRef.current;
@@ -156,7 +156,7 @@ const UserBar = () => {
     };
 
     const handleMouseUp = () => {
-        if ('ontouchstart' in window) return;
+        if (typeof window !== 'undefined' && 'ontouchstart' in window) return;
         
         setIsDragging(false);
         const scrollContainer = scrollContainerRef.current;
@@ -248,7 +248,7 @@ const UserBar = () => {
                                 scrollSnapType: 'x mandatory',
                                 width: '100%',
                                 paddingBottom: '8px',
-                                cursor: isDragging ? 'grabbing' : ('ontouchstart' in window ? 'default' : 'grab'),
+                                cursor: isDragging ? 'grabbing' : (typeof window !== 'undefined' && 'ontouchstart' in window ? 'default' : 'grab'),
                                 overflowX: 'scroll',
                                 overflowY: 'hidden'
                             }}
