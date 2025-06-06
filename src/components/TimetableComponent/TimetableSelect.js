@@ -12,6 +12,7 @@ export default function TimetableSelect({
     // ===== 상수 정의 =====
     const MOVE_THRESHOLD = 15; // PC 전용: 15px 이상 움직이면 드래그
     const VERTICAL_DRAG_THRESHOLD = 8; // 모바일 전용: 8px 이상 수직 이동하면 드래그로 인식
+    const MOBILE_SCROLL_SENSITIVITY = 0.4; // 모바일 x축 스크롤 민감도 (0.4 = 40% 속도)
 
     // States for gesture and view control
     const [visibleDayCount, setVisibleDayCount] = useState(7); // 기본값을 7로 고정
@@ -873,7 +874,7 @@ export default function TimetableSelect({
                         setIsSelectionEnabled(false);
 
                         const currentX = touch.clientX;
-                        const scrollDeltaX = startTouchX - currentX;
+                        const scrollDeltaX = (startTouchX - currentX) * MOBILE_SCROLL_SENSITIVITY;
 
                         if (timetable.scrollLeft !== undefined) {
                             timetable.scrollLeft += scrollDeltaX;
@@ -908,7 +909,7 @@ export default function TimetableSelect({
                     // 드래그 모드: 두 손가락이 같은 방향으로 이동
                     const currentCenterX =
                         (touch1.clientX + touch2.clientX) / 2;
-                    const deltaX = startTouchX - currentCenterX;
+                    const deltaX = (startTouchX - currentCenterX) * MOBILE_SCROLL_SENSITIVITY;
 
                     if (timetable.scrollLeft !== undefined) {
                         timetable.scrollLeft += deltaX;
