@@ -23,97 +23,116 @@ export default function MeetingPage({ params }) {
     const [selectedUserAvailability, setSelectedUserAvailability] =
         useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const unwrappedParams = use(params);
 
     useEffect(() => {
         const fetchData = async () => {
-            // 미팅 정보 가져오기
-            const meetingResult = await getMeeting(unwrappedParams.id);
-            if (meetingResult.success) {
-                console.log("Meeting data loaded:", meetingResult.data); // 디버깅용
-                console.log("=== Meeting selectable_time debug ===");
-                const selectableTime = meetingResult.data.selectable_time;
-                if (selectableTime) {
-                    console.log("Raw selectable_time:", selectableTime);
-                    console.log("Start time (minutes):", selectableTime.start);
-                    console.log("End time (minutes):", selectableTime.end);
-                    console.log(
-                        "Start time (hours):",
-                        selectableTime.start
-                            ? `${Math.floor(
-                                  selectableTime.start / 60
-                              )}:${String(selectableTime.start % 60).padStart(
-                                  2,
-                                  "0"
-                              )}`
-                            : "undefined"
+            try {
+                setIsLoading(true);
+
+                // 미팅 정보 가져오기
+                const meetingResult = await getMeeting(unwrappedParams.id);
+                if (meetingResult.success) {
+                    console.log("Meeting data loaded:", meetingResult.data); // 디버깅용
+                    console.log("=== Meeting selectable_time debug ===");
+                    const selectableTime = meetingResult.data.selectable_time;
+                    if (selectableTime) {
+                        console.log("Raw selectable_time:", selectableTime);
+                        console.log(
+                            "Start time (minutes):",
+                            selectableTime.start
+                        );
+                        console.log("End time (minutes):", selectableTime.end);
+                        console.log(
+                            "Start time (hours):",
+                            selectableTime.start
+                                ? `${Math.floor(
+                                      selectableTime.start / 60
+                                  )}:${String(
+                                      selectableTime.start % 60
+                                  ).padStart(2, "0")}`
+                                : "undefined"
+                        );
+                        console.log(
+                            "End time (hours):",
+                            selectableTime.end
+                                ? `${Math.floor(
+                                      selectableTime.end / 60
+                                  )}:${String(selectableTime.end % 60).padStart(
+                                      2,
+                                      "0"
+                                  )}`
+                                : "undefined"
+                        );
+                    }
+                    console.log("===============================");
+                    setMeeting(meetingResult.data);
+                } else {
+                    console.error(
+                        "Failed to fetch meeting:",
+                        meetingResult.message
                     );
-                    console.log(
-                        "End time (hours):",
-                        selectableTime.end
-                            ? `${Math.floor(selectableTime.end / 60)}:${String(
-                                  selectableTime.end % 60
-                              ).padStart(2, "0")}`
-                            : "undefined"
+                    // 미팅을 찾을 수 없으면 404 페이지 표시
+                    notFound();
+                    return;
+                }
+
+                // 사용자 목록 가져오기
+                const usersResult = await getUsers(unwrappedParams.id);
+                if (usersResult.success) {
+                    setUsers(usersResult.data.users);
+                    console.log("Users loaded:", usersResult.data.users); // 디버깅용
+                } else {
+                    console.error(
+                        "Failed to fetch users:",
+                        usersResult.message
                     );
                 }
-                console.log("===============================");
-                setMeeting(meetingResult.data);
-            } else {
-                console.error(
-                    "Failed to fetch meeting:",
-                    meetingResult.message
-                );
-                // 미팅을 찾을 수 없으면 404 페이지 표시
+
+                // 결과 데이터 가져오기
+                const resultsResult = await getResults(unwrappedParams.id);
+                if (resultsResult.success) {
+                    console.log(
+                        "Results loaded from database:",
+                        resultsResult.data.results
+                    ); // 디버깅용
+                    console.log(
+                        "Sample result data:",
+                        resultsResult.data.results[0]
+                    ); // 첫 번째 결과 상세
+                    console.log(
+                        "All result dates:",
+                        resultsResult.data.results.map((r) => r.date)
+                    ); // 모든 날짜
+                    console.log(
+                        "All result times:",
+                        resultsResult.data.results.map((r) => r.start_time)
+                    ); // 모든 시간
+                    setResults(resultsResult.data.results);
+
+                    // 결과가 없고 사용자가 있으면 자동으로 결과 계산 실행
+                    if (
+                        resultsResult.data.results.length === 0 &&
+                        usersResult.success &&
+                        usersResult.data.users.length > 0
+                    ) {
+                        console.log("No results found, calculating results...");
+                        await handleCalculateResults();
+                    }
+                } else {
+                    console.error(
+                        "Failed to fetch results:",
+                        resultsResult.message
+                    );
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                // 에러 발생 시에도 404 표시
                 notFound();
-                return;
-            }
-
-            // 사용자 목록 가져오기
-            const usersResult = await getUsers(unwrappedParams.id);
-            if (usersResult.success) {
-                setUsers(usersResult.data.users);
-                console.log("Users loaded:", usersResult.data.users); // 디버깅용
-            } else {
-                console.error("Failed to fetch users:", usersResult.message);
-            }
-
-            // 결과 데이터 가져오기
-            const resultsResult = await getResults(unwrappedParams.id);
-            if (resultsResult.success) {
-                console.log(
-                    "Results loaded from database:",
-                    resultsResult.data.results
-                ); // 디버깅용
-                console.log(
-                    "Sample result data:",
-                    resultsResult.data.results[0]
-                ); // 첫 번째 결과 상세
-                console.log(
-                    "All result dates:",
-                    resultsResult.data.results.map((r) => r.date)
-                ); // 모든 날짜
-                console.log(
-                    "All result times:",
-                    resultsResult.data.results.map((r) => r.start_time)
-                ); // 모든 시간
-                setResults(resultsResult.data.results);
-
-                // 결과가 없고 사용자가 있으면 자동으로 결과 계산 실행
-                if (
-                    resultsResult.data.results.length === 0 &&
-                    usersResult.success &&
-                    usersResult.data.users.length > 0
-                ) {
-                    console.log("No results found, calculating results...");
-                    await handleCalculateResults();
-                }
-            } else {
-                console.error(
-                    "Failed to fetch results:",
-                    resultsResult.message
-                );
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -212,6 +231,10 @@ export default function MeetingPage({ params }) {
         }
     };
 
+    // loading 상태일 때만 Loading 컴포넌트 표시
+    if (isLoading) return <Loading message="정보를 불러오고 있습니다..." />;
+
+    // meeting이 없으면 이미 notFound()가 호출되었으므로 여기까지 오지 않음
     if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
 
     return (
