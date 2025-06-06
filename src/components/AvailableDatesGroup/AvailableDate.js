@@ -14,7 +14,8 @@ export default function AvailableDate({
             onClick={onClick}
             disabled={disabled}
             className={`
-                w-[143px]
+                w-full
+                min-w-[143px]
                 rounded-md
                 bg-white
                 border border-gray-200
@@ -22,7 +23,6 @@ export default function AvailableDate({
                 relative
                 py-0.5
                 px-3
-                whitespace-nowrap
                 ${disabled ? "opacity-50 cursor-not-allowed" : ""}
                 ${className}
             `}
