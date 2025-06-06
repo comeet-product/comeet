@@ -3,17 +3,6 @@
 import React from "react";
 import Avatar from "boring-avatars";
 
-const USERS = [
-    { id: 1, name: "서윤" },
-    { id: 2, name: "예진" },
-    { id: 3, name: "재완" },
-    { id: 4, name: "기훈" },
-    { id: 5, name: "기훈" },
-    { id: 6, name: "기훈" },
-    { id: 7, name: "기훈" },
-    { id: 8, name: "기훈" },
-];
-
 const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelected, onClick, onAddClick, onEditClick }) => {
     if (isAddButton) {
         return (
@@ -96,14 +85,13 @@ const UserItem = ({ id, name, isAddButton = false, isEditMode = false, isSelecte
     );
 };
 
-const UserBar = () => {
-
-    const [selectedUser, setSelectedUser] = React.useState(null);
-    const [users, setUsers] = React.useState(USERS);
+const UserBar = ({ meetingId, users = [], selectedUser, onUserSelect, onShowSelect, onUserAdded }) => {
     const containerRef = React.useRef(null);
 
-    const handleUserClick = (id) => {
-        setSelectedUser(prev => prev === id ? null : id);
+    const handleUserClick = (userId) => {
+        if (onUserSelect) {
+            onUserSelect(userId);
+        }
     };
 
     const handleAddClick = () => {
@@ -139,11 +127,10 @@ const UserBar = () => {
                     >
                         {users.map((user) => (
                             <UserItem 
-                                key={user.id}
-                                id={user.id}
+                                key={user.userid} 
                                 name={user.name} 
-                                isSelected={selectedUser === user.id}
-                                onClick={() => handleUserClick(user.id)}
+                                isSelected={selectedUser === user.userid}
+                                onClick={() => handleUserClick(user.userid)}
                             />
                         ))}
                     </div>
