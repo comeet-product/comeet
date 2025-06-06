@@ -6,7 +6,6 @@ export default function DateSelector({
     halfCount, 
     hasDateHeaderAbove, 
     selectedSlots, 
-    slotOpacities = null,
     onSlotSelection, 
     onTapSelection,
     onTouchStart,
@@ -33,7 +32,6 @@ export default function DateSelector({
                         isFirstDay={index === 0}
                         hasDateHeaderAbove={hasDateHeaderAbove}
                         selectedSlots={selectedSlots}
-                        slotOpacities={slotOpacities}
                         onSlotSelection={onSlotSelection}
                         onTapSelection={onTapSelection}
                         onTouchStart={onTouchStart}

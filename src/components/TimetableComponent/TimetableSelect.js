@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableSelect({ selectedSlots: externalSelectedSlots, onSlotsChange, meeting = null }) {
+export default function TimetableSelect() {
     // States for gesture and view control
     const [visibleDayCount, setVisibleDayCount] = useState(7);
     const [startTouchX, setStartTouchX] = useState(0);
@@ -16,8 +16,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
     const [isScrolling, setIsScrolling] = useState(false);
     
     // 시간 슬롯 선택 상태 관리
-    const [internalSelectedSlots, setInternalSelectedSlots] = useState(new Set());
-    const selectedSlots = externalSelectedSlots || internalSelectedSlots;
+    const [selectedSlots, setSelectedSlots] = useState(new Set());
     const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
     
     // 드래그 선택 상태 관리
@@ -37,59 +36,10 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
     const scrollTimeoutRef = useRef(null);
 
     // Constants
-    const selectedDates = meeting?.dates || [];
-    const TOTAL_DAYS = selectedDates.length || 9; // 기본값 9일 (하위 호환성)
+    const TOTAL_DAYS = 9;
     const MIN_VISIBLE_DAYS = 1;
     const MAX_VISIBLE_DAYS = 7;
     const DATE_HEADER_HEIGHT = 28;
-
-    // HHMM 형식(900 = 9:00)을 분 단위로 변환하는 함수
-    const convertHHMMToMinutes = (hhmm) => {
-        const hours = Math.floor(hhmm / 100);
-        const minutes = hhmm % 100;
-        return hours * 60 + minutes;
-    };
-
-    // HHMM 형식을 시간으로 변환하는 함수 (TimeHeader용)
-    const convertHHMMToHours = (hhmm) => {
-        return Math.floor(hhmm / 100);
-    };
-
-    // 미팅의 시작/종료 시간을 기반으로 halfCount 계산 (모든 시간은 30분 단위)
-    const calculateHalfCount = () => {
-        if (!meeting?.selectable_time) return 16; // 기본값
-        
-        const startMinutes = convertHHMMToMinutes(meeting.selectable_time.start);
-        const endMinutes = convertHHMMToMinutes(meeting.selectable_time.end);
-        const durationMinutes = endMinutes - startMinutes;
-        const halfCount = durationMinutes / 30; // 30분 단위이므로 정확히 나누어떨어짐
-        
-        console.log('Calculated halfCount:', {
-            startHHMM: meeting.selectable_time.start,
-            endHHMM: meeting.selectable_time.end,
-            startMinutes,
-            endMinutes,
-            durationMinutes,
-            halfCount
-        });
-        
-        return halfCount;
-    };
-
-    const HALF_COUNT = calculateHalfCount();
-
-    console.log('TimetableSelect initialized with:', {
-        meetingDates: selectedDates,
-        totalDays: TOTAL_DAYS,
-        hasSelectedDates: selectedDates.length > 0,
-        halfCount: HALF_COUNT,
-        selectableTimeRaw: meeting?.selectable_time,
-        selectableTimeConverted: meeting?.selectable_time ? {
-            startHHMM: meeting.selectable_time.start,
-            startMinutes: convertHHMMToMinutes(meeting.selectable_time.start || 900),
-            startHours: convertHHMMToHours(meeting.selectable_time.start || 900)
-        } : null
-    });
 
     // 터치 지점에서 컬럼 인덱스 계산
     const getColumnIndexFromTouch = (clientX) => {
@@ -232,7 +182,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         }
 
         const slotId = `${dayIndex}-${halfIndex}`;
-        const updateSlots = (prev) => {
+        setSelectedSlots(prev => {
             const newSet = new Set(prev);
             if (newSet.has(slotId)) {
                 newSet.delete(slotId); // 이미 선택된 경우 해제
@@ -240,13 +190,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
                 newSet.add(slotId); // 선택되지 않은 경우 선택
             }
             return newSet;
-        };
-
-        if (onSlotsChange) {
-            onSlotsChange(updateSlots(selectedSlots));
-        } else {
-            setInternalSelectedSlots(updateSlots);
-        }
+        });
     };
 
     // 터치 시작 처리 (즉시 선택 및 드래그 준비)
@@ -363,73 +307,6 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         setHasMoved(false);
     };
 
-    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
-    const handleTapSelection = (dayIndex, halfIndex) => {
-        // 빠른 응답을 위해 필수 체크만 수행
-        if (!isSelectionEnabled || isDragSelecting) {
-            return;
-        }
-
-        const slotId = `${dayIndex}-${halfIndex}`;
-        const updateSlots = (prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(slotId)) {
-                newSet.delete(slotId); // 이미 선택된 경우 해제
-            } else {
-                newSet.add(slotId); // 선택되지 않은 경우 선택
-            }
-            return newSet;
-        };
-
-        if (onSlotsChange) {
-            onSlotsChange(updateSlots(selectedSlots));
-        } else {
-            setInternalSelectedSlots(updateSlots);
-        }
-    };
-
-    // 범위 내 슬롯들 선택/해제 (아래쪽 방향으로만)
-    const selectSlotsInRange = (startSlot, endSlot) => {
-        if (!startSlot || !endSlot) return;
-
-        // 같은 day가 아니면 처리하지 않음
-        if (startSlot.dayIndex !== endSlot.dayIndex) {
-            return;
-        }
-
-        // 아래쪽 방향으로만 선택 (endSlot이 startSlot보다 아래에 있어야 함)
-        if (endSlot.halfIndex < startSlot.halfIndex) {
-            return;
-        }
-
-        const dayIndex = startSlot.dayIndex;
-        const startHalfIndex = startSlot.halfIndex;
-        const endHalfIndex = endSlot.halfIndex;
-
-        const updateSlots = (prev) => {
-            const newSelectedSlots = new Set(prev);
-
-            // 시작점부터 끝점까지 세로로 선택
-            for (let halfIndex = startHalfIndex; halfIndex <= endHalfIndex; halfIndex++) {
-                const slotId = `${dayIndex}-${halfIndex}`;
-                
-                if (dragMode === 'select') {
-                    newSelectedSlots.add(slotId);
-                } else {
-                    newSelectedSlots.delete(slotId);
-                }
-            }
-
-            return newSelectedSlots;
-        };
-
-        if (onSlotsChange) {
-            onSlotsChange(updateSlots(selectedSlots));
-        } else {
-            setInternalSelectedSlots(updateSlots);
-        }
-    };
-
     // 드래그 선택 시작 (움직임이 감지되었을 때)
     const handleDragSelectionStart = (dayIndex, halfIndex) => {
         if (!isSelectionEnabled) {
@@ -447,21 +324,8 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         setDragStartSlot({ dayIndex, halfIndex });
         setDragMode(mode);
         
-        // 시작 슬롯은 이미 handleTouchPending에서 처리되었으므로
-        // 드래그 모드에 따라 추가 처리만 수행
-        if (mode === 'deselect' && isCurrentlySelected) {
-            const updateSlots = (prev) => {
-                const newSet = new Set(prev);
-                newSet.delete(slotId);
-                return newSet;
-            };
-
-            if (onSlotsChange) {
-                onSlotsChange(updateSlots(selectedSlots));
-            } else {
-                setInternalSelectedSlots(updateSlots);
-            }
-        }
+        // 시작 슬롯은 이미 터치 시작 시점에 처리되었으므로 추가 처리 없음
+        // 드래그 모드만 설정하고 실제 선택/해제는 드래그 이동 시 처리
     };
 
     // 드래그 선택 중
@@ -489,6 +353,61 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
         setIsDragSelecting(false);
         setDragStartSlot(null);
         setDragMode('select');
+    };
+
+    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭)
+    const handleTapSelection = (dayIndex, halfIndex) => {
+        // 빠른 응답을 위해 필수 체크만 수행
+        if (!isSelectionEnabled || isDragSelecting) {
+            return;
+        }
+
+        const slotId = `${dayIndex}-${halfIndex}`;
+        setSelectedSlots(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(slotId)) {
+                newSet.delete(slotId); // 이미 선택된 경우 해제
+            } else {
+                newSet.add(slotId); // 선택되지 않은 경우 선택
+            }
+            return newSet;
+        });
+    };
+
+    // 범위 내 슬롯들 선택/해제 (아래쪽 방향으로만)
+    const selectSlotsInRange = (startSlot, endSlot) => {
+        if (!startSlot || !endSlot) return;
+
+        // 같은 day가 아니면 처리하지 않음
+        if (startSlot.dayIndex !== endSlot.dayIndex) {
+            return;
+        }
+
+        // 아래쪽 방향으로만 선택 (endSlot이 startSlot보다 아래에 있어야 함)
+        if (endSlot.halfIndex < startSlot.halfIndex) {
+            return;
+        }
+
+        const dayIndex = startSlot.dayIndex;
+        const startHalfIndex = startSlot.halfIndex;
+        const endHalfIndex = endSlot.halfIndex;
+
+        setSelectedSlots(prev => {
+            const newSelectedSlots = new Set(prev);
+
+            // 시작점부터 끝점까지 세로로 선택
+            for (let halfIndex = startHalfIndex; halfIndex <= endHalfIndex; halfIndex++) {
+                const slotId = `${dayIndex}-${halfIndex}`;
+                
+                if (dragMode === 'select') {
+                    newSelectedSlots.add(slotId);
+                } else {
+                    newSelectedSlots.delete(slotId);
+                }
+            }
+
+            return newSelectedSlots;
+        });
     };
 
     // 터치/클릭 이벤트가 슬롯 선택인지 판단하는 함수
@@ -784,38 +703,37 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
     };
 
     return (
-        <div className="flex w-full h-full">
+        <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
                 <TimeHeader 
-                    halfCount={HALF_COUNT}
-                    startTime={meeting?.selectable_time?.start ? convertHHMMToHours(meeting.selectable_time.start) : 10}
+                    halfCount={16}
+                    startTime={10}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
 
             <div 
                 ref={containerRef}
-                className="flex-1 min-w-0 h-full"
+                className="flex-1 min-w-0"
                 style={{ 
                     position: 'relative',
-                    touchAction: 'manipulation'
+                    touchAction: 'manipulation'  // 더블탭 줌만 차단하고 다른 제스처는 허용
                 }}
             >
                 <div 
                     ref={timetableRef}
-                    className="h-full overflow-x-auto overflow-y-auto"
+                    className="overflow-x-auto overflow-y-hidden"
                     style={{ 
                         overflowX: visibleDayCount < TOTAL_DAYS ? 'auto' : 'hidden',
-                        touchAction: 'manipulation',
-                        scrollSnapType: 'none',
-                        paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0',
-                        paddingBottom: '10px' // 맨 밑 row가 잘리지 않도록 여백 추가
+                        touchAction: 'manipulation',  // 더블탭 줌만 차단하고 다른 제스처는 허용
+                        scrollSnapType: 'none',  // 브라우저 기본 snap 비활성화
+                        paddingLeft: visibleDayCount < TOTAL_DAYS ? '1.3px' : '0'  // 왼쪽 border 보정
                     }}
                 >
-                    <div style={getTableStyle()} className="h-full">
+                    <div style={getTableStyle()}>
                         <Timetable 
                             dayCount={TOTAL_DAYS}
-                            halfCount={HALF_COUNT}
+                            halfCount={16}
                             startDate="05/19"
                             hasDateHeaderAbove={false}
                             selectedSlots={selectedSlots}
@@ -833,11 +751,7 @@ export default function TimetableSelect({ selectedSlots: externalSelectedSlots, 
                             isSelectionEnabled={isSelectionEnabled}
                             isDragSelecting={isDragSelecting}
                             pendingTouchSlot={pendingTouchSlot}
-                            tapThreshold={TAP_THRESHOLD}
-                            dragThreshold={DRAG_THRESHOLD}
-                            moveThreshold={MOVE_THRESHOLD}
-                            selectedDates={selectedDates}
-                            pageStartDay={0}
+                            verticalDragThreshold={VERTICAL_DRAG_THRESHOLD}
                         />
                     </div>
                 </div>

@@ -7,7 +7,6 @@ export default function Timetable({
   startDate, 
   hasDateHeaderAbove = true,
   selectedSlots, 
-  slotOpacities = null,
   onSlotSelection, 
   onTapSelection,
   onTouchStart,
@@ -22,21 +21,13 @@ export default function Timetable({
   isSelectionEnabled,
   isDragSelecting,
   pendingTouchSlot,
-  touchStartTime,
-  setTouchStartTime,
-  tapThreshold,
-  touchMoved,
-  moveThreshold,
-  selectedDates = null,
-  pageStartDay = 0
+  verticalDragThreshold
 }) {
   return (
     <div className="flex flex-col">
       <DateHeader 
         dayCount={dayCount} 
         startDate={startDate}
-        selectedDates={selectedDates}
-        pageStartDay={pageStartDay}
       />
       <div className="h-[5px]"></div>
       <DateSelector 
@@ -44,7 +35,6 @@ export default function Timetable({
         halfCount={halfCount}
         hasDateHeaderAbove={hasDateHeaderAbove}
         selectedSlots={selectedSlots}
-        slotOpacities={slotOpacities}
         onSlotSelection={onSlotSelection}
         onTapSelection={onTapSelection}
         onTouchStart={onTouchStart}

@@ -7,7 +7,6 @@ export default function Day({
   isFirstDay, 
   hasDateHeaderAbove, 
   selectedSlots, 
-  slotOpacities = null,
   onSlotSelection, 
   onTapSelection,
   onTouchStart,
@@ -39,7 +38,6 @@ export default function Day({
           isFirstDay={isFirstDay}
           hasDateHeaderAbove={hasDateHeaderAbove && index === 0}
           selectedSlots={selectedSlots}
-          slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
           onTouchStart={onTouchStart}
@@ -67,7 +65,6 @@ export default function Day({
           isFirstDay={isFirstDay}
           hasDateHeaderAbove={hasDateHeaderAbove && hourCount === 0}
           selectedSlots={selectedSlots}
-          slotOpacities={slotOpacities}
           onSlotSelection={onSlotSelection}
           onTapSelection={onTapSelection}
           onTouchStart={onTouchStart}
