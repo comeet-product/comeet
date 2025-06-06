@@ -601,6 +601,8 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                         e.touches[0].clientY
                                     )
                                 }
+                                onSelectStart={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
                                 className={`
                                     w-full aspect-square flex items-center justify-center select-none text-base
                                     transition-colors duration-200 ease-in-out
@@ -635,6 +637,15 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                                             : ""
                                     }
                                 `}
+                                style={{
+                                    userSelect: "none",
+                                    WebkitUserSelect: "none",
+                                    MozUserSelect: "none",
+                                    msUserSelect: "none",
+                                    WebkitTouchCallout: "none",
+                                    WebkitTapHighlightColor: "transparent",
+                                    touchAction: "none",
+                                }}
                             >
                                 {day}
                             </div>
