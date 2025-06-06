@@ -96,28 +96,21 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
 
-        console.log("=== DATE TOGGLE ===");
-        console.log("Toggling day:", day, "dateStr:", dateStr);
-
         const newLocalDates = new Set(localSelectedDates);
 
         if (newLocalDates.has(dateStr)) {
             newLocalDates.delete(dateStr);
-            console.log("Date removed:", dateStr);
         } else {
             if (newLocalDates.size >= MAX_SELECTED_DATES) {
                 showToast("날짜 선택은 최대 31일까지 가능합니다.");
-                console.log("Max dates reached");
                 return;
             }
             newLocalDates.add(dateStr);
-            console.log("Date added:", dateStr);
         }
 
-        console.log("New selected dates:", [...newLocalDates]);
+        const datesArray = [...newLocalDates];
         setLocalSelectedDates(newLocalDates);
-        onChange([...newLocalDates]);
-        console.log("=== TOGGLE COMPLETE ===");
+        onChange(datesArray);
     };
 
     // 전역 터치 이벤트 핸들러 (reference.js 방식)
@@ -127,26 +120,19 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
             return;
         }
 
-        console.log("=== GLOBAL TOUCH EVENT ===");
-        console.log("Touch type:", e.type);
-        console.log("Target:", e.target);
-
         // 날짜 셀인지 확인
         const dayElement = e.target.closest("[data-day]");
         if (!dayElement) {
-            console.log("Not a day element");
             return;
         }
 
         const day = parseInt(dayElement.getAttribute("data-day"));
         if (!day) {
-            console.log("Invalid day:", day);
             return;
         }
 
         // 터치 시작 시에만 선택 처리
         if (e.type === "touchstart") {
-            console.log("Processing touch start for day:", day);
             e.preventDefault(); // 기본 동작 방지
             toggleDateSelection(day);
         }
@@ -194,7 +180,6 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
     // 전역 터치 이벤트 등록 (reference.js 방식)
     useEffect(() => {
-        console.log("Setting up global touch listeners");
         window.addEventListener("touchstart", handleGlobalTouch, {
             passive: false,
         });
@@ -203,7 +188,6 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         });
 
         return () => {
-            console.log("Cleaning up global touch listeners");
             window.removeEventListener("touchstart", handleGlobalTouch);
             window.removeEventListener("touchend", handleGlobalTouch);
         };
