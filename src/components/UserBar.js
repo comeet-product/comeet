@@ -301,7 +301,7 @@ const UserBar = () => {
     }, []);
 
     return (
-        <div className="sticky bottom-0 left-0 right-0 px-5 py-1 bg-gray-200 z-10">
+        <div className="sticky bottom-0 left-0 right-0 px-5 py-1.5 bg-gray-200 z-10">
             <div className="relative flex items-center" ref={containerRef}>
                 <div className="relative flex-1 overflow-hidden">
                     <div 
@@ -311,7 +311,7 @@ const UserBar = () => {
                             WebkitOverflowScrolling: 'touch',
                             scrollSnapType: 'x mandatory',
                             width: '100%',
-                            paddingBottom: '4px',
+                            paddingBottom: '6px',
                             cursor: 'grab',
                             touchAction: 'pan-x' // 가로 스크롤만 허용
                         }}
