@@ -227,11 +227,41 @@ export default function MeetingPage({ params }) {
             )
             .subscribe();
 
+        // user 테이블 구독 (새 사용자 추가/수정 감지)
+        const userSubscription = supabase
+            .channel('user-changes')
+            .on('postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'user',
+                    filter: `meetingid=eq.${unwrappedParams.id}`
+                },
+                async (payload) => {
+                    console.log('User data changed:', payload);
+                    // 사용자 목록 새로고침
+                    const usersResult = await getUsers(unwrappedParams.id);
+                    if (usersResult.success) {
+                        setUsers(usersResult.data.users);
+                        console.log('Users list updated:', usersResult.data.users);
+                        
+                        // 새로 추가된 사용자인 경우 자동 선택
+                        if (payload.eventType === 'INSERT' && payload.new) {
+                            const newUserId = payload.new.userid;
+                            setSelectedUser(newUserId);
+                            console.log('New user auto-selected:', newUserId);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
         // 정리 함수
         return () => {
             recommendationSubscription.unsubscribe();
             resultSubscription.unsubscribe();
             availabilitySubscription.unsubscribe();
+            userSubscription.unsubscribe();
         };
     }, [unwrappedParams.id, autoSelectUserId]);
 
