@@ -180,7 +180,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         }
     };
 
-    // 터치 종료 처리 - TimetableSelect와 동일
+    // 터치 종료 처리 (드래그가 아니면 이미 선택된 상태 유지) - TimetableSelect와 동일
     const handleTouchEnd = () => {
         if (!isSelectionEnabled) {
             return;
@@ -190,6 +190,8 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         if (isDragSelecting) {
             handleDragSelectionEnd();
         }
+
+        // 드래그가 아니었다면 이미 터치 시작 시점에 선택 처리되었으므로 추가 처리 없음
 
         // 상태 초기화
         setTouchStartPosition(null);
@@ -336,8 +338,9 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         return [...currentDragDates];
     };
 
-    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - TimetableSelect와 동일
+    // 개별 터치/클릭 선택 (드래그가 아닌 단순 탭) - TimetableSelect와 완전히 동일
     const handleTapSelection = (day) => {
+        // 빠른 응답을 위해 필수 체크만 수행 - TimetableSelect와 동일
         if (!isSelectionEnabled || isDragSelecting) {
             return;
         }
@@ -348,51 +351,22 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
-        const willAdd = !selectedDates.includes(dateStr);
 
-        if (willAdd && selectedDates.length >= MAX_SELECTED_DATES) {
-            showToast("날짜 선택은 최대 31일까지 가능합니다.");
-            return;
+        // TimetableSelect와 동일한 방식으로 직접 상태 업데이트
+        const newDates = new Set(selectedDates);
+        if (newDates.has(dateStr)) {
+            newDates.delete(dateStr); // 이미 선택된 경우 해제
+        } else {
+            // 최대 선택 개수 체크
+            if (newDates.size >= MAX_SELECTED_DATES) {
+                showToast("날짜 선택은 최대 31일까지 가능합니다.");
+                return;
+            }
+            newDates.add(dateStr); // 선택되지 않은 경우 선택
         }
 
-        onChange(toggleDate(dateStr, selectedDates));
-    };
-
-    // ===== 메인 이벤트 핸들러들 =====
-    const handleDragStart = (day, event) => {
-        if (day === null) return;
-
-        const isTouch = event.type === "touchstart";
-        const isMouseDrag = event.buttons && event.type === "mousedown";
-
-        if (isTouch) {
-            // 터치 시 즉시 선택하고 터치 상태 설정
-            const touch = event.touches[0];
-            setTouchStartPosition({ x: touch.clientX, y: touch.clientY });
-            handleTapSelection(day);
-            return;
-        }
-
-        if (!isMouseDrag) {
-            handleTapSelection(day);
-            return;
-        }
-
-        // 마우스 드래그 시작
-        const { year, month } = getCalendarData();
-        const dateStr = formatDate(year, month, day);
-        const isAddMode = !selectedDates.includes(dateStr);
-
-        if (isAddMode && selectedDates.length >= MAX_SELECTED_DATES) {
-            showToast("날짜 선택은 최대 31일까지 가능합니다.");
-            return;
-        }
-
-        setIsDragSelecting(true);
-        setDragStartDay(day);
-        setDragMode(isAddMode ? "select" : "deselect");
-
-        onChange(toggleDate(dateStr, selectedDates, isAddMode));
+        // TimetableSelect처럼 배열로 변환하여 onChange 호출
+        onChange([...newDates]);
     };
 
     // ===== 네비게이션 핸들러들 =====
