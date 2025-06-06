@@ -37,6 +37,11 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
     const [hasMoved, setHasMoved] = useState(false);
     const [isSelectionEnabled, setIsSelectionEnabled] = useState(true);
 
+    // 즉시 시각적 피드백을 위한 로컬 선택 상태
+    const [localSelectedDates, setLocalSelectedDates] = useState(
+        new Set(selectedDates)
+    );
+
     // 토스트 관련 상태
     const [toastState, setToastState] = useState({
         show: false,
@@ -251,10 +256,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
 
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
-        const isCurrentlySelected = selectedDates.includes(dateStr);
+        const isCurrentlySelected = localSelectedDates.has(dateStr);
 
         // 현재 날짜의 선택 상태에 따라 드래그 모드 결정
-        // 터치 시작 시 이미 선택 처리되었으므로, 원래 상태를 확인하여 드래그 모드 결정
+        // 터치 시작 시 이미 선택 처리되었으므로, 현재 선택 상태로 드래그 모드 결정
         const mode = isCurrentlySelected ? "select" : "deselect";
 
         setIsDragSelecting(true);
@@ -296,19 +301,23 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const { year, month } = getCalendarData();
         const dateStr = formatDate(year, month, day);
 
-        // TimetableSelect와 동일한 방식으로 Set 사용
-        const newDates = new Set(selectedDates);
-        if (newDates.has(dateStr)) {
-            newDates.delete(dateStr); // 이미 선택된 경우 해제
+        // 즉시 시각적 피드백을 위해 로컬 상태 먼저 업데이트
+        const newLocalDates = new Set(localSelectedDates);
+        if (newLocalDates.has(dateStr)) {
+            newLocalDates.delete(dateStr); // 이미 선택된 경우 해제
         } else {
-            if (newDates.size >= MAX_SELECTED_DATES) {
+            if (newLocalDates.size >= MAX_SELECTED_DATES) {
                 showToast("날짜 선택은 최대 31일까지 가능합니다.");
                 return;
             }
-            newDates.add(dateStr); // 선택되지 않은 경우 선택
+            newLocalDates.add(dateStr); // 선택되지 않은 경우 선택
         }
 
-        onChange([...newDates]);
+        // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
+        setLocalSelectedDates(newLocalDates);
+
+        // 부모 컴포넌트에 변경사항 전달
+        onChange([...newLocalDates]);
     };
 
     // 범위 내 날짜들 선택/해제 - Calendar.js 전용 (직사각형 선택)
@@ -324,7 +333,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
         const minCol = Math.min(startPos.col, endPos.col);
         const maxCol = Math.max(startPos.col, endPos.col);
 
-        const newSelectedDates = new Set(selectedDates);
+        const newSelectedDates = new Set(localSelectedDates);
 
         // 직사각형 범위의 모든 날짜 선택
         for (let row = minRow; row <= maxRow; row++) {
@@ -350,6 +359,10 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
             return;
         }
 
+        // 로컬 상태 즉시 업데이트 (즉시 시각적 피드백)
+        setLocalSelectedDates(newSelectedDates);
+
+        // 부모 컴포넌트에 변경사항 전달
         onChange([...newSelectedDates]);
     };
 
@@ -393,6 +406,11 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
             document.removeEventListener("mouseup", handleClickOutside);
         };
     }, []);
+
+    // selectedDates prop 변경 시 로컬 상태 동기화
+    useEffect(() => {
+        setLocalSelectedDates(new Set(selectedDates));
+    }, [selectedDates]);
 
     // ===== 렌더링 데이터 준비 =====
     const { year, month, days, today, isCurrentMonth } = getCalendarData();
@@ -541,7 +559,7 @@ export default function Calendar({ onChange = () => {}, selectedDates = [] }) {
                             ? formatDate(year, month, day)
                             : null;
                         const isSelected =
-                            day !== null && selectedDates?.includes(dateStr);
+                            day !== null && localSelectedDates.has(dateStr);
                         const isDragStartDay =
                             isDragSelecting &&
                             dragStartDay === day &&
