@@ -28,7 +28,23 @@ export default function Half({
   verticalDragThreshold
 }) {
   const slotId = `${dayIndex}-${halfIndex}`;
-  const isSelected = selectedSlots?.has(slotId) || false;
+  
+  // selectedSlots가 Map인지 Set인지 확인하여 처리
+  let isSelected = false;
+  let slotOpacity = 100; // 기본 투명도 100%
+  
+  if (selectedSlots instanceof Map) {
+    // Map인 경우 (결과 데이터)
+    const slotData = selectedSlots.get(slotId);
+    if (slotData) {
+      isSelected = true;
+      slotOpacity = slotData.opacity;
+    }
+  } else if (selectedSlots instanceof Set || selectedSlots?.has) {
+    // Set인 경우 (사용자 availability)
+    isSelected = selectedSlots.has(slotId);
+  }
+  
   const isPending = pendingTouchSlot && 
     pendingTouchSlot.dayIndex === dayIndex && 
     pendingTouchSlot.halfIndex === halfIndex;
@@ -212,16 +228,23 @@ export default function Half({
 
   return (
     <div 
-      className={`w-full h-[17px] border-main cursor-pointer transition-colors duration-150 ${
+      className={`w-full h-[17px] border-gray-500 cursor-pointer transition-colors duration-150 ${
         isTop === undefined
           ? `border-[1.3px] ${hasHourAbove ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}`
           : isTop 
-            ? `border-[1.3px] border-b-[1px] border-b-main/50 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
+            ? `border-[1px] border-b-[1px] border-b-gray-400 ${!isFirstHour ? 'border-t-0' : ''} ${!isFirstDay ? 'border-l-0' : ''} ${hasDateHeaderAbove ? 'border-t-0' : ''}` 
             : `border-[1.3px] border-t-0 ${!isFirstDay ? 'border-l-0' : ''}`
-      } ${
-        isSelected ? 'bg-main/30' : 
-        isPending ? 'bg-main/10' : ''
       }`}
+      style={{
+        backgroundColor: isSelected 
+          ? `#3674B5${Math.round(slotOpacity * 2.55).toString(16).padStart(2, '0')}` // main color with dynamic opacity
+          : isPending 
+            ? '#3674B526' // main color with 10% opacity (26 in hex = ~15% opacity)
+            : 'transparent',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'none'
+      }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -232,11 +255,6 @@ export default function Half({
       onTouchEnd={handleTouchEnd}
       data-day-index={String(dayIndex)}
       data-half-index={String(halfIndex)}
-              style={{
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          touchAction: 'none'
-        }}
     >
     </div>
   );

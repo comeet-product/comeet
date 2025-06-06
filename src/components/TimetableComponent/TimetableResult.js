@@ -4,7 +4,19 @@ import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
 
-export default function TimetableResult() {
+export default function TimetableResult({ 
+    dayCount = 7, 
+    halfCount = 8, 
+    startDate = "05/19", 
+    startTime = 10, 
+    dateHeaderHeight = 23,
+    meetingId,
+    meeting,
+    results = [],
+    users = [],
+    selectedUser = null,
+    selectedUserAvailability = null
+}) {
     // 페이지네이션 상태 관리
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -18,11 +30,80 @@ export default function TimetableResult() {
     const containerRef = useRef(null);
     const timetableRef = useRef(null);
 
-    // Constants
-    const TOTAL_DAYS = 9;
+    // meeting 데이터를 기반으로 동적으로 계산된 값들
+    const dynamicStartTime = meeting?.selectable_time?.start ? Math.floor(meeting.selectable_time.start / 100) : startTime;
+    const dynamicEndTime = meeting?.selectable_time?.end ? Math.floor(meeting.selectable_time.end / 100) : (startTime + Math.floor(halfCount / 2));
+    const dynamicHalfCount = meeting?.selectable_time ? 
+        (dynamicEndTime - dynamicStartTime) * 2 : halfCount;
+
+    // 실제 데이터를 기반으로 계산된 Constants
+    const TOTAL_DAYS = meeting?.dates?.length || dayCount;
     const VISIBLE_DAY_COUNT = 7; // Fixed to 7 columns
-    const DATE_HEADER_HEIGHT = 28;
+    const DATE_HEADER_HEIGHT = dateHeaderHeight;
     const SWIPE_THRESHOLD = 50; // 50px 이상 스와이프해야 페이지 변경
+
+    // 시간 슬롯 ID 생성 헬퍼 함수 (HHMM 형식을 30분 단위 인덱스로 변환)
+    const timeToHalfIndex = (time) => {
+        if (typeof time === 'string') {
+            // "10:30" 형태 처리
+            const [hour, minute] = time.split(':').map(Number);
+            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+        } else {
+            // HHMM 숫자 형태 처리 (예: 1030)
+            const hour = Math.floor(time / 100);
+            const minute = time % 100;
+            return (hour - dynamicStartTime) * 2 + (minute >= 30 ? 1 : 0);
+        }
+    };
+
+    const halfIndexToTime = (halfIndex) => {
+        const hour = dynamicStartTime + Math.floor(halfIndex / 2);
+        const minute = (halfIndex % 2) * 30;
+        return hour * 100 + minute; // HHMM 형식으로 반환
+    };
+
+    // 결과 데이터를 시간 슬롯 정보로 변환
+    const getResultSlots = () => {
+        const resultSlots = new Map(); // Set 대신 Map을 사용하여 투명도 정보도 저장
+        
+        results.forEach(result => {
+            const dateIndex = meeting?.dates?.indexOf(result.date);
+            if (dateIndex !== -1) {
+                const halfIndex = timeToHalfIndex(result.start_time);
+                if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                    const slotId = `${dateIndex}-${halfIndex}`;
+                    // 사람 수에 따른 투명도 계산 (선택사람수/전체사람수*100)
+                    const opacity = users.length > 0 ? (result.number / users.length) * 100 : 0;
+                    resultSlots.set(slotId, { opacity, count: result.number });
+                }
+            }
+        });
+
+        return resultSlots;
+    };
+
+    // 선택된 사용자의 availability를 시간 슬롯 정보로 변환  
+    const getUserAvailabilitySlots = () => {
+        if (!selectedUser || !selectedUserAvailability) {
+            return new Set();
+        }
+
+        const availabilitySlots = new Set();
+        
+        Object.entries(selectedUserAvailability).forEach(([date, times]) => {
+            const dateIndex = meeting?.dates?.indexOf(date);
+            if (dateIndex !== -1 && Array.isArray(times)) {
+                times.forEach(time => {
+                    const halfIndex = timeToHalfIndex(time);
+                    if (halfIndex >= 0 && halfIndex < dynamicHalfCount) {
+                        availabilitySlots.add(`${dateIndex}-${halfIndex}`);
+                    }
+                });
+            }
+        });
+
+        return availabilitySlots;
+    };
 
     // 페이지 계산 로직
     const getMaxPageIndex = () => {
@@ -53,18 +134,6 @@ export default function TimetableResult() {
             // 7개 미만이면 컨테이너 너비를 채우도록 조정
             shouldStretch: dayCount < VISIBLE_DAY_COUNT
         };
-    };
-
-    // 날짜 계산 헬퍼 함수
-    const getStartDateForPage = (pageIndex) => {
-        const baseDate = new Date('2024-05-19'); // 기준 날짜
-        const pageInfo = getPageInfo(pageIndex);
-        const targetDate = new Date(baseDate);
-        targetDate.setDate(baseDate.getDate() + pageInfo.startDay);
-        
-        const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(targetDate.getDate()).padStart(2, '0');
-        return `${month}/${day}`;
     };
 
     // 페이지 이동 함수 - 캐러셀 효과 적용
@@ -252,12 +321,15 @@ export default function TimetableResult() {
         }
     };
 
+    // 현재 표시할 슬롯들 결정
+    const currentSelectedSlots = selectedUser ? getUserAvailabilitySlots() : getResultSlots();
+
     return (
         <div className="flex w-full">
             <div className="flex-shrink-0 min-w-max">
                 <TimeHeader 
-                    halfCount={16}
-                    startTime={10}
+                    halfCount={dynamicHalfCount}
+                    startTime={dynamicStartTime}
                     dateHeaderHeight={DATE_HEADER_HEIGHT}
                 />
             </div>
@@ -291,10 +363,9 @@ export default function TimetableResult() {
                                 <div style={getTimetableStyle(pageInfo)}>
                                     <Timetable 
                                         dayCount={pageInfo.dayCount}
-                                        halfCount={16}
-                                        startDate={getStartDateForPage(pageIndex)}
+                                        halfCount={dynamicHalfCount}
                                         hasDateHeaderAbove={false}
-                                        selectedSlots={new Set()}  // 빈 Set으로 선택 없음 표시
+                                        selectedSlots={currentSelectedSlots}  // 결과 또는 사용자 availability 표시
                                         onSlotSelection={() => {}}  // 터치 선택 비활성화
                                         onTapSelection={() => {}}   // 터치 선택 비활성화
                                         onTouchPending={() => {}}   // 터치 선택 비활성화
@@ -304,6 +375,7 @@ export default function TimetableResult() {
                                         isSelectionEnabled={false}       // 선택 기능 완전 비활성화
                                         isDragSelecting={false}
                                         pendingTouchSlot={null}
+                                        selectedDates={meeting?.dates}    // 실제 날짜 배열 전달
                                         pageStartDay={pageInfo.startDay}  // 페이지 시작 날짜 정보
                                     />
                                 </div>
