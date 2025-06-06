@@ -16,7 +16,9 @@ const UserItem = ({
     isAvailable,
     isHighlighted,
     animationOrder,
+
     scrollContainerRef
+
 }) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const touchStartRef = React.useRef(null);
@@ -42,14 +44,16 @@ const UserItem = ({
 
     const handleTouchMove = (e) => {
         if (!touchStartRef.current) return;
-        
+
         const touch = e.touches[0];
         const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+
         
         // 움직임이 감지되면 스크롤로 간주
         if (deltaX > 5 || deltaY > 5) {
             setIsDraggingScroll(true);
+
             setIsPressed(false);
             if (touchTimeoutRef.current) {
                 clearTimeout(touchTimeoutRef.current);
@@ -71,11 +75,11 @@ const UserItem = ({
             touchStartRef.current = null;
         }, 50);
     };
-  
+
     if (isAddButton) {
         return (
-            <div className="flex-shrink-0" style={{ width: '60px' }}>
-                <button 
+            <div className="flex-shrink-0" style={{ width: "60px" }}>
+                <button
                     onClick={isEditMode ? onEditClick : onAddClick}
                     className="w-full flex flex-col items-center mb-4 group py-1 px-2"
                 >
@@ -87,11 +91,13 @@ const UserItem = ({
                         className="w-8 h-8 rounded-full mb-1 group-hover:opacity-80 transition-opacity flex-shrink-0"
                     />
                     <div className="w-full min-w-0 flex justify-center">
-                        <span className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity truncate text-center"
-                        style={{
-                            maxWidth: '44px',
-                            minWidth: 0,
-                        }}>
+                        <span
+                            className="text-xs font-normal tracking-[0.06px] text-main group-hover:opacity-80 transition-opacity truncate text-center"
+                            style={{
+                                maxWidth: "44px",
+                                minWidth: 0,
+                            }}
+                        >
                             {isEditMode ? "수정하기" : "추가하기"}
                         </span>
                     </div>
@@ -101,26 +107,29 @@ const UserItem = ({
     }
 
     return (
-        <div 
+        <div
             className="flex-shrink-0 transition-all duration-500 ease-out"
             style={{
                 order: animationOrder,
+
                 transform: 'translateX(0)',
                 width: '60px',
                 // 터치 영역 최적화
                 touchAction: 'manipulation',
                 WebkitTouchCallout: 'none',
+
             }}
         >
-            <button 
+            <button
                 className={`w-full flex flex-col items-center py-1 px-2 rounded-lg cursor-pointer border touch-none select-none ${
-                    isSelected 
-                        ? 'bg-main/30 border-main' 
+                    isSelected
+                        ? "bg-main/30 border-main"
                         : isHighlighted
-                        ? 'bg-main/10 border-main/30'
-                        : 'border-transparent'
+                        ? "bg-main/10 border-main/30"
+                        : "border-transparent"
                 }`}
                 style={{
+
                     WebkitTapHighlightColor: 'transparent', 
                     WebkitUserSelect: 'none',
                     userSelect: 'none',
@@ -139,22 +148,45 @@ const UserItem = ({
                         ? 'rgba(54, 116, 181, 0.3)'
                         : 'transparent',
                     touchAction: 'manipulation', // iOS에서 더 나은 터치 반응
+
+                    WebkitTapHighlightColor: "transparent",
+                    WebkitUserSelect: "none",
+                    userSelect: "none",
+                    backgroundColor: isSelected
+                        ? "rgba(54, 116, 181, 0.3)"
+                        : isHighlighted
+                        ? "rgba(54, 116, 181, 0.1)"
+                        : "transparent",
+                    opacity: isAvailable === false ? 0.4 : 1, // 불가능한 사용자는 반투명
+                    transition: "all 0.3s ease-out", // 모든 속성에 대해 부드러운 전환 적용
+                    borderColor: isSelected
+                        ? "#3674B5"
+                        : isHighlighted
+                        ? "rgba(54, 116, 181, 0.3)"
+                        : "transparent",
+
                 }}
                 onMouseEnter={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.15)' : 'rgba(54, 116, 181, 0.1)';
+                        const color = isHighlighted
+                            ? "rgba(54, 116, 181, 0.15)"
+                            : "rgba(54, 116, 181, 0.1)";
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (!isSelected && e.currentTarget) {
-                        const color = isHighlighted ? 'rgba(54, 116, 181, 0.1)' : 'transparent';
+                        const color = isHighlighted
+                            ? "rgba(54, 116, 181, 0.1)"
+                            : "transparent";
                         e.currentTarget.style.backgroundColor = color;
                     }
                 }}
+
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
+
                 onClick={(e) => {
                     // 스크롤 중이었다면 클릭 이벤트 무시
                     if (isDraggingScroll) {
@@ -182,13 +214,19 @@ const UserItem = ({
                     />
                 </div>
                 <div className="w-full min-w-0 flex justify-center">
-                    <span className={`text-xs font-normal tracking-[0.06px] transition-all duration-300 ease-out text-black truncate text-center ${
-                        isSelected ? 'font-medium' : isHighlighted ? 'font-medium' : ''
-                    }`}
-                    style={{
-                        maxWidth: '44px',
-                        minWidth: 0,
-                    }}>
+                    <span
+                        className={`text-xs font-normal tracking-[0.06px] transition-all duration-300 ease-out text-black truncate text-center ${
+                            isSelected
+                                ? "font-medium"
+                                : isHighlighted
+                                ? "font-medium"
+                                : ""
+                        }`}
+                        style={{
+                            maxWidth: "44px",
+                            minWidth: 0,
+                        }}
+                    >
                         {name}
                     </span>
                 </div>

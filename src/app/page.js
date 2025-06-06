@@ -1,198 +1,239 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { useEffect } from "react";
+import Link from "next/link";
 
 export default function Landing() {
-    const router = useRouter();
-
     return (
-        <div className="relative min-h-screen bg-white max-w-[375px] mx-auto">
-            {/* 상단 그라데이션 배경 */}
-            <div
-                className="absolute top-0 left-0 w-full h-screen z-0"
-                style={{
-                    background:
-                        "linear-gradient(to bottom, rgba(54, 116, 181, 0.15) 0%, rgba(54, 116, 181, 0.1) 30%, rgba(54, 116, 181, 0.05) 70%, rgba(54, 116, 181, 0.02) 100%)",
-                }}
-            />
+        <main className="min-h-screen bg-white">
+            <div className="max-w-[375px] mx-auto relative">
+                {/* Hero Section */}
+                <motion.section
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="px-6 py-8 bg-gradient-to-br from-[#3674B5]/10 via-[#3674B5]/2 to-white"
+                >
+                    <div className="space-y-6">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+                                모두가 되는 시간,
+                                <br />한 눈에 👀
+                            </h1>
+                            <p className="text-gray-600 leading-relaxed text-sm">
+                                함께 만나요, Co-meet
+                            </p>
+                        </div>
 
-            {/* Hero Section */}
-            <section className="px-6 py-8 relative z-10">
-                <div className="space-y-6">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-                            모두가 되는 시간,
-                            <br />
-                            한눈에
-                        </h1>
-                        <p className="text-gray-600 leading-relaxed text-sm">
-                            번거로운 일정 조율,
-                            <br />
-                            추천 시간까지 COMEET으로 한눈에 확인 👀
-                        </p>
-                    </div>
+                        {/* 결과화면 */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                duration: 0.7,
+                                ease: "easeOut",
+                                delay: 0.1,
+                            }}
+                            className="bg-white rounded-xl shadow-sm border p-6 max-w-[280px] mx-auto"
+                        >
+                            <img
+                                src="/resultpage.png"
+                                alt="COMEET 결과화면"
+                                className="w-full h-[400px] object-contain"
+                            />
+                        </motion.div>
 
-                    {/* 결과화면 Placeholder */}
-                    <div className="bg-white/90 rounded-xl shadow-lg border p-6 backdrop-blur-sm">
-                        <div className="relative h-56 bg-gray-50 rounded-lg overflow-hidden">
-                            <div className="absolute inset-0">
-                                <img
-                                    src="/resultpage.png"
-                                    alt="COMEET 결과화면"
-                                    className="w-full object-cover object-top"
-                                />
-                                <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-white via-white/80 to-transparent" />
+                        {/* 장점 */}
+                        <div className="grid grid-cols-1 gap-3">
+                            <div className="flex items-center justify-center space-x-6 text-sm">
+                                <div className="flex items-center space-x-2">
+                                    <CheckCircle className="w-4 h-4 text-[#3674B5]" />
+                                    <span className="text-gray-600">
+                                        회원가입 없이
+                                    </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <CheckCircle className="w-4 h-4 text-[#3674B5]" />
+                                    <span className="text-gray-600">
+                                        링크 공유만으로
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </motion.section>
 
-                    {/* 장점 */}
-                    <div className="grid grid-cols-1 gap-3">
-                        <div className="flex items-center justify-center space-x-6 text-sm">
-                            <div className="flex items-center space-x-2">
-                                <CheckCircle className="w-4 h-4 text-[#3674B5]" />
-                                <span className="text-gray-600">
-                                    회원가입 없이
-                                </span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <CheckCircle className="w-4 h-4 text-[#3674B5]" />
-                                <span className="text-gray-600">
-                                    빠르게 공유해서
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <div className="flex items-center space-x-2">
-                                <CheckCircle className="w-4 h-4 text-[#3674B5]" />
-                                <span className="text-sm text-gray-600">
-                                    즉시 결과 확인!
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 3단계 섹션 */}
-            <section className="px-6 py-8 pb-24 relative z-10">
-                <div className="space-y-8">
-                    <div className="text-center space-y-2">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                            3단계로 완성하는 미팅 일정
-                        </h2>
-                    </div>
-
-                    <div className="bg-white/90 rounded-xl shadow-lg p-6 backdrop-blur-sm space-y-6">
-                        {/* 1단계 */}
-                        <div className="space-y-2">
+                {/* 3단계 섹션 */}
+                <motion.section
+                    id="steps-section"
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                    className="px-6 py-12 pb-24 relative"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#3674B5]/5 via-white to-[#3674B5]/10" />
+                    <div className="space-y-12 relative z-10">
+                        {/* Step 1 */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            viewport={{ once: true }}
+                            className="space-y-4"
+                        >
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#3674B5] to-[#3674B5]/90 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
                                     1
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900">
                                     미팅 생성
                                 </h3>
                             </div>
-                            <p className="text-sm text-gray-600 ml-8">
-                                제목을 입력하고 날짜와 시간대를 선택해요
+                            <p className="text-sm text-gray-600 text-center">
+                                제목을 입력하고 약속 날짜와 시간대를 선택하세요
                             </p>
-                        </div>
 
-                        {/* 2단계 */}
-                        <div className="space-y-2">
+                            {/* Create Screen - 이미지로 대체 */}
+                            <div className="text-center">
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl p-4 shadow-sm max-w-[280px] mx-auto">
+                                    <div className="flex items-center justify-center">
+                                        <img
+                                            src="/create.png"
+                                            alt="Create 화면"
+                                            className="w-full h-[400px] object-contain rounded-xl"
+                                            style={{ margin: 0 }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Step 2 */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            viewport={{ once: true }}
+                            className="space-y-4"
+                        >
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#3674B5] to-[#3674B5]/90 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
                                     2
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900">
                                     시간 선택
                                 </h3>
                             </div>
-                            <p className="text-sm text-gray-600 ml-8">
-                                가능한 시간을 톡 누르거나 <br />
-                                스르륵 드래그 하세요
+                            <p className="text-sm text-gray-600 text-center">
+                                가능한 시간을 터치하거나 스르륵 드래그 하세요
                             </p>
-                        </div>
 
-                        {/* 3단계 */}
-                        <div className="space-y-2">
+                            {/* SelectTime Screen */}
+                            <div className="text-center">
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-8 py-1 shadow-sm max-w-[280px] mx-auto">
+                                    <div className="flex items-center justify-center">
+                                        <img
+                                            src="/timeselect.png"
+                                            alt="SelectTime 화면"
+                                            className="w-full h-[400px] object-contain rounded-xl"
+                                            style={{ margin: 0 }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Step 3 */}
+                        <motion.div
+                            id="last-step"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.4 }}
+                            viewport={{ once: true }}
+                            className="space-y-4"
+                        >
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-[#3674B5] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#3674B5] to-[#3674B5]/90 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">
                                     3
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    링크 공유
+                                    추천 시간
                                 </h3>
                             </div>
-                            <p className="text-sm text-gray-600 ml-8">
-                                참석자들에게 링크를 바로 공유해보세요
+                            <p className="text-sm text-gray-600 text-center">
+                                모두가 모이는 날부터, 오래 가능한 시간까지
+                                확인하세요
                             </p>
-                        </div>
+
+                            {/* Share Screen */}
+                            <div className="space-y-4">
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-4 py-1 shadow-sm max-w-[280px] mx-auto">
+                                    <div className="flex items-center justify-center">
+                                        <img
+                                            src="/cell.png"
+                                            alt="추천 시간 화면"
+                                            className="w-full h-[180px] object-contain rounded-xl"
+                                            style={{ margin: 0 }}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-600 text-center">
+                                    셀을 누르면 가능한 사람들이 아래에 나타나요
+                                </p>
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-2 py-1 shadow-sm max-w-[280px] mx-auto">
+                                    <div className="flex items-center justify-center">
+                                        <img
+                                            src="/cell2.png"
+                                            alt="추천 시간 화면2"
+                                            className="w-full h-[260px] object-contain rounded-xl"
+                                            style={{ margin: 0 }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            </section>
+                </motion.section>
 
-            {/* Final CTA Section */}
-            <section className="px-6 py-4 relative z-10">
-                <div className="text-center">
-                    <h2 className="text-2xl font-medium text-gray-900 leading-tight">
-                        지금 바로 간편하고 빠르게
-                        <br />
-                        약속 시간을 정해보세요!
-                    </h2>
-                </div>
-            </section>
-
-            {/* Feedback Section */}
-            <section className="px-6 py-6 bg-gray-100 text-center relative z-10">
-                <h2 className="text-base font-medium text-gray-900 mb-3">
-                    서비스 개선을 위한 의견을 보내주세요
-                </h2>
-                <button
-                    className="bg-[#3674B5]/20 hover:bg-[#3674B5]/30 text-[#3674B5] font-medium rounded-lg px-5 py-2 text-sm transition-colors"
-                    onClick={() =>
-                        window.open("https://tally.so/r/mZLO9A", "_blank")
-                    }
+                {/* 항상 보이는 Floating Button (페이지 진입 시만 애니메이션) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, ease: "easeOut", delay: 0.35 }}
+                    className="fixed left-0 right-0 bottom-6 z-50 pointer-events-none"
                 >
-                    의견 보내기
-                </button>
-            </section>
-
-            {/* Simple Footer */}
-            <footer className="bg-gray-50 py-6 px-6 pb-32 relative z-10">
-                <div className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-2">
-                        <img
-                            src="/logo_text.png"
-                            alt="COMEET Logo"
-                            className="h-6 w-auto"
-                        />
-                    </div>
-                    <p className="text-xs text-gray-400">
-                        © {new Date().getFullYear()} COMEET. All rights
-                        reserved.
-                    </p>
-                </div>
-            </footer>
-
-            {/* Fixed Bottom Button */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white p-4">
-                <div className="max-w-[375px] mx-auto border-t border-gray-200 pt-4">
-                    <div className="flex justify-center">
-                        <Link href="/create">
-                            <button
-                                className="bg-[#3674B5] hover:bg-[#3674B5]/90 text-white font-semibold rounded-lg transform transition-all duration-200 hover:scale-105 active:scale-95"
-                                style={{ width: "313px", height: "59px" }}
-                            >
+                    <div className="max-w-[375px] mx-auto flex justify-center">
+                        <Link
+                            href="/create"
+                            className="pointer-events-auto w-full flex justify-center"
+                        >
+                            <button className="bg-[#3674B5]/70 hover:bg-[#3674B5]/90 text-white font-semibold rounded-full shadow-xl px-6 py-4 transition-colors text-base w-[80%] max-w-[260px] backdrop-blur-md">
                                 시작하기
                             </button>
                         </Link>
                     </div>
-                </div>
+                </motion.div>
+
+                {/* Footer */}
+                <footer className="bg-gray-50 py-6 px-6 pb-20">
+                    <div className="text-center">
+                        <div className="flex items-center justify-center space-x-2 mb-2">
+                            <img
+                                src="/logo_text.png"
+                                alt="COMEET Logo"
+                                className="h-6 w-auto"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            © {new Date().getFullYear()} COMEET. All rights
+                            reserved.
+                        </p>
+                    </div>
+                </footer>
             </div>
-        </div>
+        </main>
     );
 }
