@@ -66,10 +66,12 @@ export default function Home() {
     };
 
     return (
-        <div className="relative flex flex-col justify-center items-center min-h-full w-full px-10 py-4 gap-12 overflow-y-auto">
-            <Title onChange={setTitle} link={false}>
-                {title}
-            </Title>
+        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 py-4">
+            <div className="mt-8">
+                <Title onChange={setTitle} link={false}>
+                    {title}
+                </Title>
+            </div>
             <div className="flex flex-col gap-4 w-full">
                 <Calendar
                     selectedDates={selectedDates}
@@ -85,12 +87,14 @@ export default function Home() {
                     onValidityChange={setIsTimeValid}
                 />
             </div>
-            <Button
-                onClick={handleCreateMeeting}
-                disabled={isLoading || !isTimeValid}
-            >
-                미팅 생성
-            </Button>
+            <div className="mb-10 w-full">
+                <Button
+                    onClick={handleCreateMeeting}
+                    disabled={isLoading || !isTimeValid}
+                >
+                    미팅 생성
+                </Button>
+            </div>
             
             {/* 로딩 오버레이 */}
             {isLoading && (
