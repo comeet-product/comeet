@@ -40,7 +40,7 @@ export default function TimetableSelect() {
     const MIN_VISIBLE_DAYS = 1;
     const MAX_VISIBLE_DAYS = 7;
     const DATE_HEADER_HEIGHT = 28;
-    const HORIZONTAL_SCROLL_FACTOR = 0.7; // 수평 스크롤 속도 조절 (0.7 = 손가락 움직임의 70% 속도)
+    const HORIZONTAL_SCROLL_FACTOR = 0.5; // 수평 스크롤 속도 조절 (0.7 = 손가락 움직임의 70% 속도)
 
     // 터치 지점에서 컬럼 인덱스 계산
     const getColumnIndexFromTouch = (clientX) => {
