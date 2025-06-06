@@ -394,7 +394,7 @@ export default function MeetingPage({ params }) {
                     </div>
                 </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="sticky bottom-0 bg-white">
                 <UserBar 
                     meetingId={unwrappedParams.id} 
                     users={users}
