@@ -12,7 +12,7 @@ export const metadata = {
         apple: '/logo.png',
     },
     openGraph: {
-        images: ["/comeet_logo.png"],
+        images: ["/comeet_logo.png?v=2"],
     },
 };
 
