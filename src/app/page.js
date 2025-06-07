@@ -101,7 +101,7 @@ export default function Landing() {
                                 <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl p-4 shadow-sm max-w-[280px] mx-auto">
                                     <div className="flex items-center justify-center">
                                         <img
-                                            src="/create.png"
+                                            src="/step1.png"
                                             alt="Create 화면"
                                             className="w-full h-[400px] object-contain rounded-xl"
                                             style={{ margin: 0 }}
@@ -173,7 +173,7 @@ export default function Landing() {
                                 <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-4 py-1 shadow-sm max-w-[280px] mx-auto">
                                     <div className="flex items-center justify-center">
                                         <img
-                                            src="/cell.png"
+                                            src="/step3-1.png"
                                             alt="추천 시간 화면"
                                             className="w-full h-[180px] object-contain rounded-xl"
                                             style={{ margin: 0 }}
@@ -186,7 +186,7 @@ export default function Landing() {
                                 <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-1 py-0.5 shadow-sm max-w-[280px] mx-auto my-0.5">
                                     <div className="flex items-center justify-center">
                                         <img
-                                            src="/cell2.png"
+                                            src="/step3-2.png"
                                             alt="추천 시간 화면2"
                                             className="w-full h-[260px] object-contain rounded-xl"
                                             style={{ margin: 0 }}
