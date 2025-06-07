@@ -81,7 +81,9 @@ export default function Half({
             const hasTouch =
                 "ontouchstart" in window || navigator.maxTouchPoints > 0;
             const isSmallScreen = window.innerWidth <= 768;
-            setIsMobile(hasTouch && isSmallScreen);
+            const mobileResult = hasTouch && isSmallScreen;
+            console.log('Mobile Detection:', { hasTouch, isSmallScreen, mobileResult, windowWidth: window.innerWidth });
+            setIsMobile(mobileResult);
         };
 
         checkIsMobile();
@@ -103,8 +105,18 @@ export default function Half({
         // 선택 기능이 활성화된 경우(TimetableSelect) 모두 처리
         const shouldProcessTouch = (onCellClick && !isSelectionEnabled) || isSelectionEnabled;
         
+        console.log('Mobile Touch Start:', { 
+            dayIndex, 
+            halfIndex, 
+            onCellClick: !!onCellClick, 
+            isSelectionEnabled, 
+            shouldProcessTouch,
+            touchesLength: e.touches.length 
+        });
+        
         // 두 손가락 이상의 터치라면 무시
         if (!shouldProcessTouch || e.touches.length > 1) {
+            console.log('Touch ignored:', { shouldProcessTouch, touchesLength: e.touches.length });
             return;
         }
 
@@ -117,6 +129,8 @@ export default function Half({
         setTouchStartPos({ x: touch.clientX, y: touch.clientY });
         setTouchStartTimestamp(Date.now());
         setLocalTouchMoved(false);
+
+        console.log('Touch start processed successfully');
 
         // 상위 컴포넌트의 터치 시작 핸들러 호출 (선택 기능이 활성화된 경우만)
         if (onTouchStart && isSelectionEnabled) {
@@ -256,6 +270,20 @@ export default function Half({
         }
     };
 
+    // 조건부 이벤트 핸들러 계산
+    const shouldUseMobileEvents = isMobile && (((onCellClick && !isSelectionEnabled) || isSelectionEnabled));
+    const shouldUsePCEvents = !isMobile;
+    
+    console.log('Event Handler Conditions:', {
+        isMobile,
+        onCellClick: !!onCellClick,
+        isSelectionEnabled,
+        shouldUseMobileEvents,
+        shouldUsePCEvents,
+        dayIndex,
+        halfIndex
+    });
+
     return (
         <div
             className={`time-slot w-full h-[17px] border-gray-500 cursor-pointer transition-colors duration-150 ${
@@ -280,24 +308,24 @@ export default function Half({
                 touchAction: isMobile ? "manipulation" : "none",
             }}
             // 조건부 이벤트 핸들러 (디바이스별 분기)
-            {...(isMobile
+            {...(shouldUseMobileEvents
                 ? {
-                      // 모바일: 터치 이벤트 + 클릭 백업 (onCellClick이 있거나 선택 기능이 활성화된 경우)
-                      ...(((onCellClick && !isSelectionEnabled) || isSelectionEnabled) && {
-                          onClick: handleMobileClick,
-                          onTouchStart: handleMobileTouchStart,
-                          onTouchMove: handleMobileTouchMove,
-                          onTouchEnd: handleMobileTouchEnd,
-                      }),
+                      // 모바일: 터치 이벤트 + 클릭 백업
+                      onClick: handleMobileClick,
+                      onTouchStart: handleMobileTouchStart,
+                      onTouchMove: handleMobileTouchMove,
+                      onTouchEnd: handleMobileTouchEnd,
                   }
-                : {
+                : shouldUsePCEvents
+                ? {
                       // PC: 마우스 이벤트만
                       onClick: handlePCClick,
                       onMouseDown: handlePCMouseDown,
                       onMouseMove: handlePCMouseMove,
                       onMouseEnter: handlePCMouseEnter,
                       onMouseUp: handlePCMouseUp,
-                  })}
+                  }
+                : {})}
             data-day-index={String(dayIndex)}
             data-half-index={String(halfIndex)}
         ></div>
