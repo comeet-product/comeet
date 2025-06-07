@@ -536,6 +536,11 @@ export default function TimetableResult({
 
         // 스와이프 감지를 위한 터치 이벤트 핸들러
         const handleTouchStart = (e) => {
+            // time-slot 클래스를 가진 요소(셀)에서 발생한 터치는 무시
+            if (e.target.closest('.time-slot')) {
+                return;
+            }
+            
             if (e.touches.length === 1 && !isAnimating) {
                 const touch = e.touches[0];
                 setTouchStart({ x: touch.clientX, y: touch.clientY });
@@ -545,6 +550,11 @@ export default function TimetableResult({
         };
 
         const handleTouchMove = (e) => {
+            // time-slot 클래스를 가진 요소(셀)에서 발생한 터치는 무시
+            if (e.target.closest('.time-slot')) {
+                return;
+            }
+            
             if (e.touches.length === 1 && isSwiping && !isAnimating) {
                 const touch = e.touches[0];
                 setTouchEnd({ x: touch.clientX, y: touch.clientY });
@@ -560,6 +570,11 @@ export default function TimetableResult({
         };
 
         const handleTouchEnd = (e) => {
+            // time-slot 클래스를 가진 요소(셀)에서 발생한 터치는 무시
+            if (e.target.closest('.time-slot')) {
+                return;
+            }
+            
             if (e.touches.length === 0 && isSwiping && !isAnimating) {
                 handleSwipeEnd();
             }
@@ -746,7 +761,7 @@ export default function TimetableResult({
                     className="overflow-hidden"
                     data-scroll-container="true"
                     style={{ 
-                        touchAction: "pan-y", // 세로 스크롤만 허용, 가로는 스와이프로 처리
+                        touchAction: "auto", // pan-y에서 auto로 변경하여 셀 클릭 허용
                         userSelect: "none", // 텍스트 선택 방지
                         WebkitUserSelect: "none",
                         minHeight: "100px",
