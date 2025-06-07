@@ -77,16 +77,25 @@ export default function Half({
 
     useEffect(() => {
         const checkIsMobile = () => {
-            // 더 단순한 모바일 감지 - 터치만 확인
+            // 더 정확한 모바일 감지
             const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-            console.log('Mobile Detection Simple:', { 
+            const isSmallScreen = window.innerWidth <= 768;
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            
+            // 터치 기능이 있고 화면이 작거나 모바일 유저에이전트인 경우에만 모바일로 판단
+            const mobileResult = hasTouch && (isSmallScreen || isMobileUA);
+            
+            console.log('🔍 Mobile Detection Details:', { 
                 hasTouch, 
+                isSmallScreen,
+                isMobileUA,
+                mobileResult,
                 userAgent: navigator.userAgent,
-                maxTouchPoints: navigator.maxTouchPoints,
                 windowWidth: window.innerWidth 
             });
-            // 일단 터치 디바이스면 모바일로 간주
-            setIsMobile(hasTouch);
+            
+            setIsMobile(mobileResult);
         };
 
         checkIsMobile();
@@ -100,8 +109,10 @@ export default function Half({
     const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
     const [localTouchMoved, setLocalTouchMoved] = useState(false);
     const [touchStartTimestamp, setTouchStartTimestamp] = useState(0);
+    const [touchDirection, setTouchDirection] = useState(null); // 'vertical', 'horizontal', null
 
     const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
+    const DIRECTION_THRESHOLD = 15; // 방향 감지를 위한 임계값
 
     const handleMobileTouchStart = (e) => {
         console.log('🔥 TOUCH START EVENT FIRED!', {
@@ -117,23 +128,11 @@ export default function Half({
         // 선택 기능이 활성화된 경우(TimetableSelect) 모두 처리
         const shouldProcessTouch = (onCellClick && !isSelectionEnabled) || isSelectionEnabled;
         
-        console.log('Mobile Touch Start:', { 
-            dayIndex, 
-            halfIndex, 
-            onCellClick: !!onCellClick, 
-            isSelectionEnabled, 
-            shouldProcessTouch,
-            touchesLength: e.touches.length 
-        });
-        
         // 두 손가락 이상의 터치라면 무시
         if (!shouldProcessTouch || e.touches.length > 1) {
             console.log('❌ Touch ignored:', { shouldProcessTouch, touchesLength: e.touches.length });
             return;
         }
-
-        e.preventDefault();
-        e.stopPropagation();
 
         const touch = e.touches[0];
 
@@ -141,12 +140,19 @@ export default function Half({
         setTouchStartPos({ x: touch.clientX, y: touch.clientY });
         setTouchStartTimestamp(Date.now());
         setLocalTouchMoved(false);
+        setTouchDirection(null); // 방향 초기화
 
         console.log('✅ Touch start processed successfully');
 
-        // 상위 컴포넌트의 터치 시작 핸들러 호출 (선택 기능이 활성화된 경우만)
-        if (onTouchStart && isSelectionEnabled) {
-            onTouchStart(dayIndex, halfIndex, touch.clientY);
+        // 선택 기능이 활성화된 경우에만 preventDefault (TimetableSelect)
+        if (isSelectionEnabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // 상위 컴포넌트의 터치 시작 핸들러 호출
+            if (onTouchStart) {
+                onTouchStart(dayIndex, halfIndex, touch.clientY);
+            }
         }
     };
 
@@ -160,6 +166,23 @@ export default function Half({
         const deltaX = Math.abs(touch.clientX - touchStartPos.x);
         const deltaY = Math.abs(touch.clientY - touchStartPos.y);
 
+        // 방향이 아직 결정되지 않았고 충분한 움직임이 감지된 경우
+        if (!touchDirection && (deltaX > DIRECTION_THRESHOLD || deltaY > DIRECTION_THRESHOLD)) {
+            if (deltaY > deltaX) {
+                setTouchDirection('vertical'); // 세로 방향
+                console.log('🔽 Vertical drag detected');
+            } else {
+                setTouchDirection('horizontal'); // 가로 방향  
+                console.log('↔️ Horizontal drag detected - allowing scroll');
+                return; // 가로 방향이면 이후 처리하지 않음 (스크롤 허용)
+            }
+        }
+
+        // 가로 방향 드래그인 경우 처리하지 않음 (스크롤 허용)
+        if (touchDirection === 'horizontal') {
+            return;
+        }
+
         // 움직임이 충분히 감지되면 localTouchMoved 설정
         if (
             (deltaX > TOUCH_MOVE_THRESHOLD || deltaY > TOUCH_MOVE_THRESHOLD) &&
@@ -168,40 +191,51 @@ export default function Half({
             setLocalTouchMoved(true);
         }
 
-        // 상위 컴포넌트의 터치 이동 핸들러 호출 (선택 기능이 활성화된 경우만)
-        if (onTouchMove && isSelectionEnabled) {
-            onTouchMove(dayIndex, halfIndex, touch.clientY);
-        }
+        // 세로 방향 드래그이고 선택 기능이 활성화된 경우에만 처리
+        if (touchDirection === 'vertical' && isSelectionEnabled) {
+            e.preventDefault();
+            e.stopPropagation();
 
-        // 이미 드래그 선택 중이면 드래그 이동도 처리 (선택 기능이 활성화된 경우만)
-        if (isDragSelecting && onDragSelectionMove && isSelectionEnabled) {
-            // 터치 포인트 아래의 엘리먼트 찾기
-            const elementBelow = document.elementFromPoint(
-                touch.clientX,
-                touch.clientY
-            );
+            // 상위 컴포넌트의 터치 이동 핸들러 호출
+            if (onTouchMove) {
+                onTouchMove(dayIndex, halfIndex, touch.clientY);
+            }
 
-            if (
-                elementBelow &&
-                elementBelow.dataset.dayIndex &&
-                elementBelow.dataset.halfIndex
-            ) {
-                const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
-                const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
+            // 이미 드래그 선택 중이면 드래그 이동도 처리
+            if (isDragSelecting && onDragSelectionMove) {
+                // 터치 포인트 아래의 엘리먼트 찾기
+                const elementBelow = document.elementFromPoint(
+                    touch.clientX,
+                    touch.clientY
+                );
 
-                // 드래그 이동 처리
-                onDragSelectionMove(newDayIndex, newHalfIndex);
+                if (
+                    elementBelow &&
+                    elementBelow.dataset.dayIndex &&
+                    elementBelow.dataset.halfIndex
+                ) {
+                    const newDayIndex = parseInt(elementBelow.dataset.dayIndex);
+                    const newHalfIndex = parseInt(elementBelow.dataset.halfIndex);
+
+                    // 드래그 이동 처리
+                    onDragSelectionMove(newDayIndex, newHalfIndex);
+                }
             }
         }
     };
 
     const handleMobileTouchEnd = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        console.log('👋 Touch end:', { touchDirection, localTouchMoved, isSelectionEnabled });
 
-        // 상위 컴포넌트의 터치 종료 핸들러 호출 (선택 기능이 활성화된 경우만)
-        if (onTouchEnd && isSelectionEnabled) {
-            onTouchEnd();
+        // 세로 방향 드래그이고 선택 기능이 활성화된 경우에만 preventDefault
+        if (touchDirection === 'vertical' && isSelectionEnabled) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // 상위 컴포넌트의 터치 종료 핸들러 호출
+            if (onTouchEnd) {
+                onTouchEnd();
+            }
         }
 
         // 상태 초기화
@@ -209,6 +243,7 @@ export default function Half({
             setTouchStartPos({ x: 0, y: 0 });
             setLocalTouchMoved(false);
             setTouchStartTimestamp(0);
+            setTouchDirection(null);
         }, 50);
     };
 
@@ -273,19 +308,27 @@ export default function Half({
             isMobile,
             onCellClick: !!onCellClick,
             isSelectionEnabled,
+            touchDirection,
+            localTouchMoved,
             eventType: e.type
         });
+
+        // 가로 방향 드래그였다면 클릭 무시 (스크롤로 간주)
+        if (touchDirection === 'horizontal') {
+            console.log('↔️ Ignoring click after horizontal drag');
+            return;
+        }
 
         e.preventDefault();
         e.stopPropagation();
 
         // TimetableResult에서 셀 클릭 처리 (isSelectionEnabled가 false일 때)
-        if (onCellClick && !isSelectionEnabled) {
+        if (onCellClick && !isSelectionEnabled && !localTouchMoved) {
             console.log('✅ Calling onCellClick');
             onCellClick(dayIndex, halfIndex, pageStartDay || 0);
         }
-        // 선택 기능이 활성화된 경우
-        else if (isSelectionEnabled && onTapSelection) {
+        // 선택 기능이 활성화된 경우 (세로 방향 드래그가 아닌 탭)
+        else if (isSelectionEnabled && onTapSelection && touchDirection !== 'vertical' && !localTouchMoved) {
             console.log('✅ Calling onTapSelection');
             onTapSelection(dayIndex, halfIndex);
         }
