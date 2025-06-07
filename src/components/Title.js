@@ -171,8 +171,8 @@ export default function Title({ children, editable = true, onChange = () => {} }
                             <img 
                                 src="/editTitle.svg" 
                                 alt="수정" 
-                                width={20} 
-                                height={20}
+                                width={17} 
+                                height={17}
                             />
                         </button>
                     )}
