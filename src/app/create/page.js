@@ -66,7 +66,7 @@ export default function Create() {
     };
 
     return (
-        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 pt-4 pb-10 gap-10">
+        <div className="relative flex flex-col justify-between items-center h-full w-full px-10 pt-4 pb-10 gap-10 mt-4">
             <Title onChange={setTitle} link={false}>
                 {title}
             </Title>
