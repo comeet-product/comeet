@@ -77,13 +77,16 @@ export default function Half({
 
     useEffect(() => {
         const checkIsMobile = () => {
-            // 터치 디바이스 여부와 화면 크기로 모바일 판단
-            const hasTouch =
-                "ontouchstart" in window || navigator.maxTouchPoints > 0;
-            const isSmallScreen = window.innerWidth <= 768;
-            const mobileResult = hasTouch && isSmallScreen;
-            console.log('Mobile Detection:', { hasTouch, isSmallScreen, mobileResult, windowWidth: window.innerWidth });
-            setIsMobile(mobileResult);
+            // 더 단순한 모바일 감지 - 터치만 확인
+            const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+            console.log('Mobile Detection Simple:', { 
+                hasTouch, 
+                userAgent: navigator.userAgent,
+                maxTouchPoints: navigator.maxTouchPoints,
+                windowWidth: window.innerWidth 
+            });
+            // 일단 터치 디바이스면 모바일로 간주
+            setIsMobile(hasTouch);
         };
 
         checkIsMobile();
@@ -101,6 +104,15 @@ export default function Half({
     const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
 
     const handleMobileTouchStart = (e) => {
+        console.log('🔥 TOUCH START EVENT FIRED!', {
+            dayIndex, 
+            halfIndex,
+            touchesLength: e.touches.length,
+            isMobile,
+            onCellClick: !!onCellClick,
+            isSelectionEnabled
+        });
+        
         // onCellClick이 있으면서 선택 기능이 비활성화된 경우(TimetableResult)나 
         // 선택 기능이 활성화된 경우(TimetableSelect) 모두 처리
         const shouldProcessTouch = (onCellClick && !isSelectionEnabled) || isSelectionEnabled;
@@ -116,7 +128,7 @@ export default function Half({
         
         // 두 손가락 이상의 터치라면 무시
         if (!shouldProcessTouch || e.touches.length > 1) {
-            console.log('Touch ignored:', { shouldProcessTouch, touchesLength: e.touches.length });
+            console.log('❌ Touch ignored:', { shouldProcessTouch, touchesLength: e.touches.length });
             return;
         }
 
@@ -130,7 +142,7 @@ export default function Half({
         setTouchStartTimestamp(Date.now());
         setLocalTouchMoved(false);
 
-        console.log('Touch start processed successfully');
+        console.log('✅ Touch start processed successfully');
 
         // 상위 컴포넌트의 터치 시작 핸들러 호출 (선택 기능이 활성화된 경우만)
         if (onTouchStart && isSelectionEnabled) {
@@ -202,8 +214,9 @@ export default function Half({
 
     // ===== PC 전용 마우스 이벤트 핸들러 (Calendar.js 방식) =====
 
+    // PC에서는 마우스 다운 이벤트 처리 (Result에서는 사용 안함, Select에서만 사용)
     const handlePCMouseDown = (e) => {
-        if (!isSelectionEnabled) return;
+        if (!isSelectionEnabled) return; // TimetableResult에서는 마우스 다운 무시
 
         e.preventDefault();
         e.stopPropagation();
@@ -252,20 +265,28 @@ export default function Half({
         // PC에서 선택 기능이 활성화된 경우는 마우스 다운에서 이미 처리됨
     };
 
-    // ===== 모바일 전용 클릭 핸들러 =====
+    // ===== 공통 클릭 핸들러 (백업용) =====
+    const handleCommonClick = (e) => {
+        console.log('🖱️ Common Click Event Fired!', {
+            dayIndex,
+            halfIndex,
+            isMobile,
+            onCellClick: !!onCellClick,
+            isSelectionEnabled,
+            eventType: e.type
+        });
 
-    const handleMobileClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        console.log('Mobile Click:', { dayIndex, halfIndex, onCellClick: !!onCellClick, isSelectionEnabled, localTouchMoved, pageStartDay });
-
-        // TimetableResult에서 셀 클릭 처리
-        if (onCellClick && !isSelectionEnabled && !localTouchMoved) {
+        // TimetableResult에서 셀 클릭 처리 (isSelectionEnabled가 false일 때)
+        if (onCellClick && !isSelectionEnabled) {
+            console.log('✅ Calling onCellClick');
             onCellClick(dayIndex, halfIndex, pageStartDay || 0);
         }
-        // 모바일에서 선택 기능이 활성화된 경우 탭 선택 처리 (백업용)
-        else if (isSelectionEnabled && onTapSelection && !localTouchMoved) {
+        // 선택 기능이 활성화된 경우
+        else if (isSelectionEnabled && onTapSelection) {
+            console.log('✅ Calling onTapSelection');
             onTapSelection(dayIndex, halfIndex);
         }
     };
@@ -273,6 +294,7 @@ export default function Half({
     // 조건부 이벤트 핸들러 계산
     const shouldUseMobileEvents = isMobile && (((onCellClick && !isSelectionEnabled) || isSelectionEnabled));
     const shouldUsePCEvents = !isMobile;
+    const shouldUseCommonClick = (onCellClick && !isSelectionEnabled) || isSelectionEnabled;
     
     console.log('Event Handler Conditions:', {
         isMobile,
@@ -280,6 +302,7 @@ export default function Half({
         isSelectionEnabled,
         shouldUseMobileEvents,
         shouldUsePCEvents,
+        shouldUseCommonClick,
         dayIndex,
         halfIndex
     });
@@ -305,27 +328,10 @@ export default function Half({
                 backgroundColor: getBackgroundColor(),
                 userSelect: "none",
                 WebkitUserSelect: "none",
-                touchAction: isMobile ? "manipulation" : "none",
+                touchAction: "manipulation", // 모바일에서 더 나은 터치 응답성
             }}
-            // 조건부 이벤트 핸들러 (디바이스별 분기)
-            {...(shouldUseMobileEvents
-                ? {
-                      // 모바일: 터치 이벤트 + 클릭 백업
-                      onClick: handleMobileClick,
-                      onTouchStart: handleMobileTouchStart,
-                      onTouchMove: handleMobileTouchMove,
-                      onTouchEnd: handleMobileTouchEnd,
-                  }
-                : shouldUsePCEvents
-                ? {
-                      // PC: 마우스 이벤트만
-                      onClick: handlePCClick,
-                      onMouseDown: handlePCMouseDown,
-                      onMouseMove: handlePCMouseMove,
-                      onMouseEnter: handlePCMouseEnter,
-                      onMouseUp: handlePCMouseUp,
-                  }
-                : {})}
+            // 모든 디바이스에서 공통 클릭 이벤트 사용
+            onClick={shouldUseCommonClick ? handleCommonClick : undefined}
             data-day-index={String(dayIndex)}
             data-half-index={String(halfIndex)}
         ></div>
