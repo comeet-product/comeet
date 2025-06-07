@@ -70,8 +70,8 @@ export default function Header() {
             
             // title이 있으면 포함, 없으면 제외
             const textToCopy = title 
-                ? `[Comeet]\n${title}\n${shareUrl}\n\n\n지금 바로 모두가 되는 일정을 확인해보세요!`
-                : `[Comeet]\n지금 바로 모두가 되는 일정을 확인해보세요!\n$www.comeet.team`;
+                ? `[Comeet]\n${title}\n${shareUrl}\n\n지금 바로 모두가 되는 일정을 확인해보세요!`
+                : `[Comeet]www.comeet.team\n지금 바로 모두가 되는 일정을 확인해보세요!`
                 
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(textToCopy);

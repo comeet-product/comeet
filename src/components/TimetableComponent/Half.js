@@ -330,8 +330,23 @@ export default function Half({
                 WebkitUserSelect: "none",
                 touchAction: "manipulation", // 모바일에서 더 나은 터치 응답성
             }}
-            // 모든 디바이스에서 공통 클릭 이벤트 사용
+            // 클릭 이벤트 (모든 디바이스 공통)
             onClick={shouldUseCommonClick ? handleCommonClick : undefined}
+            // 선택 기능이 활성화된 경우에만 터치/마우스 이벤트 추가 (TimetableSelect)
+            {...(isSelectionEnabled ? {
+                ...(isMobile ? {
+                    // 모바일: 터치 이벤트
+                    onTouchStart: handleMobileTouchStart,
+                    onTouchMove: handleMobileTouchMove,
+                    onTouchEnd: handleMobileTouchEnd,
+                } : {
+                    // PC: 마우스 이벤트
+                    onMouseDown: handlePCMouseDown,
+                    onMouseMove: handlePCMouseMove,
+                    onMouseEnter: handlePCMouseEnter,
+                    onMouseUp: handlePCMouseUp,
+                })
+            } : {})}
             data-day-index={String(dayIndex)}
             data-half-index={String(halfIndex)}
         ></div>
