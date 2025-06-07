@@ -40,6 +40,9 @@ export default function Header() {
                 // 폴백: 임시 textarea를 이용한 복사
                 const textarea = document.createElement("textarea");
                 textarea.value = textToCopy;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "absolute";
+                textarea.style.left = "-9999px";
                 document.body.appendChild(textarea);
                 textarea.select();
                 document.execCommand("copy");
