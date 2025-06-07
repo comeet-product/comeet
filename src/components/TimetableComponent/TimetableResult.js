@@ -292,8 +292,14 @@ export default function TimetableResult({
         };
     };
 
+    // 자동 네비게이션을 위한 ref들
+    const autoNavigationTimeoutRef = useRef(null);
+    const [isAutoNavigating, setIsAutoNavigating] = useState(false);
+    const lastAutoNavigatedSelectedCellsRef = useRef(null); // 마지막으로 자동 네비게이션된 selectedCells
+    const [userHasManuallyNavigated, setUserHasManuallyNavigated] = useState(false); // 사용자가 수동으로 네비게이션했는지 추적
+
     // 페이지 이동 함수 - 캐러셀 효과 적용
-    const goToPage = (pageIndex) => {
+    const goToPage = (pageIndex, isManual = false) => {
         const maxPage = getMaxPageIndex();
         const targetPage = Math.max(0, Math.min(pageIndex, maxPage));
         
@@ -302,13 +308,20 @@ export default function TimetableResult({
             maxPage,
             targetPage,
             currentPageIndex,
-            isAnimating
+            isAnimating,
+            isManual
         });
         
         if (targetPage !== currentPageIndex && !isAnimating) {
             console.log('✅ Moving to page:', targetPage);
             setIsAnimating(true);
             setCurrentPageIndex(targetPage);
+            
+            // 수동 네비게이션인 경우 플래그 설정 (selectedCells 자동 네비게이션용)
+            if (isManual) {
+                setUserHasManuallyNavigated(true);
+                console.log('🙋‍♂️ User manually navigated to page:', targetPage);
+            }
             
             // 애니메이션 완료 후 상태 초기화
             setTimeout(() => {
@@ -404,11 +417,7 @@ export default function TimetableResult({
         return hasAvailability;
     };
 
-    // 자동 네비게이션을 위한 debounce ref
-    const autoNavigationTimeoutRef = useRef(null);
-    const [isAutoNavigating, setIsAutoNavigating] = useState(false);
-
-    // 선택된 사용자가 변경될 때 자동 페이지 이동 (debounced)
+    // 선택된 사용자가 변경될 때 자동 페이지 이동 (기존 로직 복원)
     useEffect(() => {
         // 이전 timeout 취소
         if (autoNavigationTimeoutRef.current) {
@@ -446,7 +455,7 @@ export default function TimetableResult({
                         if (targetPage !== -1 && targetPage !== currentPageIndex) {
                             console.log(`🚀 Moving to page ${targetPage} for date ${firstAvailableDate}`);
                             setIsAutoNavigating(true);
-                            goToPage(targetPage);
+                            goToPage(targetPage, false); // 자동 이동이므로 isManual = false
                             // 네비게이션 완료 후 플래그 해제
                             setTimeout(() => setIsAutoNavigating(false), 500);
                         } else {
@@ -467,12 +476,37 @@ export default function TimetableResult({
                 clearTimeout(autoNavigationTimeoutRef.current);
             }
         };
-    }, [selectedUser, selectedUserAvailability, currentPageIndex, isAutoNavigating]);
+    }, [selectedUser, selectedUserAvailability, currentPageIndex, isAutoNavigating]); // 기존 dependency 복원
 
-    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동 (debounced)
+    // 추천 클릭 시 (selectedCells 변경 시) 자동 페이지 이동 (한 번만 실행)
     useEffect(() => {
+        console.log('🎯 SelectedCells effect triggered:', {
+            selectedCells: selectedCells?.length || 0,
+            lastAutoNavigatedSelectedCells: lastAutoNavigatedSelectedCellsRef.current?.length || 0,
+            userHasManuallyNavigated,
+            selectedUser
+        });
+
         // 자동 네비게이션 중이거나 사용자가 선택된 경우 스킵
         if (isAutoNavigating || selectedUser) {
+            return;
+        }
+
+        // selectedCells가 바뀔 때 수동 네비게이션 플래그 초기화
+        if (selectedCells !== lastAutoNavigatedSelectedCellsRef.current) {
+            setUserHasManuallyNavigated(false);
+            console.log('🔄 Reset manual navigation flag for new selectedCells');
+        }
+
+        // 이미 이 selectedCells에 대해 자동 네비게이션을 했으면 스킵
+        if (selectedCells && selectedCells === lastAutoNavigatedSelectedCellsRef.current) {
+            console.log('⛔ Auto navigation skipped - already navigated for this selectedCells');
+            return;
+        }
+
+        // 사용자가 수동으로 네비게이션했으면 스킵
+        if (userHasManuallyNavigated) {
+            console.log('⛔ Auto navigation skipped - user has manually navigated');
             return;
         }
 
@@ -496,19 +530,31 @@ export default function TimetableResult({
                     if (targetPage !== -1 && targetPage !== currentPageIndex) {
                         console.log(`🎯 Moving to page ${targetPage} for recommendation date ${selectedDate}`);
                         setIsAutoNavigating(true);
-                        goToPage(targetPage);
+                        lastAutoNavigatedSelectedCellsRef.current = selectedCells; // 자동 네비게이션 실행된 selectedCells 기록
+                        goToPage(targetPage, false); // 자동 이동이므로 isManual = false
                         // 네비게이션 완료 후 플래그 해제
                         setTimeout(() => setIsAutoNavigating(false), 500);
                     } else {
                         console.log('Target page is same as current page or invalid');
+                        lastAutoNavigatedSelectedCellsRef.current = selectedCells; // 이동할 필요 없어도 기록
                     }
+                } else {
+                    lastAutoNavigatedSelectedCellsRef.current = selectedCells; // 날짜 없어도 기록
                 }
                 console.log('=== End recommendation auto page navigation check ===');
             }, 150); // 150ms debounce
 
             return () => clearTimeout(timeoutId);
         }
-    }, [selectedCells, currentPageIndex, isAutoNavigating, selectedUser]);
+    }, [selectedCells]); // dependency를 최소한으로 줄임
+
+    // selectedCells가 바뀔 때만 ref 초기화
+    useEffect(() => {
+        if (selectedCells !== lastAutoNavigatedSelectedCellsRef.current) {
+            lastAutoNavigatedSelectedCellsRef.current = null;
+            console.log('🔄 Reset auto navigation ref for new selectedCells');
+        }
+    }, [selectedCells]);
 
     // 스와이프 방향 감지 및 페이지 변경
     const handleSwipeEnd = () => {
@@ -520,11 +566,11 @@ export default function TimetableResult({
         // 수평 스와이프가 수직 움직임보다 크고 임계값을 넘었을 때만 처리
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > deltaY) {
             if (deltaX > 0) {
-                // 오른쪽 스와이프 - 이전 페이지
-                goToPage(currentPageIndex - 1);
+                // 오른쪽 스와이프 - 이전 페이지 (수동 네비게이션)
+                goToPage(currentPageIndex - 1, true);
             } else {
-                // 왼쪽 스와이프 - 다음 페이지  
-                goToPage(currentPageIndex + 1);
+                // 왼쪽 스와이프 - 다음 페이지 (수동 네비게이션)
+                goToPage(currentPageIndex + 1, true);
             }
         }
         
@@ -614,11 +660,11 @@ export default function TimetableResult({
                     e.preventDefault();
                     
                     if (e.deltaX > 0) {
-                        // 왼쪽으로 스크롤 (다음 페이지)
-                        goToPage(currentPageIndex + 1);
+                        // 왼쪽으로 스크롤 (다음 페이지) - 수동 네비게이션
+                        goToPage(currentPageIndex + 1, true);
                     } else {
-                        // 오른쪽으로 스크롤 (이전 페이지)
-                        goToPage(currentPageIndex - 1);
+                        // 오른쪽으로 스크롤 (이전 페이지) - 수동 네비게이션
+                        goToPage(currentPageIndex - 1, true);
                     }
                 }
             }
