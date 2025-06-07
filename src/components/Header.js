@@ -34,13 +34,13 @@ export default function Header() {
     const handleShareClick = async () => {
         try {
             let shareUrl = "https://www.comeet.team";
-            const pathSegments = pathname.split("/");
-            // /[id] 형태의 미팅 상세 페이지라면
-            if (pathSegments.length === 2 && pathSegments[1]) {
-                shareUrl = `https://www.comeet.team/${pathSegments[1]}`;
+            // /, /create는 무조건 메인 주소 복사
+            if (!(pathname === "/" || pathname === "/create")) {
+                const pathSegments = pathname.split("/");
+                if (pathSegments.length === 2 && pathSegments[1]) {
+                    shareUrl = `https://www.comeet.team/${pathSegments[1]}`;
+                }
             }
-            // 그 외에는 항상 메인 주소만 복사
-
             const textToCopy = `[COMEET]\n지금 바로 모두가 되는 일정을 확인해보세요!\n${shareUrl}`;
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(textToCopy);
