@@ -201,7 +201,7 @@ export default function Header() {
 
                 {/* 토스트 메시지 */}
                 {showToast && (
-                    <div className="fixed bottom-[65px] left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
+                    <div className="fixed bottom-[110px] left-1/2 transform -translate-x-1/2 bg-main text-white px-3 py-2 rounded-full text-xs whitespace-nowrap shadow-md z-50 transition-opacity duration-500">
                         {toastMessage}
                     </div>
                 )}
