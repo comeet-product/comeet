@@ -33,18 +33,16 @@ export default function Header() {
 
     const handleShareClick = async () => {
         try {
-            // URL에서 미팅 ID 추출
+            // 항상 최신 URL 사용
+            let shareUrl = window.location.href;
             const pathSegments = pathname.split("/");
-            const meetingId = pathSegments[1]; // /[id] 형태에서 id 추출
-
-            let shareUrl = currentUrl;
+            const meetingId = pathSegments[1];
             if (meetingId && meetingId !== "") {
                 const meetingResult = await getMeeting(meetingId);
                 if (meetingResult.success) {
                     shareUrl = `https://www.comeet.team/${meetingId}`;
                 }
             }
-
             const textToCopy = `[COMEET]\n지금 바로 모두가 되는 일정을 확인해보세요!\n${shareUrl}`;
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(textToCopy);
