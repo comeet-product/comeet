@@ -373,9 +373,21 @@ export default function MeetingPage({ params }) {
         }
     };
 
-    if (!meeting) return <Loading message="정보를 불러오고 있습니다..." />;
+    if (!meeting) {
+        return (
+            <div className="absolute inset-0 bg-white flex items-center justify-center z-50">
+                <Loading message="정보를 불러오고 있습니다..." />
+            </div>
+        );
+    }
     
-    if (isLoading) return <Loading message="데이터를 처리하고 있습니다..." />;
+    if (isLoading) {
+        return (
+            <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+                <Loading message="데이터를 처리하고 있습니다..." />
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col">
