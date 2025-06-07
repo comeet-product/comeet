@@ -16,10 +16,36 @@ export default function Header() {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
+    const [title, setTitle] = useState("");
 
     useEffect(() => {
         setCurrentUrl(window.location.href);
     }, []);
+
+    // 현재 미팅의 title 가져오기
+    useEffect(() => {
+        const fetchMeetingTitle = async () => {
+            // pathname에서 meetingId 추출 (/, /create가 아닌 경우)
+            if (pathname !== "/" && pathname !== "/create") {
+                const pathSegments = pathname.split("/");
+                if (pathSegments.length >= 2 && pathSegments[1]) {
+                    const meetingId = pathSegments[1];
+                    try {
+                        const meetingResult = await getMeeting(meetingId);
+                        if (meetingResult.success) {
+                            setTitle(meetingResult.data.title || "");
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch meeting title:", error);
+                    }
+                }
+            } else {
+                setTitle(""); // 메인 페이지나 생성 페이지에서는 title 초기화
+            }
+        };
+
+        fetchMeetingTitle();
+    }, [pathname]);
 
     const handleLogoClick = () => {
         if (pathname === "/") {
@@ -41,7 +67,12 @@ export default function Header() {
                     shareUrl = `https://www.comeet.team/${pathSegments[1]}`;
                 }
             }
-            const textToCopy = `[COMEET]\n지금 바로 모두가 되는 일정을 확인해보세요!\n${shareUrl}`;
+            
+            // title이 있으면 포함, 없으면 제외
+            const textToCopy = title 
+                ? `[Comeet]\n지금 바로 모두가 되는 일정을 확인해보세요!\n\n${title}\n${shareUrl}`
+                : `[Comeet]\n지금 바로 모두가 되는 일정을 확인해보세요!\n$www.comeet.team`;
+                
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(textToCopy);
             } else {
