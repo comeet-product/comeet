@@ -99,8 +99,12 @@ export default function Half({
     const TOUCH_MOVE_THRESHOLD = 8; // 8px 이상 움직이면 드래그로 간주
 
     const handleMobileTouchStart = (e) => {
-        // 선택 기능이 비활성화되어 있거나 두 손가락 이상의 터치라면 무시
-        if (!isSelectionEnabled || e.touches.length > 1) {
+        // onCellClick이 있으면서 선택 기능이 비활성화된 경우(TimetableResult)나 
+        // 선택 기능이 활성화된 경우(TimetableSelect) 모두 처리
+        const shouldProcessTouch = (onCellClick && !isSelectionEnabled) || isSelectionEnabled;
+        
+        // 두 손가락 이상의 터치라면 무시
+        if (!shouldProcessTouch || e.touches.length > 1) {
             return;
         }
 
@@ -114,8 +118,8 @@ export default function Half({
         setTouchStartTimestamp(Date.now());
         setLocalTouchMoved(false);
 
-        // 상위 컴포넌트의 터치 시작 핸들러 호출
-        if (onTouchStart) {
+        // 상위 컴포넌트의 터치 시작 핸들러 호출 (선택 기능이 활성화된 경우만)
+        if (onTouchStart && isSelectionEnabled) {
             onTouchStart(dayIndex, halfIndex, touch.clientY);
         }
     };
@@ -138,13 +142,13 @@ export default function Half({
             setLocalTouchMoved(true);
         }
 
-        // 상위 컴포넌트의 터치 이동 핸들러 호출
-        if (onTouchMove) {
+        // 상위 컴포넌트의 터치 이동 핸들러 호출 (선택 기능이 활성화된 경우만)
+        if (onTouchMove && isSelectionEnabled) {
             onTouchMove(dayIndex, halfIndex, touch.clientY);
         }
 
-        // 이미 드래그 선택 중이면 드래그 이동도 처리
-        if (isDragSelecting && onDragSelectionMove) {
+        // 이미 드래그 선택 중이면 드래그 이동도 처리 (선택 기능이 활성화된 경우만)
+        if (isDragSelecting && onDragSelectionMove && isSelectionEnabled) {
             // 터치 포인트 아래의 엘리먼트 찾기
             const elementBelow = document.elementFromPoint(
                 touch.clientX,
@@ -169,8 +173,8 @@ export default function Half({
         e.preventDefault();
         e.stopPropagation();
 
-        // 상위 컴포넌트의 터치 종료 핸들러 호출
-        if (onTouchEnd) {
+        // 상위 컴포넌트의 터치 종료 핸들러 호출 (선택 기능이 활성화된 경우만)
+        if (onTouchEnd && isSelectionEnabled) {
             onTouchEnd();
         }
 
@@ -278,11 +282,13 @@ export default function Half({
             // 조건부 이벤트 핸들러 (디바이스별 분기)
             {...(isMobile
                 ? {
-                      // 모바일: 터치 이벤트 + 클릭 백업
-                      onClick: handleMobileClick,
-                      onTouchStart: handleMobileTouchStart,
-                      onTouchMove: handleMobileTouchMove,
-                      onTouchEnd: handleMobileTouchEnd,
+                      // 모바일: 터치 이벤트 + 클릭 백업 (onCellClick이 있거나 선택 기능이 활성화된 경우)
+                      ...(((onCellClick && !isSelectionEnabled) || isSelectionEnabled) && {
+                          onClick: handleMobileClick,
+                          onTouchStart: handleMobileTouchStart,
+                          onTouchMove: handleMobileTouchMove,
+                          onTouchEnd: handleMobileTouchEnd,
+                      }),
                   }
                 : {
                       // PC: 마우스 이벤트만
