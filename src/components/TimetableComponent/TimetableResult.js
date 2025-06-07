@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import TimeHeader from "./TimeHeader";
 import Timetable from "./Timetable";
+import DateHeader from "./DateHeader";
+import DateSelectorResult from "./DateSelectorResult";
+import TimetableOnlyResult from "./TimetableOnlyResult";
 
 export default function TimetableResult({ 
     dayCount = 7, 
@@ -739,65 +742,73 @@ export default function TimetableResult({
     };
 
     return (
-        <div className="flex w-full">
-            <div className="flex-shrink-0 min-w-max">
-                <TimeHeader 
-                    halfCount={dynamicHalfCount}
-                    startTime={dynamicStartTime}
-                    dateHeaderHeight={DATE_HEADER_HEIGHT}
-                />
-            </div>
+        <div className="flex flex-col">
+            <DateHeader 
+                dayCount={dayCount} 
+                selectedDates={meeting?.dates}
+                pageStartDay={currentPageIndex * VISIBLE_DAY_COUNT}
+            />
+            <div className="h-[5px]"></div>
+            <div className="flex w-full">
+                <div className="flex-shrink-0 min-w-max">
+                    <TimeHeader 
+                        halfCount={dynamicHalfCount}
+                        startTime={dynamicStartTime}
+                        dateHeaderHeight={DATE_HEADER_HEIGHT}
+                    />
+                </div>
 
-            <div 
-                ref={containerRef}
-                className="flex-1 min-w-0"
-                style={{ 
-                    position: "relative",
-                    touchAction: "manipulation", // TimetableSelect와 동일한 설정
-                }}
-            >
                 <div 
-                    ref={timetableRef}
-                    className="overflow-hidden"
-                    data-scroll-container="true"
+                    ref={containerRef}
+                    className="flex-1 min-w-0"
                     style={{ 
-                        touchAction: "auto", // pan-y에서 auto로 변경하여 셀 클릭 허용
-                        userSelect: "none", // 텍스트 선택 방지
-                        WebkitUserSelect: "none",
-                        minHeight: "100px",
-                        width: "100%",
+                        position: "relative",
+                        touchAction: "manipulation", // TimetableSelect와 동일한 설정
                     }}
                 >
-                    <div style={getCarouselContainerStyle()}>
-                        {getAllPages().map((pageInfo, pageIndex) => (
-                            <div key={pageIndex} style={getPageStyle(pageInfo)}>
-                                <div style={getTimetableStyle(pageInfo)}>
-                                    <Timetable 
-                                        dayCount={pageInfo.dayCount}
-                                        halfCount={dynamicHalfCount}
-                                        hasDateHeaderAbove={false}
-                                        selectedSlots={getCombinedSlots(pageInfo.startDay, pageInfo.dayCount)}  // 페이지별 데이터 전달
-                                        onSlotSelection={() => {}}  // 터치 선택 비활성화
-                                        onTapSelection={() => {}}   // 터치 선택 비활성화
-                                        onTouchPending={() => {}}   // 터치 선택 비활성화
-                                        onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
-                                        onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
-                                        onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
-                                        isSelectionEnabled={false}       // 선택 기능 완전 비활성화
-                                        isDragSelecting={false}
-                                        pendingTouchSlot={null}
-                                        selectedDates={meeting?.dates} // 실제 날짜 배열 전달
-                                        pageStartDay={pageInfo.startDay} // 페이지 시작 날짜 정보
-                                        onCellClick={handleCellClick} // 셀 클릭 핸들러 추가
-                                        selectedCell={selectedCell} // 선택된 셀 정보 전달
-                                        selectedCells={selectedCells} // 연속 선택된 셀들 정보 전달
-                                        results={results} // 결과 데이터 전달
-                                        meeting={meeting} // 미팅 데이터 전달
-                                        dynamicStartTime={dynamicStartTime} // 동적 시작 시간 전달
-                                    />
+                    <div 
+                        ref={timetableRef}
+                        className="overflow-hidden"
+                        data-scroll-container="true"
+                        style={{ 
+                            touchAction: "auto", // pan-y에서 auto로 변경하여 셀 클릭 허용
+                            userSelect: "none", // 텍스트 선택 방지
+                            WebkitUserSelect: "none",
+                            minHeight: "100px",
+                            width: "100%",
+                        }}
+                    >
+                        <div style={getCarouselContainerStyle()}>
+                            {getAllPages().map((pageInfo, pageIndex) => (
+                                <div key={pageIndex} style={getPageStyle(pageInfo)}>
+                                    <div style={getTimetableStyle(pageInfo)}>
+                                        <TimetableOnlyResult 
+                                            dayCount={pageInfo.dayCount}
+                                            halfCount={dynamicHalfCount}
+                                            hasDateHeaderAbove={false}
+                                            selectedSlots={getCombinedSlots(pageInfo.startDay, pageInfo.dayCount)}  // 페이지별 데이터 전달
+                                            onSlotSelection={() => {}}  // 터치 선택 비활성화
+                                            onTapSelection={() => {}}   // 터치 선택 비활성화
+                                            onTouchPending={() => {}}   // 터치 선택 비활성화
+                                            onDragSelectionStart={() => {}}  // 드래그 선택 비활성화
+                                            onDragSelectionMove={() => {}}   // 드래그 선택 비활성화
+                                            onDragSelectionEnd={() => {}}    // 드래그 선택 비활성화
+                                            isSelectionEnabled={false}       // 선택 기능 완전 비활성화
+                                            isDragSelecting={false}
+                                            pendingTouchSlot={null}
+                                            selectedDates={meeting?.dates} // 실제 날짜 배열 전달
+                                            pageStartDay={pageInfo.startDay} // 페이지 시작 날짜 정보
+                                            onCellClick={handleCellClick} // 셀 클릭 핸들러 추가
+                                            selectedCell={selectedCell} // 선택된 셀 정보 전달
+                                            selectedCells={selectedCells} // 연속 선택된 셀들 정보 전달
+                                            results={results} // 결과 데이터 전달
+                                            meeting={meeting} // 미팅 데이터 전달
+                                            dynamicStartTime={dynamicStartTime} // 동적 시작 시간 전달
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
