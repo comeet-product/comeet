@@ -133,7 +133,7 @@ export default function Landing() {
 
                             {/* SelectTime Screen */}
                             <div className="text-center">
-                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-8 py-1 shadow-sm max-w-[280px] mx-auto">
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-2 py-0.5 shadow-sm max-w-[280px] mx-auto">
                                     <div className="flex items-center justify-center">
                                         <img
                                             src="/timeselect.png"
@@ -183,7 +183,7 @@ export default function Landing() {
                                 <p className="text-sm text-gray-600 text-center">
                                     셀을 누르면 가능한 사람들이 아래에 나타나요
                                 </p>
-                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-2 py-1 shadow-sm max-w-[280px] mx-auto">
+                                <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-xl px-1 py-0.5 shadow-sm max-w-[280px] mx-auto my-0.5">
                                     <div className="flex items-center justify-center">
                                         <img
                                             src="/cell2.png"
@@ -210,7 +210,7 @@ export default function Landing() {
                             href="/create"
                             className="pointer-events-auto w-full flex justify-center"
                         >
-                            <button className="bg-[#3674B5]/70 hover:bg-[#3674B5]/90 text-white font-semibold rounded-full shadow-xl px-6 py-4 transition-colors text-base w-[80%] max-w-[260px] backdrop-blur-md">
+                            <button className="bg-[#3674B5] hover:bg-[#3674B5]/90 text-white font-semibold rounded-full shadow-xl px-6 py-4 transition-colors text-base w-[80%] max-w-[260px] backdrop-blur-md">
                                 시작하기
                             </button>
                         </Link>
