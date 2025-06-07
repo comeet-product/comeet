@@ -743,12 +743,6 @@ export default function TimetableResult({
 
     return (
         <div className="flex flex-col">
-            <DateHeader 
-                dayCount={dayCount} 
-                selectedDates={meeting?.dates}
-                pageStartDay={currentPageIndex * VISIBLE_DAY_COUNT}
-            />
-            <div className="h-[5px]"></div>
             <div className="flex w-full">
                 <div className="flex-shrink-0 min-w-max">
                     <TimeHeader 
